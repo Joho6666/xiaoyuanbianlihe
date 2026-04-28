@@ -21,14 +21,20 @@ function stableStringify(value) {
  */
 const CLOUD_ENV_ID = 'xyblh-5gb26qrnf9d30feb'
 
+const campuses = require('./utils/campuses.js')
+const SELECTED_CAMPUS_ID_KEY = 'selectedCampusId_v1'
+const SELECTED_CAMPUS_NAME_KEY = 'selectedCampusName_v1'
+
 /** 员工推广扫码 scene 本地缓存 key（与 bindInviteEmployee 配合） */
 const INVITE_SCENE_STORAGE_KEY = 'invite_scene'
+/** 用户互推 ref，形如 u_<numericId>（与 userReferral 配合） */
+const USER_PEER_REF_STORAGE_KEY = 'user_peer_referral_ref'
 
 App({
   // 小程序初始化
   onLaunch(options) {
     console.log('校园便利盒小程序启动')
-    this.saveInviteSceneIfPresent(options)
+    this.savePromoFromOptions(options)
     this._requestCache = new Map()
     this._requestInflight = new Map()
     this._tempUrlCache = new Map()
@@ -50,17 +56,43 @@ App({
   },
 
   /**
-   * 从启动参数或页面 onLoad 的 options 中解析小程序码 scene，写入 invite_scene。
-   * 数字型 scene 为微信场景值枚举，忽略。
+   * 解析启动/落地页的推广参数：员工 scene 写入 invite_scene；好友邀请 u_<数字ID> 写入 user_peer_referral_ref。
+   * 分享落地支持 query.ref 或 query.r。
    */
-  saveInviteSceneIfPresent(options) {
+  savePromoFromOptions(options) {
+    if (!options || typeof options !== 'object') return
+    const q = options.query || {}
+    let ref = q.ref != null && q.ref !== '' ? q.ref : q.r != null && q.r !== '' ? q.r : ''
+    if (ref !== '') {
+      try {
+        ref = decodeURIComponent(String(ref).trim())
+      } catch (e) {
+        ref = String(ref).trim()
+      }
+      if (/^u_[0-9]+$/.test(ref)) {
+        try {
+          wx.setStorageSync(USER_PEER_REF_STORAGE_KEY, ref)
+        } catch (e) {
+          console.warn('[user_peer_referral_ref] query 写入失败', e)
+        }
+      }
+    }
     const scene = this._parseInviteSceneFromOptions(options)
     if (!scene) return
     try {
-      wx.setStorageSync(INVITE_SCENE_STORAGE_KEY, scene)
+      if (/^u_[0-9]+$/.test(scene)) {
+        wx.setStorageSync(USER_PEER_REF_STORAGE_KEY, scene)
+      } else {
+        wx.setStorageSync(INVITE_SCENE_STORAGE_KEY, scene)
+      }
     } catch (e) {
-      console.warn('[invite_scene] 写入失败', e)
+      console.warn('[promo] 写入失败', e)
     }
+  },
+
+  /** 兼容旧调用名 */
+  saveInviteSceneIfPresent(options) {
+    this.savePromoFromOptions(options || {})
   },
 
   _parseInviteSceneFromOptions(options) {
@@ -117,6 +149,39 @@ App({
     })
   },
 
+  /** 登录成功后绑定用户互推邀请人 */
+  _tryBindUserReferral() {
+    if (!this.globalData.cloudReady || !this.globalData.isLoggedIn) return
+    let ref = ''
+    try {
+      ref = String(wx.getStorageSync(USER_PEER_REF_STORAGE_KEY) || '').trim()
+    } catch (e) {
+      ref = ''
+    }
+    if (!ref) return
+
+    wx.cloud.callFunction({
+      name: 'userReferral',
+      data: { action: 'bind', ref },
+      success: (res) => {
+        const r = (res && res.result) || {}
+        if (r.success && this.globalData.userInfo && r.inviterOpenid) {
+          this.globalData.userInfo.inviterOpenid = r.inviterOpenid
+          if (r.peerInviteRef != null) this.globalData.userInfo.peerInviteRef = r.peerInviteRef
+        }
+        const clear = r.success === true || r.clearScene === true
+        if (clear) {
+          try {
+            wx.removeStorageSync(USER_PEER_REF_STORAGE_KEY)
+          } catch (e) {}
+        }
+      },
+      fail: (err) => {
+        console.warn('[userReferral] 调用失败，保留 user_peer_referral_ref 以便重试', err)
+      }
+    })
+  },
+
   // 全局数据
   globalData: {
     // 当前用户信息（登录后填充）
@@ -134,6 +199,80 @@ App({
     indexFeedNeedsRefresh: false,
     marketNeedsRefresh: false,
     mineNeedsRefresh: false
+  },
+
+  // ========== 校区（帖子 / 集市隔离） ==========
+
+  /** 本地是否已选校区（未选则首页 / 集市列表不拉取，直至用户确认） */
+  hasSelectedCampusInStorage() {
+    return !!this.getCommittedCampusId()
+  },
+
+  /** 仅已写入 Storage 的校区（用于列表请求） */
+  getCommittedCampusId() {
+    try {
+      const id = wx.getStorageSync(SELECTED_CAMPUS_ID_KEY)
+      if (id && campuses.getCampusById(id)) return id
+    } catch (e) {}
+    return null
+  },
+
+  /** 发帖等写操作：已选校区 > 用户资料 > 默认桂航 */
+  getSelectedCampusId() {
+    const c = this.getCommittedCampusId()
+    if (c) return c
+    const u = this.globalData.userInfo
+    if (u && u.campusId && campuses.getCampusById(u.campusId)) return u.campusId
+    return campuses.DEFAULT_CAMPUS_ID
+  },
+
+  getSelectedCampusName() {
+    try {
+      const name = wx.getStorageSync(SELECTED_CAMPUS_NAME_KEY)
+      if (name) return name
+    } catch (e) {}
+    const id = this.getSelectedCampusId()
+    const c = campuses.getCampusById(id)
+    return (c && c.name) || '桂林航天工业学院'
+  },
+
+  /**
+   * 保存当前校区并刷新帖子缓存；可选同步到云端用户资料
+   * @param {string} campusId
+   * @param {{ syncCloud?: boolean }} options
+   */
+  async setSelectedCampus(campusId, options = {}) {
+    const c = campuses.getCampusById(campusId)
+    if (!c) {
+      wx.showToast({ title: '无效的校区', icon: 'none' })
+      return false
+    }
+    try {
+      wx.setStorageSync(SELECTED_CAMPUS_ID_KEY, c.id)
+      wx.setStorageSync(SELECTED_CAMPUS_NAME_KEY, c.name)
+    } catch (e) {
+      console.warn('[campus] storage', e)
+    }
+    if (this.globalData.userInfo) {
+      this.globalData.userInfo.campusId = c.id
+      this.globalData.userInfo.campusName = c.name
+      this.globalData.userInfo.college = c.name
+    }
+    this.invalidateCacheByPrefix('getPosts:')
+    this.globalData.marketNeedsRefresh = true
+    const syncCloud = options.syncCloud !== false
+    if (syncCloud && this.globalData.isLoggedIn && this.globalData.cloudReady) {
+      try {
+        await this.updateProfile({
+          campusId: c.id,
+          campusName: c.name,
+          college: c.name
+        })
+      } catch (err) {
+        console.warn('[campus] updateProfile', err)
+      }
+    }
+    return true
   },
 
   // ========== 登录 ==========
@@ -184,6 +323,8 @@ App({
 
           // 员工推广：登录完成后再绑定（users 文档已由 login 云函数创建/更新）
           this._tryBindInviteEmployee()
+          // 用户互推：好友邀请 ref u_<numericId>
+          this._tryBindUserReferral()
 
           // 不在此自动跳转登录/隐私页：须先允许用户浏览首页等功能，在用户主动使用需身份的功能时再引导（平台审核要求）
 
@@ -386,7 +527,11 @@ App({
 
   // 获取帖子列表（失败时抛出，由页面区分「网络错误」与「真的没有帖子」）
   async getPosts(category, keyword, page = 1, feedType = 'discover') {
-    const payload = { category, keyword, page, feedType }
+    const campusId = this.getCommittedCampusId()
+    if (!campusId) {
+      return []
+    }
+    const payload = { category, keyword, page, feedType, campusId }
     const oid = this.globalData.openid || ''
     const cacheKey = `getPosts:${stableStringify(payload)}:${oid}`
     return this.cachedCall(cacheKey, page === 1 ? 15000 : 8000, async () => {
@@ -412,7 +557,10 @@ App({
   // 发布新帖子
   async addPost(postData) {
     try {
-      const result = await this.callDB('addPost', postData)
+      const result = await this.callDB('addPost', {
+        ...postData,
+        campusId: this.getSelectedCampusId()
+      })
       this.invalidateCacheByPrefix('getPosts:')
       this.invalidateCacheByPrefix('getPostById:')
       return result

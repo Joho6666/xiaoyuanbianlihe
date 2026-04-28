@@ -56,7 +56,7 @@ exports.main = async (event, context) => {
         }
       }
 
-      return { pass: true, errMsg: '无文件内容' }
+      return { pass: false, errCode: -1, errMsg: '图片文件读取失败' }
 
     } else if (type === 'video') {
       // ========== 视频内容安全检测 ==========
@@ -69,9 +69,10 @@ exports.main = async (event, context) => {
       })
 
       return {
-        pass: true,
+        pass: false,
         traceId: result.traceId,
-        errMsg: '视频已提交审核，异步处理中'
+        errCode: -1,
+        errMsg: '视频审核为异步流程，当前接口不提供同步放行结果'
       }
 
     } else if (type === 'imageUrl') {
@@ -85,13 +86,14 @@ exports.main = async (event, context) => {
       })
 
       return {
-        pass: true,
+        pass: false,
         traceId: result.traceId,
-        errMsg: '图片已提交审核'
+        errCode: -1,
+        errMsg: '图片 URL 审核为异步流程，当前接口不提供同步放行结果'
       }
     }
 
-    return { pass: true, errMsg: '未知检测类型' }
+    return { pass: false, errCode: -1, errMsg: '未知检测类型' }
 
   } catch (err) {
     console.error('内容安全检测异常:', err)
@@ -103,9 +105,9 @@ exports.main = async (event, context) => {
       }
     }
     return {
-      pass: true,
+      pass: false,
       errCode: err.errCode || -1,
-      errMsg: '内容安全服务暂不可用，已跳过检测'
+      errMsg: '内容安全服务异常，请稍后重试'
     }
   }
 }

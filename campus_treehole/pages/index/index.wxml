@@ -23,14 +23,69 @@
         <text class="nav-tab {{feedType === 'discover' ? 'nav-tab-active' : ''}}" bindtap="onFeedSwitch" data-type="discover">发现</text>
       </view>
       <view class="nav-search" bindtap="onSearchFocus">
-        <text class="nav-search-icon">🔍</text>
-        <input class="nav-search-input" placeholder="搜索" value="{{searchKeyword}}" bindinput="onSearchInput" bindconfirm="onSearchConfirm" confirm-type="search" />
-        <view class="nav-search-clear" wx:if="{{searchKeyword}}" bindtap="onClearSearch">清除</view>
+        <view class="nav-search-ico" aria-hidden="true"></view>
+        <input
+          class="nav-search-input"
+          placeholder="搜索帖子标题或正文"
+          placeholder-class="nav-search-ph"
+          value="{{searchKeyword}}"
+          bindinput="onSearchInput"
+          bindconfirm="onSearchConfirm"
+          confirm-type="search"
+        />
+        <view class="nav-search-clear" wx:if="{{searchKeyword}}" catchtap="onClearSearch">清除</view>
+      </view>
+      <view class="nav-campus-row" bindtap="onOpenCampusPicker">
+        <text class="nav-campus-tag">校区</text>
+        <text class="nav-campus-name">{{selectedCampusName || '请选择校区'}}</text>
+        <text class="nav-campus-arrow">›</text>
       </view>
     </view>
   </view>
 
   <view style="height: {{navOffsetHeight}}px;"></view>
+
+  <view class="campus-mask" wx:if="{{showCampusPicker}}" catchtouchmove="preventCampusMove">
+    <view class="campus-sheet" catchtap="">
+      <view class="campus-sheet-handle"></view>
+      <text class="campus-sheet-title">选择你的校区</text>
+      <text class="campus-sheet-sub">内容仅展示所选校区，可随时更换；支持简称、空格多关键词</text>
+      <view class="campus-search-wrap">
+        <view class="campus-search-ico" aria-hidden="true"></view>
+        <input
+          class="campus-search-input"
+          placeholder="搜校名、简称或拼音片段，如 桂电 雁山"
+          placeholder-class="campus-search-ph"
+          value="{{campusQuery}}"
+          bindinput="onCampusSearch"
+          bindconfirm="onCampusSearchConfirm"
+          confirm-type="search"
+        />
+        <view class="campus-search-clear" wx:if="{{campusQuery}}" catchtap="onClearCampusSearch">清除</view>
+      </view>
+      <scroll-view
+        class="campus-list"
+        scroll-y
+        enhanced
+        show-scrollbar="{{true}}"
+        enable-flex
+        scroll-with-animation
+      >
+        <view
+          class="campus-item"
+          wx:for="{{campusPickerList}}"
+          wx:key="id"
+          data-id="{{item.id}}"
+          bindtap="onPickCampus"
+        >
+          <text class="campus-item-name">{{item.name}}</text>
+          <text class="campus-item-arrow">›</text>
+        </view>
+        <view wx:if="{{!campusPickerList.length}}" class="campus-empty">未找到匹配校区，试试校名里的连续几个字或简称</view>
+        <view class="campus-list-spacer"></view>
+      </scroll-view>
+    </view>
+  </view>
 
   <scroll-view class="category-scroll" scroll-x enable-flex show-scrollbar="{{false}}">
     <view class="category-track">

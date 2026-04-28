@@ -6,6 +6,25 @@ const LIST_PAGE_SIZE = 15
 /** 退出登录后写入，登录页读取以预填昵称/头像 */
 const LOGIN_PREFILL_KEY = 'login_prefill_v1'
 
+function splitWaterfall(list) {
+  const left = []
+  const right = []
+  ;(list || []).forEach((item, index) => {
+    if (index % 2 === 0) left.push(item)
+    else right.push(item)
+  })
+  return { left, right }
+}
+
+function firstCoverSrc(item) {
+  if (!item) return ''
+  const thumbs = Array.isArray(item.thumbImages) ? item.thumbImages : []
+  if (thumbs.length && String(thumbs[0] || '').trim()) return String(thumbs[0]).trim()
+  const images = Array.isArray(item.images) ? item.images : []
+  if (images.length && String(images[0] || '').trim()) return String(images[0]).trim()
+  return ''
+}
+
 Page({
   data: {
     userInfo: {},
@@ -14,11 +33,23 @@ Page({
     followingCount: 0,
     followerCount: 0,
     currentTab: 0,
-    tabs: ['我的发布', '我的闲置', '我的点赞', '我的收藏'],
+    tabs: ['发布', '闲置', '点赞', '收藏'],
     myPosts: [],
     myGoods: [],
     likedPosts: [],
     favoredPosts: [],
+    myPostsExpanded: false,
+    myGoodsExpanded: false,
+    likedPostsExpanded: false,
+    favoredPostsExpanded: false,
+    myPostsLeft: [],
+    myPostsRight: [],
+    myGoodsLeft: [],
+    myGoodsRight: [],
+    likedPostsLeft: [],
+    likedPostsRight: [],
+    favoredPostsLeft: [],
+    favoredPostsRight: [],
     myPostsHasMore: true,
     myGoodsHasMore: true,
     likedPostsHasMore: true,
@@ -27,7 +58,52 @@ Page({
     myGoodsLoadingMore: false,
     likedPostsLoadingMore: false,
     favoredPostsLoadingMore: false,
-    loading: false
+    loading: false,
+    menuExpanded: false
+  },
+
+  _syncWaterfallView() {
+    const myPostsView = this.data.myPostsExpanded ? this.data.myPosts : this.data.myPosts.slice(0, 2)
+    const myGoodsView = this.data.myGoodsExpanded ? this.data.myGoods : this.data.myGoods.slice(0, 2)
+    const likedPostsView = this.data.likedPostsExpanded ? this.data.likedPosts : this.data.likedPosts.slice(0, 2)
+    const favoredPostsView = this.data.favoredPostsExpanded ? this.data.favoredPosts : this.data.favoredPosts.slice(0, 2)
+    const mp = splitWaterfall(myPostsView)
+    const mg = splitWaterfall(myGoodsView)
+    const lp = splitWaterfall(likedPostsView)
+    const fp = splitWaterfall(favoredPostsView)
+    this.setData({
+      myPostsLeft: mp.left,
+      myPostsRight: mp.right,
+      myGoodsLeft: mg.left,
+      myGoodsRight: mg.right,
+      likedPostsLeft: lp.left,
+      likedPostsRight: lp.right,
+      favoredPostsLeft: fp.left,
+      favoredPostsRight: fp.right
+    })
+  },
+
+  onToggleExpand(e) {
+    const type = e.currentTarget.dataset.type
+    if (type === 'myPosts') {
+      this.setData({ myPostsExpanded: !this.data.myPostsExpanded }, () => this._syncWaterfallView())
+      return
+    }
+    if (type === 'myGoods') {
+      this.setData({ myGoodsExpanded: !this.data.myGoodsExpanded }, () => this._syncWaterfallView())
+      return
+    }
+    if (type === 'likedPosts') {
+      this.setData({ likedPostsExpanded: !this.data.likedPostsExpanded }, () => this._syncWaterfallView())
+      return
+    }
+    if (type === 'favoredPosts') {
+      this.setData({ favoredPostsExpanded: !this.data.favoredPostsExpanded }, () => this._syncWaterfallView())
+    }
+  },
+
+  onToggleMenuMore() {
+    this.setData({ menuExpanded: !this.data.menuExpanded })
   },
 
   onLoad() {
@@ -96,7 +172,8 @@ Page({
         : raw
     return resolved.map((p) => ({
       ...p,
-      time: app.formatTime(p.createTime)
+      time: app.formatTime(p.createTime),
+      _coverSrc: firstCoverSrc(p)
     }))
   },
 
@@ -118,7 +195,8 @@ Page({
           : rawGoods
       const list = goodsResolved.map((g) => ({
         ...g,
-        time: app.formatTime(g.createTime)
+        time: app.formatTime(g.createTime),
+        _coverSrc: firstCoverSrc(g)
       }))
       return { list, hasMore: rawGoods.length >= LIST_PAGE_SIZE }
     } catch (e) {
@@ -169,7 +247,7 @@ Page({
         favoredPostsHasMore: rawFavored.length >= LIST_PAGE_SIZE,
         userInfo,
         loading: false
-      })
+      }, () => this._syncWaterfallView())
       this._dataLoaded = true
     } catch (err) {
       console.error('刷新数据失败:', err)
@@ -181,10 +259,10 @@ Page({
   onReachBottom() {
     if (this.data.loading) return
     const tab = this.data.currentTab
-    if (tab === 0) this.loadMoreMyPosts()
-    else if (tab === 1) this.loadMoreMyGoods()
-    else if (tab === 2) this.loadMoreLikedPosts()
-    else if (tab === 3) this.loadMoreFavoredPosts()
+    if (tab === 0 && this.data.myPostsExpanded) this.loadMoreMyPosts()
+    else if (tab === 1 && this.data.myGoodsExpanded) this.loadMoreMyGoods()
+    else if (tab === 2 && this.data.likedPostsExpanded) this.loadMoreLikedPosts()
+    else if (tab === 3 && this.data.favoredPostsExpanded) this.loadMoreFavoredPosts()
   },
 
   onPullDownRefresh() {
@@ -217,7 +295,7 @@ Page({
         myPostsHasMore: raw.length >= LIST_PAGE_SIZE,
         myPostsLoadingMore: false,
         totalLikes
-      })
+      }, () => this._syncWaterfallView())
     } catch (e) {
       this.setData({ myPostsLoadingMore: false })
     }
@@ -239,7 +317,7 @@ Page({
         myGoods: [...this.data.myGoods, ...list],
         myGoodsHasMore: hasMore,
         myGoodsLoadingMore: false
-      })
+      }, () => this._syncWaterfallView())
     } catch (e) {
       this.setData({ myGoodsLoadingMore: false })
     }
@@ -262,7 +340,7 @@ Page({
         likedPosts: [...this.data.likedPosts, ...rows],
         likedPostsHasMore: raw.length >= LIST_PAGE_SIZE,
         likedPostsLoadingMore: false
-      })
+      }, () => this._syncWaterfallView())
     } catch (e) {
       this.setData({ likedPostsLoadingMore: false })
     }
@@ -285,7 +363,7 @@ Page({
         favoredPosts: [...this.data.favoredPosts, ...rows],
         favoredPostsHasMore: raw.length >= LIST_PAGE_SIZE,
         favoredPostsLoadingMore: false
-      })
+      }, () => this._syncWaterfallView())
     } catch (e) {
       this.setData({ favoredPostsLoadingMore: false })
     }
@@ -328,30 +406,58 @@ Page({
     wx.navigateTo({ url: '/pages/edit-profile/edit-profile' })
   },
 
+  async _uploadAndSaveProfileImage({ filePath, cloudDir, field, successText }) {
+    // 前置检测：尽量在上传前就给出明确失败原因
+    const check = await app.checkImageContent(filePath)
+    if (!check || !check.pass) {
+      wx.showToast({ title: (check && check.errMsg) || '图片未通过审核', icon: 'none' })
+      return
+    }
+
+    wx.showLoading({ title: '上传中...' })
+    let uploadedFileId = ''
+    try {
+      const uploadRes = await wx.cloud.uploadFile({
+        cloudPath: `${cloudDir}/${Date.now()}_${Math.random().toString(36).slice(2)}.jpg`,
+        filePath
+      })
+      uploadedFileId = uploadRes && uploadRes.fileID ? uploadRes.fileID : ''
+      if (!uploadedFileId) {
+        wx.showToast({ title: '上传失败，请重试', icon: 'none' })
+        return
+      }
+
+      const result = await app.updateProfile({ [field]: uploadedFileId })
+      if (!result) {
+        // 服务端拒绝时清理刚上传文件，避免云存储残留
+        try { await wx.cloud.deleteFile({ fileList: [uploadedFileId] }) } catch (e) {}
+        return
+      }
+
+      await this._setUserInfoResolved()
+      wx.showToast({ title: successText, icon: 'success' })
+    } catch (err) {
+      if (uploadedFileId) {
+        try { await wx.cloud.deleteFile({ fileList: [uploadedFileId] }) } catch (e) {}
+      }
+      wx.showToast({ title: '上传失败', icon: 'none' })
+    } finally {
+      wx.hideLoading()
+    }
+  },
+
   onChangeCover() {
     wx.chooseMedia({
       count: 1,
       mediaType: ['image'],
       success: async (res) => {
         const filePath = res.tempFiles[0].tempFilePath
-        wx.showLoading({ title: '上传中...' })
-        try {
-          const uploadRes = await wx.cloud.uploadFile({
-            cloudPath: `covers/${Date.now()}.jpg`,
-            filePath
-          })
-          const result = await app.updateProfile({ coverImage: uploadRes.fileID })
-          if (!result) {
-            wx.hideLoading()
-            return
-          }
-          await this._setUserInfoResolved()
-          wx.hideLoading()
-          wx.showToast({ title: '封面已更新', icon: 'none' })
-        } catch (err) {
-          wx.hideLoading()
-          wx.showToast({ title: '上传失败', icon: 'none' })
-        }
+        await this._uploadAndSaveProfileImage({
+          filePath,
+          cloudDir: 'covers',
+          field: 'coverImage',
+          successText: '封面已更新'
+        })
       }
     })
   },
@@ -362,24 +468,12 @@ Page({
       mediaType: ['image'],
       success: async (res) => {
         const filePath = res.tempFiles[0].tempFilePath
-        wx.showLoading({ title: '上传中...' })
-        try {
-          const uploadRes = await wx.cloud.uploadFile({
-            cloudPath: `avatars/${Date.now()}.jpg`,
-            filePath
-          })
-          const result = await app.updateProfile({ avatarUrl: uploadRes.fileID })
-          if (!result) {
-            wx.hideLoading()
-            return
-          }
-          await this._setUserInfoResolved()
-          wx.hideLoading()
-          wx.showToast({ title: '头像已更新', icon: 'success' })
-        } catch (err) {
-          wx.hideLoading()
-          wx.showToast({ title: '上传失败', icon: 'none' })
-        }
+        await this._uploadAndSaveProfileImage({
+          filePath,
+          cloudDir: 'avatars',
+          field: 'avatarUrl',
+          successText: '头像已更新'
+        })
       }
     })
   },
@@ -413,12 +507,14 @@ Page({
     const page = e.currentTarget.dataset.page
     if (page === 'adminReferral') {
       wx.navigateTo({ url: '/pages/admin-referral/admin-referral' })
+    } else if (page === 'referral') {
+      wx.navigateTo({ url: '/pages/referral/referral' })
     } else if (page === 'editProfile') {
       this.onEditProfile()
     } else if (page === 'searchUser') {
       wx.navigateTo({ url: '/pages/follow/follow?tab=2' })
     } else if (page === 'contact') {
-      wx.showToast({ title: '请通过微信公众平台联系客服', icon: 'none' })
+      wx.navigateTo({ url: '/pages/contact/contact' })
     } else if (page === 'privacy') {
       wx.navigateTo({ url: '/pages/privacy/privacy' })
     }

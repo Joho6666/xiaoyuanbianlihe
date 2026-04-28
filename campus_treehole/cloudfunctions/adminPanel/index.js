@@ -109,6 +109,8 @@ exports.main = async (event, context) => {
         return await getEmployeeReferralStats()
       case 'generateEmployeeQrcode':
         return await generateEmployeeQrcode(data)
+      case 'saveEmployee':
+        return await saveEmployee(data)
 
       default:
         return { code: -1, msg: '未知操作: ' + action }
@@ -670,5 +672,52 @@ async function generateEmployeeQrcode(data = {}) {
     data: { qrcodeUrl: upload.fileID }
   })
   return { code: 0, msg: '已生成并上传', data: { fileID: upload.fileID, qrcodeUrl: upload.fileID } }
+}
+
+/** 管理员：新增或更新推广员工（不可改 empId，避免与已绑定用户脱节） */
+async function saveEmployee(data = {}) {
+  const isNew = !!data.isNew
+  const empId = String(data.empId || '').trim()
+  const name = String(data.name || '').trim()
+  const inviteCode = String(data.inviteCode || '').trim()
+  const status = data.status === 'disabled' ? 'disabled' : 'enabled'
+
+  if (!empId) return { code: -1, msg: '员工编号不能为空' }
+  if (empId.length > 32) return { code: -1, msg: '员工编号最长 32 字符（与太阳码 scene 一致）' }
+  if (!/^[a-zA-Z0-9_-]+$/.test(empId)) {
+    return { code: -1, msg: '员工编号仅允许字母、数字、下划线、短横线' }
+  }
+  if (!name) return { code: -1, msg: '姓名不能为空' }
+  if (name.length > 40) return { code: -1, msg: '姓名最多 40 字' }
+  if (inviteCode.length > 32) return { code: -1, msg: '邀请码过长' }
+
+  const existing = await db.collection('employees').where({ empId }).limit(1).get()
+  const doc = existing.data[0]
+
+  if (isNew) {
+    if (doc) return { code: -1, msg: '该员工编号已存在，请换一个或改为编辑' }
+    await db.collection('employees').add({
+      data: {
+        empId,
+        name,
+        inviteCode,
+        qrcodeUrl: '',
+        status,
+        createTime: db.serverDate()
+      }
+    })
+    return { code: 0, msg: '已添加员工' }
+  }
+
+  if (!doc) return { code: -1, msg: '员工不存在' }
+  await db.collection('employees').doc(doc._id).update({
+    data: {
+      name,
+      inviteCode,
+      status,
+      updateTime: db.serverDate()
+    }
+  })
+  return { code: 0, msg: '已保存' }
 }
 

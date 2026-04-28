@@ -12,8 +12,10 @@
     "pages/edit-profile/edit-profile",
     "pages/post-editor/post-editor",
     "pages/privacy/privacy",
+    "pages/contact/contact",
     "pages/login/login",
     "pages/admin-referral/admin-referral",
+    "pages/referral/referral",
     "pages/market-post/market-post",
     "pages/market-detail/market-detail"
   ],

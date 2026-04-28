@@ -252,7 +252,8 @@ Page({
         category: this.data.selectedCategory,
         condition: this.data.condition || '未说明',
         tradeMethod: this.data.tradeMethod || '均可',
-        bargain: this.data.bargain !== null ? this.data.bargain : true
+        bargain: this.data.bargain !== null ? this.data.bargain : true,
+        campusId: app.getSelectedCampusId()
       })
 
       wx.hideLoading()

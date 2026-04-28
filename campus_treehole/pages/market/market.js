@@ -44,10 +44,11 @@ function splitGoods(goods) {
   return { leftCol, rightCol }
 }
 
-function buildMarketCacheKey(categoryIndex, searchKeyword) {
+function buildMarketCacheKey(categoryIndex, searchKeyword, campusId) {
   return JSON.stringify({
     categoryIndex,
-    searchKeyword: (searchKeyword || '').trim()
+    searchKeyword: (searchKeyword || '').trim(),
+    campusId: campusId || ''
   })
 }
 
@@ -101,7 +102,7 @@ Page({
     this.setData(getNavMetrics())
     this.restoreCachedGoods()
 
-    if (app.globalData.cloudReady) {
+    if (app.globalData.cloudReady && app.hasSelectedCampusInStorage()) {
       this._initialLoadStarted = true
       this.loadGoods()
     }
@@ -109,6 +110,17 @@ Page({
     app.waitForLogin(() => {
       if (!app.globalData.isLoggedIn) return
       if (!app.ensureComplianceOnTabShow({ mode: 'browse' })) return
+      if (!app.hasSelectedCampusInStorage()) {
+        this.setData({
+          goods: [],
+          leftCol: [],
+          rightCol: [],
+          loading: false,
+          showSkeleton: false,
+          loadError: '请先在「首页」选择校区后即可浏览本校闲置'
+        })
+        return
+      }
       if (!this._initialLoadStarted && !this.data.goods.length) {
         this._initialLoadStarted = true
         this.loadGoods()
@@ -117,7 +129,8 @@ Page({
   },
 
   getCurrentMarketCacheKey() {
-    return buildMarketCacheKey(this.data.currentCategory, this.data.searchKeyword)
+    const cid = app.getCommittedCampusId() || ''
+    return buildMarketCacheKey(this.data.currentCategory, this.data.searchKeyword, cid)
   },
 
   restoreCachedGoods() {
@@ -176,6 +189,24 @@ Page({
     }
 
     if (!app.globalData.isLoggedIn) return
+
+    if (!app.hasSelectedCampusInStorage()) {
+      this.setData({
+        goods: [],
+        leftCol: [],
+        rightCol: [],
+        loading: false,
+        showSkeleton: false,
+        loadError: '请先在「首页」选择校区后即可浏览本校闲置'
+      })
+      return
+    }
+
+    if (this.data.loadError && this.data.loadError.indexOf('选择校区') !== -1) {
+      this.setData({ loadError: '', page: 1, hasMore: true })
+      this.loadGoods()
+      return
+    }
 
     if (app.globalData.marketNeedsRefresh) {
       app.globalData.marketNeedsRefresh = false
@@ -254,6 +285,16 @@ Page({
   },
 
   async loadGoods() {
+    const campusId = app.getCommittedCampusId()
+    if (!campusId) {
+      this.setData({
+        loading: false,
+        loadError: '请先在「首页」选择校区后即可浏览本校闲置',
+        showSkeleton: false
+      })
+      return
+    }
+
     this._reqSeq = (this._reqSeq || 0) + 1
     const requestId = this._reqSeq
     const requestedPage = this.data.page
@@ -268,7 +309,8 @@ Page({
         category,
         keyword,
         page: requestedPage,
-        pageSize: 20
+        pageSize: 20,
+        campusId
       })
 
       const items = result.data || []

@@ -1,9 +1,10 @@
 const app = getApp()
+const campuses = require('../../utils/campuses.js')
 const INDEX_CACHE_KEY = 'index_feed_cache_v1'
 const INDEX_CACHE_TTL = 5 * 60 * 1000
 
-/** 与 index.wxss 瀑布流一致：左右 padding 12rpx + 列间距 12rpx */
-const WF_COL_WIDTH_RPX = (750 - 12 * 2 - 12) / 2
+/** 与 index.wxss 瀑布流一致：左右 padding 16rpx + 列间距 16rpx */
+const WF_COL_WIDTH_RPX = (750 - 16 * 2 - 16) / 2
 /** 封面展示高度上下限（过长图居中裁剪，过扁图加高并裁两侧） */
 const COVER_HEIGHT_MIN_RPX = 220
 const COVER_HEIGHT_MAX_RPX = 900
@@ -90,11 +91,12 @@ function feedMediaSignature(posts) {
   ].join('|')).join('~')
 }
 
-function buildFeedCacheKey(feedType, currentCategory, searchKeyword) {
+function buildFeedCacheKey(feedType, currentCategory, searchKeyword, campusId) {
   return JSON.stringify({
     feedType,
     currentCategory,
-    searchKeyword: (searchKeyword || '').trim()
+    searchKeyword: (searchKeyword || '').trim(),
+    campusId: campusId || ''
   })
 }
 
@@ -121,12 +123,18 @@ Page({
     hasMore: true,
     showSplash: true,
     splashHidden: false,
-    showSkeleton: true
+    showSkeleton: true,
+    selectedCampusId: '',
+    selectedCampusName: '',
+    showCampusPicker: false,
+    campusQuery: '',
+    campusPickerList: []
   },
 
   onLoad(options) {
-    app.saveInviteSceneIfPresent(options || {})
+    app.savePromoFromOptions(options || {})
     this.setData(getNavMetrics())
+    this._syncCampusUiFromApp()
     this.restoreCachedFeed()
 
     app.waitForLogin(() => {
@@ -139,8 +147,77 @@ Page({
         return
       }
       if (!app.ensureComplianceOnTabShow({ mode: 'browse' })) return
+      if (!app.hasSelectedCampusInStorage()) {
+        this.setData({
+          showCampusPicker: true,
+          campusQuery: '',
+          campusPickerList: campuses.filterCampusesByQuery('')
+        })
+        this._dismissSplash()
+        if (this.data.showSkeleton) this.setData({ showSkeleton: false })
+        return
+      }
+      this._syncCampusUiFromApp()
       this.loadPosts()
     })
+  },
+
+  _syncCampusUiFromApp() {
+    if (!app.hasSelectedCampusInStorage()) {
+      this.setData({
+        selectedCampusId: '',
+        selectedCampusName: ''
+      })
+      return
+    }
+    this.setData({
+      selectedCampusId: app.getCommittedCampusId(),
+      selectedCampusName: app.getSelectedCampusName(),
+      showCampusPicker: false
+    })
+  },
+
+  preventCampusMove() {},
+
+  onCampusSearch(e) {
+    const campusQuery = e.detail.value || ''
+    this.setData({
+      campusQuery,
+      campusPickerList: campuses.filterCampusesByQuery(campusQuery)
+    })
+  },
+
+  onCampusSearchConfirm() {
+    if (typeof wx.hideKeyboard === 'function') wx.hideKeyboard()
+  },
+
+  onClearCampusSearch() {
+    this.setData({
+      campusQuery: '',
+      campusPickerList: campuses.filterCampusesByQuery('')
+    })
+  },
+
+  onOpenCampusPicker() {
+    const q = this.data.campusQuery || ''
+    this.setData({
+      showCampusPicker: true,
+      campusPickerList: campuses.filterCampusesByQuery(q)
+    })
+  },
+
+  async onPickCampus(e) {
+    const id = e.currentTarget.dataset.id
+    if (!id) return
+    await app.setSelectedCampus(id, { syncCloud: true })
+    this.setData({
+      selectedCampusId: id,
+      selectedCampusName: app.getSelectedCampusName(),
+      showCampusPicker: false,
+      page: 1,
+      hasMore: true
+    })
+    this.loadPosts()
   },
 
   onReady() {
@@ -182,6 +259,15 @@ Page({
     if (!app.ensureComplianceOnTabShow({ mode: 'browse' })) return
 
     if (!app.globalData.isLoggedIn) return
+
+    if (!app.hasSelectedCampusInStorage()) {
+      this.setData({
+        showCampusPicker: true,
+        campusPickerList: campuses.filterCampusesByQuery(this.data.campusQuery || '')
+      })
+      return
+    }
+    this._syncCampusUiFromApp()
 
     if (app.globalData.indexFeedNeedsRefresh) {
       app.globalData.indexFeedNeedsRefresh = false
@@ -233,7 +319,8 @@ Page({
     return buildFeedCacheKey(
       this.data.feedType,
       this.data.currentCategory,
-      this.data.searchKeyword
+      this.data.searchKeyword,
+      app.getCommittedCampusId() || ''
     )
   },
 

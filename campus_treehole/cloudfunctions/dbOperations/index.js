@@ -7,6 +7,26 @@ const _ = db.command
 const createWebAdminDispatch = require('./webAdminHandlers')
 const webAdminDispatch = createWebAdminDispatch(db, _)
 
+/** 与小程序 utils/campuses.js 中桂林航天工业学院 id 一致 */
+const DEFAULT_CAMPUS_ID = 'guit-hangtian'
+
+function resolveCampusIdForRead(data) {
+  const raw = data && data.campusId
+  if (typeof raw === 'string' && raw.trim()) return raw.trim()
+  return null
+}
+
+function campusWhereClause(campusId) {
+  if (!campusId) return null
+  if (campusId === DEFAULT_CAMPUS_ID) {
+    return _.or([
+      { campusId: DEFAULT_CAMPUS_ID },
+      { campusId: _.exists(false) }
+    ])
+  }
+  return { campusId }
+}
+
 // ========== 工具函数 ==========
 
 // 验证调用者身份
@@ -114,9 +134,46 @@ async function wxTextCheck(openid, text) {
     }
     return { pass: true, word: null }
   } catch (err) {
-    console.warn('微信文本安全检测异常，降级使用本地检测:', err)
-    return checkBannedWords(text)
+    console.error('微信文本安全检测异常（按强制策略拦截）:', err)
+    return { pass: false, word: '(文本安全服务异常)' }
   }
+}
+
+// 微信官方图片安全检测（同步）
+async function wxImageCheck(openid, fileID) {
+  if (!fileID || typeof fileID !== 'string') {
+    return { pass: false, word: '(图片文件参数缺失)' }
+  }
+  try {
+    const res = await cloud.downloadFile({ fileID })
+    const fileBuffer = res && res.fileContent
+    if (!fileBuffer) {
+      return { pass: false, word: '(图片文件读取失败)' }
+    }
+    const result = await cloud.openapi.security.imgSecCheck({
+      media: {
+        contentType: 'image/png',
+        value: fileBuffer
+      }
+    })
+    const risky = result && result.errCode && result.errCode !== 0
+    if (risky) {
+      return { pass: false, word: '(图片未通过安全审核)' }
+    }
+    return { pass: true, word: null }
+  } catch (err) {
+    console.error('微信图片安全检测异常（按强制策略拦截）:', err)
+    return { pass: false, word: '(图片安全服务异常)' }
+  }
+}
+
+async function wxImageBatchCheck(openid, fileList) {
+  const list = Array.isArray(fileList) ? fileList.filter(Boolean) : []
+  for (const fileID of list) {
+    const check = await wxImageCheck(openid, fileID)
+    if (!check.pass) return check
+  }
+  return { pass: true, word: null }
 }
 
 // ========== 主入口 ==========
@@ -149,6 +206,15 @@ exports.main = async (event, context) => {
 
   if (action === 'getMarketGoods') {
     return await getMarketGoods(data)
+  }
+
+  // 与 callAdminPanel 相同密钥：供本机 CloudBase CLI「tcb fn invoke」执行迁移（无 OPENID）
+  if (action === 'migrateCampusDefaults') {
+    const envSecret = process.env.ADMIN_WEB_SECRET
+    const ws = data && data.webSecret
+    if (envSecret && ws && String(ws) === String(envSecret)) {
+      return await runMigrateCampusDefaults()
+    }
   }
 
   try {
@@ -201,6 +267,8 @@ exports.main = async (event, context) => {
         return await getUserInfo(openid, data.targetOpenid || openid)
       case 'updateProfile':
         return await updateProfile(openid, data)
+      case 'migrateCampusDefaults':
+        return await migrateCampusDefaults(openid)
       case 'searchUsers':
         return await searchUsers(openid, data.keyword)
       case 'getMyPosts':
@@ -440,8 +508,10 @@ function sortPostsByTimeDesc(arr) {
 }
 
 /** 关注数 >20 时 _.in 需分批查询再合并（微信端单次 in 最多 20 条） */
-async function getPostsFollowMultiChunk(targetIds, { category, keyword, page, pageSize }) {
+async function getPostsFollowMultiChunk(targetIds, { category, keyword, page, pageSize, campusId }) {
   const parts = [{ status: 'active' }]
+  const cw = campusWhereClause(campusId || DEFAULT_CAMPUS_ID)
+  if (cw) parts.push(cw)
   if (category && category !== '全部') parts.push({ category })
   if (keyword && keyword.trim()) {
     const regex = db.RegExp({ regexp: escapeRegExp(keyword.trim()), options: 'i' })
@@ -505,7 +575,12 @@ async function getFollowTargetOpenids(openid, maxFollowCount = 2000) {
   return targetIds
 }
 
-async function getPosts(openid, { category, keyword, page = 1, pageSize = 20, feedType = 'discover' }) {
+async function getPosts(openid, { category, keyword, page = 1, pageSize = 20, feedType = 'discover', campusId: campusIdRaw }) {
+  const campusIdRead = resolveCampusIdForRead({ campusId: campusIdRaw })
+  if (campusIdRead === null) {
+    return { code: 0, data: [] }
+  }
+
   let followTargetIds = null
   if (feedType === 'follow') {
     followTargetIds = await getFollowTargetOpenids(openid)
@@ -513,7 +588,7 @@ async function getPosts(openid, { category, keyword, page = 1, pageSize = 20, fe
       return { code: 0, data: [] }
     }
     if (followTargetIds.length > 20) {
-      const merged = await getPostsFollowMultiChunk(followTargetIds, { category, keyword, page, pageSize })
+      const merged = await getPostsFollowMultiChunk(followTargetIds, { category, keyword, page, pageSize, campusId: campusIdRead })
       const withEng = await attachPostEngagement(openid, merged)
       const data = await sanitizePostsForClient(withEng, openid)
       return { code: 0, data }
@@ -522,21 +597,15 @@ async function getPosts(openid, { category, keyword, page = 1, pageSize = 20, fe
 
   const parts = [{ status: 'active' }]
 
+  const cwMain = campusWhereClause(campusIdRead)
+  if (cwMain) parts.push(cwMain)
+
   if (category && category !== '全部') {
     parts.push({ category })
   }
 
   if (feedType === 'follow') {
     parts.push({ _openid: _.in(followTargetIds) })
-  }
-
-  if (feedType === 'campus') {
-    const userRes = await db.collection('users').where({ _openid: openid }).limit(1).get()
-    const user = userRes.data[0] || {}
-    if (!user.college) {
-      return { code: 0, data: [] }
-    }
-    parts.push({ college: user.college })
   }
 
   if (keyword && keyword.trim()) {
@@ -618,25 +687,36 @@ async function addPost(openid, data) {
   const wxCheck = await wxTextCheck(openid, textToCheck)
   if (!wxCheck.pass) return { code: -2, msg: '内容未通过安全审核' }
 
+  const images = Array.isArray(data.images) ? data.images : []
+  const wxImageRes = await wxImageBatchCheck(openid, images)
+  if (!wxImageRes.pass) return { code: -2, msg: '图片未通过安全审核' }
+
   const videos = Array.isArray(data.videos) ? data.videos : []
   const thumbImages = Array.isArray(data.thumbImages) ? data.thumbImages : []
   if (videos.length > 0 && !isAdmin) {
     return { code: -1, msg: '仅管理员可发布视频' }
   }
 
+  const campusIdPost =
+    typeof data.campusId === 'string' && data.campusId.trim()
+      ? data.campusId.trim()
+      : (user.campusId || DEFAULT_CAMPUS_ID)
+  const displayCollege = user.campusName || user.college || '未设置'
+
   const newPost = {
     _openid: openid,
     nickname: user.nickName || '未知用户',
     avatar: user.avatarUrl || '/images/avatar_default.png',
-    college: user.college || '未设置',
+    college: displayCollege,
+    campusId: campusIdPost,
     userId: openid,
     category: data.category || '校园生活',
     title: data.title || '',
     content: data.content,
-    images: data.images || [],
+    images,
     thumbImages,
     videos,
-    image: data.images && data.images.length > 0 ? data.images[0] : '',
+    image: images.length > 0 ? images[0] : '',
     likes: 0,
     comments: 0,
     isAnonymous: false,
@@ -685,6 +765,8 @@ async function updatePost(openid, data) {
   if (!wxCheck.pass) return { code: -2, msg: '内容未通过安全审核' }
 
   const images = Array.isArray(data.images) ? data.images : []
+  const wxImageRes = await wxImageBatchCheck(openid, images)
+  if (!wxImageRes.pass) return { code: -2, msg: '图片未通过安全审核' }
   const thumbImages = Array.isArray(data.thumbImages) ? data.thumbImages : []
   const videos = Array.isArray(data.videos) ? data.videos : []
   if (videos.length > 0 && !isAdmin) {
@@ -692,6 +774,12 @@ async function updatePost(openid, data) {
   }
   const previousVideos = Array.isArray(post.videos) ? post.videos : []
   const videosChanged = JSON.stringify(previousVideos) !== JSON.stringify(videos)
+
+  let campusIdUpdate =
+    typeof data.campusId === 'string' && data.campusId.trim()
+      ? data.campusId.trim()
+      : (post.campusId || user.campusId || DEFAULT_CAMPUS_ID)
+  const displayCollegeUpdate = user.campusName || user.college || post.college || '未设置'
 
   const updateData = {
     title,
@@ -705,7 +793,8 @@ async function updatePost(openid, data) {
     location: data.location || '',
     nickname: user.nickName || post.nickname || '未知用户',
     avatar: user.avatarUrl || post.avatar || '/images/avatar_default.png',
-    college: user.college || post.college || '未设置',
+    college: displayCollegeUpdate,
+    campusId: campusIdUpdate,
     updateTime: db.serverDate()
   }
 
@@ -1078,14 +1167,71 @@ async function getUserInfo(openid, targetOpenid) {
   }
 }
 
+/** 批量补齐 campusId（历史数据默认桂航） */
+async function runMigrateCampusDefaults() {
+  const name = '桂林航天工业学院'
+  const whereMissing = _.or([
+    { campusId: _.exists(false) },
+    { campusId: '' }
+  ])
+  let postsUpdated = 0
+  let goodsUpdated = 0
+  let usersUpdated = 0
+  try {
+    const pr = await db.collection('posts').where(whereMissing).update({
+      data: { campusId: DEFAULT_CAMPUS_ID }
+    })
+    postsUpdated = (pr && pr.stats && pr.stats.updated) || 0
+  } catch (e) {
+    console.error('migrate posts', e)
+  }
+  try {
+    const gr = await db.collection('market_goods').where(whereMissing).update({
+      data: { campusId: DEFAULT_CAMPUS_ID }
+    })
+    goodsUpdated = (gr && gr.stats && gr.stats.updated) || 0
+  } catch (e) {
+    console.error('migrate market_goods', e)
+  }
+  try {
+    const ur = await db.collection('users').where(whereMissing).update({
+      data: {
+        campusId: DEFAULT_CAMPUS_ID,
+        campusName: name,
+        college: name
+      }
+    })
+    usersUpdated = (ur && ur.stats && ur.stats.updated) || 0
+  } catch (e) {
+    console.error('migrate users', e)
+  }
+  return {
+    code: 0,
+    msg: '迁移完成',
+    data: { postsUpdated, goodsUpdated, usersUpdated, campusId: DEFAULT_CAMPUS_ID }
+  }
+}
+
+/** 管理员一次性补齐 campusId；小程序端用管理员 OPENID；CLI 用 webSecret 见 MIGRATE_CAMPUS.md */
+async function migrateCampusDefaults(openid) {
+  if (!(await checkAdmin(openid))) {
+    return { code: -403, msg: '仅管理员可执行校区字段迁移' }
+  }
+  return await runMigrateCampusDefaults()
+}
+
 async function updateProfile(openid, data) {
   // 只允许更新指定字段
-  const allowedFields = ['nickName', 'avatarUrl', 'college', 'bio', 'tags', 'coverImage', 'profileCompleted']
+  const allowedFields = ['nickName', 'avatarUrl', 'college', 'bio', 'tags', 'coverImage', 'profileCompleted', 'campusId', 'campusName']
   const updateData = {}
   for (const key of allowedFields) {
     if (data[key] !== undefined) {
       updateData[key] = data[key]
     }
+  }
+
+  if (updateData.campusName && !updateData.college) {
+    updateData.college = updateData.campusName
   }
 
   // 昵称违禁词检查
@@ -1096,6 +1242,37 @@ async function updateProfile(openid, data) {
   if (updateData.bio) {
     const check = checkBannedWords(updateData.bio)
     if (!check.pass) return { code: -2, msg: `简介包含违规词"${check.word}"` }
+  }
+
+  // 微信官方文本安全审核（强制）
+  if (updateData.nickName) {
+    const wxCheck = await wxTextCheck(openid, String(updateData.nickName))
+    if (!wxCheck.pass) return { code: -2, msg: '昵称未通过安全审核' }
+  }
+  if (updateData.bio) {
+    const wxCheck = await wxTextCheck(openid, String(updateData.bio))
+    if (!wxCheck.pass) return { code: -2, msg: '简介未通过安全审核' }
+  }
+
+  // 微信官方图片安全审核（强制）
+  // 这里仅接受 cloud:// 文件，确保可同步审核后再入库展示
+  if (updateData.avatarUrl) {
+    const avatar = String(updateData.avatarUrl || '').trim()
+    if (avatar && avatar.startsWith('cloud://')) {
+      const wxAvatar = await wxImageCheck(openid, avatar)
+      if (!wxAvatar.pass) return { code: -2, msg: '头像未通过安全审核' }
+    } else if (avatar) {
+      return { code: -2, msg: '头像需先上传到云存储后再提交' }
+    }
+  }
+  if (updateData.coverImage) {
+    const cover = String(updateData.coverImage || '').trim()
+    if (cover && cover.startsWith('cloud://')) {
+      const wxCover = await wxImageCheck(openid, cover)
+      if (!wxCover.pass) return { code: -2, msg: '封面未通过安全审核' }
+    } else if (cover) {
+      return { code: -2, msg: '封面需先上传到云存储后再提交' }
+    }
   }
 
   await db.collection('users').where({ _openid: openid }).update({ data: updateData })
@@ -1404,6 +1581,13 @@ async function sendMessage(openid, data = {}) {
   if (type === 'text' || type === 'emoji') {
     const check = checkBannedWords(trimmedContent)
     if (!check.pass) return { code: -2, msg: `消息包含违规词"${check.word}"` }
+    const wxCheck = await wxTextCheck(openid, trimmedContent)
+    if (!wxCheck.pass) return { code: -2, msg: '消息未通过安全审核' }
+  }
+
+  if (type === 'image') {
+    const wxImageRes = await wxImageCheck(openid, normalizedFileId)
+    if (!wxImageRes.pass) return { code: -2, msg: '图片消息未通过安全审核' }
   }
 
   const msg = {
@@ -1551,8 +1735,14 @@ async function banUser(openid, targetOpenid) {
 
 // ========== 集市操作 ==========
 
-async function getMarketGoods({ category, keyword, page = 1, pageSize = 20 }) {
+async function getMarketGoods({ category, keyword, page = 1, pageSize = 20, campusId: campusIdRaw }) {
+  const campusIdRead = resolveCampusIdForRead({ campusId: campusIdRaw })
+  if (campusIdRead === null) {
+    return { code: 0, data: [] }
+  }
   const parts = [{ status: 'active' }]
+  const cw = campusWhereClause(campusIdRead)
+  if (cw) parts.push(cw)
   if (category) parts.push({ category })
 
   if (keyword && keyword.trim()) {
@@ -1686,10 +1876,19 @@ async function addMarketGoods(openid, data) {
   const wxCheck = await wxTextCheck(openid, textToCheck)
   if (!wxCheck.pass) return { code: -2, msg: '内容未通过安全审核' }
 
+  const wxImageRes = await wxImageBatchCheck(openid, data.images || [])
+  if (!wxImageRes.pass) return { code: -2, msg: '商品图片未通过安全审核' }
+
+  const campusIdGoods =
+    typeof data.campusId === 'string' && data.campusId.trim()
+      ? data.campusId.trim()
+      : (user.campusId || DEFAULT_CAMPUS_ID)
+
   // 获取用户信息
   const newGoods = {
     _openid: openid,
     numericId: user.numericId || '',
+    campusId: campusIdGoods,
     nickname: user.nickName || '未知卖家',
     avatar: user.avatarUrl || '/images/avatar_default.png',
     title: data.title,

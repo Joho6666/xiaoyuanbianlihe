@@ -17,6 +17,11 @@ exports.main = async (event) => {
     return fail('无推广参数', { clearScene: true })
   }
 
+  // 用户互推使用 u_<numericId>，由 userReferral 处理，勿走员工表
+  if (/^u_[0-9]+$/.test(scene)) {
+    return fail('此为好友邀请码', { clearScene: true, empId: null, isFirstBind: false })
+  }
+
   try {
     const empRes = await db.collection('employees').where({ empId: scene }).limit(1).get()
     const employee = empRes.data[0]
