@@ -10,6 +10,45 @@ function getNumericId(openid) {
   return String((raw % 90000000) + 10000000)
 }
 
+function deriveDeterministicUserId(openid) {
+  const hex = crypto.createHash('sha256').update(`xiaoyuanbianlihe:user:${openid}`).digest('hex')
+  return [
+    hex.slice(0, 8),
+    hex.slice(8, 12),
+    '4' + hex.slice(13, 16),
+    ((parseInt(hex.slice(16, 18), 16) & 0x3f) | 0x80).toString(16).padStart(2, '0') + hex.slice(18, 20),
+    hex.slice(20, 32)
+  ].join('-')
+}
+
+async function recordAuthIdentity(userId, openid) {
+  try {
+    const identId = `ident_wx_${openid}`
+    await db.collection('auth_identities').doc(identId).set({
+      data: {
+        userId,
+        provider: 'wechat_mini',
+        providerKey: openid,
+        lastLoginAt: db.serverDate(),
+        updatedAt: db.serverDate()
+      }
+    })
+  } catch (err) {
+    if (err && err.message && err.message.includes('not exist')) {
+      await db.createCollection('auth_identities').catch(() => {})
+      await db.collection('auth_identities').doc(`ident_wx_${openid}`).set({
+        data: {
+          userId,
+          provider: 'wechat_mini',
+          providerKey: openid,
+          lastLoginAt: db.serverDate(),
+          updatedAt: db.serverDate()
+        }
+      }).catch(() => {})
+    }
+  }
+}
+
 exports.main = async (event, context) => {
   const { OPENID } = cloud.getWXContext()
 
@@ -86,22 +125,28 @@ exports.main = async (event, context) => {
         return { code: -2, msg: '账号已被封禁', user: null }
       }
 
+      const internalUserId = user.internalUserId || deriveDeterministicUserId(OPENID)
       const nextUser = {
         ...user,
-        numericId: user.numericId || getNumericId(OPENID)
+        numericId: user.numericId || getNumericId(OPENID),
+        internalUserId
       }
-      // 更新最后登录时间
+      // 更新最后登录时间与补齐内部稳定用户 ID
       await db.collection('users').doc(user._id).update({
         data: {
           lastLoginTime: db.serverDate(),
-          numericId: nextUser.numericId
+          numericId: nextUser.numericId,
+          internalUserId
         }
       })
-      return { code: 0, msg: '登录成功', user: nextUser, openid: OPENID }
+      await recordAuthIdentity(internalUserId, OPENID)
+      return { code: 0, msg: '登录成功', user: nextUser, openid: OPENID, internalUserId }
     } else {
       // 新用户 - 创建用户记录
+      const internalUserId = deriveDeterministicUserId(OPENID)
       const newUser = {
         _openid: OPENID,
+        internalUserId,
         numericId: getNumericId(OPENID),
         nickName: '树洞用户' + Math.floor(Math.random() * 9000 + 1000),
         avatarUrl: '/images/avatar_default.png',
@@ -120,7 +165,8 @@ exports.main = async (event, context) => {
       }
       const addRes = await db.collection('users').add({ data: newUser })
       newUser._id = addRes._id
-      return { code: 0, msg: '注册成功', user: newUser, openid: OPENID, isNew: true }
+      await recordAuthIdentity(internalUserId, OPENID)
+      return { code: 0, msg: '注册成功', user: newUser, openid: OPENID, internalUserId, isNew: true }
     }
   } catch (err) {
     console.error('登录失败:', err)
