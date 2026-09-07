@@ -29,3 +29,7 @@ project.private.config.json
 
 # Local cloud environment config with secrets
 campus_treehole/cloudbaserc.json
+
+# Local submodules / cookbooks
+cookbook/
+
