@@ -1,6 +1,7 @@
 {
   "pages": [
     "pages/index/index",
+    "pages/discover/discover",
     "pages/market/market",
     "pages/post/post",
     "pages/message/message",
@@ -47,10 +48,10 @@
         "selectedIconPath": "images/tab_home_active.png"
       },
       {
-        "pagePath": "pages/market/market",
-        "text": "集市",
-        "iconPath": "images/tab_market.png",
-        "selectedIconPath": "images/tab_market_active.png"
+        "pagePath": "pages/discover/discover",
+        "text": "发现",
+        "iconPath": "images/tab_discover.png",
+        "selectedIconPath": "images/tab_discover_active.png"
       },
       {
         "pagePath": "pages/post/post",

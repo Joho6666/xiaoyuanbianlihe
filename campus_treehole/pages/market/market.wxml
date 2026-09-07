@@ -1,6 +1,9 @@
 <view class="page">
   <view class="nav-bar" style="padding-top: {{statusBarHeight}}px;">
     <view class="nav-content">
+      <view class="nav-back-btn" wx:if="{{canGoBack}}" bindtap="onNavBack">
+        <text class="nav-back-arrow">←</text>
+      </view>
       <text class="nav-title">校园集市</text>
       <view class="nav-search" bindtap="onSearchFocus">
         <text class="search-icon">🔍</text>

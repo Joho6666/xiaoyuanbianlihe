@@ -25,11 +25,11 @@
             <view wx:else class="icon-home"></view>
           </view>
         </block>
-        <!-- 集市 -->
+        <!-- 发现 -->
         <block wx:elif="{{index === 1}}">
           <view class="svg-icon {{selected === index ? 'active' : ''}}">
-            <view wx:if="{{selected === index}}" class="icon-market-fill"></view>
-            <view wx:else class="icon-market"></view>
+            <view wx:if="{{selected === index}}" class="icon-discover-fill"></view>
+            <view wx:else class="icon-discover"></view>
           </view>
         </block>
         <!-- 消息 -->

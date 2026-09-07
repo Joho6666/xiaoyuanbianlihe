@@ -23,9 +23,25 @@
 .nav-content {
   display: flex;
   align-items: center;
-  gap: 20rpx;
+  gap: 16rpx;
   padding: 12rpx 24rpx 16rpx;
   box-sizing: border-box;
+}
+
+.nav-back-btn {
+  width: 48rpx;
+  height: 48rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.nav-back-arrow {
+  font-size: 36rpx;
+  font-weight: 700;
+  color: var(--primary);
+  line-height: 1;
 }
 
 .nav-title {

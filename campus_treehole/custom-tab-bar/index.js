@@ -5,7 +5,7 @@ Component({
     unreadCount: 0,
     list: [
       { pagePath: "/pages/index/index", text: "首页", icon: "home", iconFill: "home-fill" },
-      { pagePath: "/pages/market/market", text: "集市", icon: "market", iconFill: "market-fill" },
+      { pagePath: "/pages/discover/discover", text: "发现", icon: "discover", iconFill: "discover-fill" },
       { pagePath: "/pages/post/post", text: "", icon: "plus", iconFill: "plus" },
       { pagePath: "/pages/message/message", text: "消息", icon: "message", iconFill: "message-fill" },
       { pagePath: "/pages/mine/mine", text: "我", icon: "mine", iconFill: "mine-fill" }

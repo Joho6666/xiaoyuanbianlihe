@@ -80,7 +80,8 @@ Page({
     loading: false,
     page: 1,
     hasMore: true,
-    showSkeleton: true
+    showSkeleton: true,
+    canGoBack: false
   },
 
   onLoad() {
@@ -170,6 +171,9 @@ Page({
   },
 
   onShow() {
+    const pages = typeof getCurrentPages === 'function' ? getCurrentPages() : []
+    this.setData({ canGoBack: pages.length > 1 })
+
     if (!app.ensureComplianceOnTabShow({ mode: 'browse' })) return
     const tabBar = typeof this.getTabBar === 'function' ? this.getTabBar() : null
     if (tabBar) {
@@ -226,6 +230,15 @@ Page({
     if (this.searchTimer) { clearTimeout(this.searchTimer); this.searchTimer = null }
     if (this._mediaFallbackTimer) { clearTimeout(this._mediaFallbackTimer); this._mediaFallbackTimer = null }
     if (this._mediaTimer) { clearTimeout(this._mediaTimer); this._mediaTimer = null }
+  },
+
+  onNavBack() {
+    const pages = typeof getCurrentPages === 'function' ? getCurrentPages() : []
+    if (pages.length > 1) {
+      wx.navigateBack({ delta: 1 })
+    } else {
+      wx.switchTab({ url: '/pages/discover/discover' })
+    }
   },
 
   _scheduleMediaFallback(goods) {

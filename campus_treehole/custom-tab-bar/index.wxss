@@ -184,6 +184,70 @@
   border-bottom: 18rpx solid var(--primary);
 }
 
+/* 发现 - 指南针空心 */
+.icon-discover {
+  width: 40rpx;
+  height: 40rpx;
+  border: 4rpx solid var(--outline-variant);
+  border-radius: 50%;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  margin-top: 4rpx;
+}
+.icon-discover::before {
+  content: '';
+  position: absolute;
+  width: 14rpx;
+  height: 14rpx;
+  border: 3rpx solid var(--outline-variant);
+  transform: rotate(45deg);
+  border-radius: 2rpx;
+  box-sizing: border-box;
+}
+.icon-discover::after {
+  content: '';
+  position: absolute;
+  width: 6rpx;
+  height: 6rpx;
+  background: var(--outline-variant);
+  border-radius: 50%;
+}
+
+/* 发现 - 指南针实心激活 */
+.icon-discover-fill {
+  width: 40rpx;
+  height: 40rpx;
+  border: 4rpx solid var(--primary);
+  background: rgba(66, 96, 137, 0.12);
+  border-radius: 50%;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  margin-top: 4rpx;
+}
+.icon-discover-fill::before {
+  content: '';
+  position: absolute;
+  width: 16rpx;
+  height: 16rpx;
+  background: var(--primary);
+  transform: rotate(45deg);
+  border-radius: 2rpx;
+}
+.icon-discover-fill::after {
+  content: '';
+  position: absolute;
+  width: 6rpx;
+  height: 6rpx;
+  background: #ffffff;
+  border-radius: 50%;
+}
+
 /* 集市 - 购物袋空心 */
 .icon-market {
   width: 36rpx; height: 38rpx;
