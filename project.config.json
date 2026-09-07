@@ -30,7 +30,32 @@
   "compileType": "miniprogram",
   "simulatorPluginLibVersion": {},
   "packOptions": {
-    "ignore": [],
+    "ignore": [
+      {
+        "type": "glob",
+        "value": "docs/**"
+      },
+      {
+        "type": "glob",
+        "value": "scripts/**"
+      },
+      {
+        "type": "glob",
+        "value": "test/**"
+      },
+      {
+        "type": "glob",
+        "value": "cookbook/**"
+      },
+      {
+        "type": "glob",
+        "value": "azure_campus/**"
+      },
+      {
+        "type": "glob",
+        "value": "_*/**"
+      }
+    ],
     "include": []
   },
   "appid": "wx102bdbec340c0f45",

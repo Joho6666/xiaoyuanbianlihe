@@ -1,4 +1,260 @@
-@import '../../../pages/index/index.wxss';
+/* 分包页面不能 @import 主包页面 WXSS；这里保留活动瀑布流所需的局部样式。 */
+
+.waterfall {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  gap: 16rpx;
+  width: 100%;
+  padding: 16rpx;
+  box-sizing: border-box;
+  align-items: flex-start;
+}
+
+.wf-col {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+
+.wf-card {
+  position: relative;
+  overflow: hidden;
+  border-radius: 16rpx;
+  background: #ffffff;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  border: 1rpx solid #f0f0f0;
+  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.04);
+}
+
+.wf-activity-tag {
+  position: absolute;
+  top: 12rpx;
+  left: 12rpx;
+  z-index: 3;
+  font-size: 20rpx;
+  font-weight: 700;
+  color: #fff;
+  background: linear-gradient(135deg, #ff2442 0%, #ff6b4a 100%);
+  padding: 6rpx 14rpx;
+  border-radius: 999rpx;
+}
+
+.wf-cover-wrap,
+.wf-video-wrap {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  flex-shrink: 0;
+  background: var(--surface-container-low);
+}
+
+.wf-cover-wrap {
+  height: 320rpx;
+}
+
+.wf-cover-wrap.wf-cover-wrap-ready {
+  min-height: 0;
+}
+
+.wf-cover {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  transition: opacity 220ms ease;
+}
+
+.wf-cover-ready {
+  opacity: 1;
+}
+
+.wf-video-wrap {
+  height: 0;
+  padding-bottom: 125%;
+  box-sizing: border-box;
+  background: var(--on-surface);
+}
+
+.wf-video-el {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.wf-media-skeleton {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: linear-gradient(90deg, var(--surface-container) 25%, var(--surface-container-low) 50%, var(--surface-container) 75%);
+  background-size: 220% 100%;
+}
+
+.wf-media-skeleton-hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.video-badge {
+  position: absolute;
+  right: 12rpx;
+  bottom: 12rpx;
+  z-index: 2;
+  padding: 8rpx 16rpx;
+  border-radius: 999rpx;
+  background: rgba(0, 0, 0, 0.55);
+  color: #ffffff;
+  font-size: 24rpx;
+  font-weight: 600;
+}
+
+.wf-text-card {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: 360rpx;
+  padding: 24rpx 22rpx;
+  background: linear-gradient(145deg, var(--secondary-container), var(--primary-container));
+  box-sizing: border-box;
+  flex-shrink: 0;
+}
+
+.wf-text-only {
+  overflow: hidden;
+  font-size: 30rpx;
+  line-height: 1.55;
+  color: var(--on-secondary-container);
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 6;
+}
+
+.wf-info {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 16rpx 18rpx 18rpx;
+  box-sizing: border-box;
+}
+
+.wf-title {
+  display: -webkit-box;
+  overflow: hidden;
+  margin-bottom: 10rpx;
+  font-size: 30rpx;
+  line-height: 1.4;
+  color: #111111;
+  font-weight: 700;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  word-break: break-word;
+}
+
+.wf-footer,
+.wf-author,
+.wf-actions {
+  display: flex;
+  align-items: center;
+}
+
+.wf-footer {
+  justify-content: space-between;
+  gap: 8rpx;
+}
+
+.wf-author {
+  flex: 1;
+  min-width: 0;
+  gap: 6rpx;
+}
+
+.wf-avatar {
+  width: 40rpx;
+  height: 40rpx;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.wf-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 24rpx;
+  color: #888888;
+}
+
+.wf-actions {
+  gap: 12rpx;
+  flex-shrink: 0;
+}
+
+.wf-favor {
+  display: flex;
+  align-items: center;
+  padding: 4rpx;
+}
+
+.favor-icon {
+  font-size: 32rpx;
+  color: #bbbbbb;
+  line-height: 1;
+}
+
+.wf-favor.favored .favor-icon {
+  color: #c9a227;
+}
+
+.wf-like {
+  display: flex;
+  align-items: center;
+  gap: 6rpx;
+  flex-shrink: 0;
+}
+
+.like-icon {
+  font-size: 28rpx;
+}
+
+.like-num {
+  font-size: 24rpx;
+  color: #888888;
+}
+
+.wf-like.liked .like-num {
+  color: #ff2442;
+}
+
+.load-status {
+  padding: 40rpx 0;
+  text-align: center;
+}
+
+.load-status.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 120rpx 0;
+}
+
+.empty-emoji {
+  margin-bottom: 16rpx;
+  font-size: 72rpx;
+}
+
+.load-text {
+  font-size: 28rpx;
+  color: #9a9a9a;
+}
 
 .act-page {
   min-height: 100vh;

@@ -176,12 +176,15 @@
   </view>
 
   <!-- 频道详情 / 预览弹窗 (原生弹窗体验) -->
-  <view class="preview-modal-mask" wx:if="{{showModal}}" bindtap="closeModal">
+  <view class="preview-modal-mask" wx:if="{{showModal}}" bindtap="closeModal" catchtouchmove="stopBubble">
     <view class="preview-modal-box" catchtap="stopBubble">
       <view class="modal-indicator"></view>
-      <view class="modal-header">
-        <view class="modal-badge {{modalData.badgeClass}}">{{modalData.badgeText}}</view>
-        <text class="modal-title">{{modalData.title}}</text>
+      <view class="modal-header-row">
+        <view class="modal-header-left">
+          <view class="modal-badge {{modalData.badgeClass}}">{{modalData.badgeText}}</view>
+          <text class="modal-title">{{modalData.title}}</text>
+        </view>
+        <view class="modal-close-btn" bindtap="closeModal">✕</view>
       </view>
       <text class="modal-desc">{{modalData.description}}</text>
 

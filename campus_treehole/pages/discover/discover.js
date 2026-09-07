@@ -105,6 +105,7 @@ Page({
         isUniBridge: false
       }
     })
+    this.toggleTabBar(false)
   },
 
   // 5. 打开友桥 UniBridge 预告与功能预览
@@ -124,6 +125,14 @@ Page({
         isUniBridge: true
       }
     })
+    this.toggleTabBar(false)
+  },
+
+  toggleTabBar(visible) {
+    const tabBar = typeof this.getTabBar === 'function' ? this.getTabBar() : null
+    if (tabBar) {
+      tabBar.setData({ hidden: !visible })
+    }
   },
 
   // 双语预览语言切换演示
@@ -145,6 +154,17 @@ Page({
 
   closeModal() {
     this.setData({ showModal: false })
+    this.toggleTabBar(true)
+  },
+
+  onHide() {
+    if (this.data.showModal) {
+      this.closeModal()
+    }
+  },
+
+  onUnload() {
+    this.toggleTabBar(true)
   },
 
   stopBubble() {
