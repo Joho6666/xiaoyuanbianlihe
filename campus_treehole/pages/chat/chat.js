@@ -908,7 +908,7 @@ Page({
       return
     }
     if (type === 'goods') {
-      wx.navigateTo({ url: `/pages/market-detail/market-detail?id=${encodeURIComponent(id)}` })
+      wx.navigateTo({ url: `/packageMarket/pages/market-detail/market-detail?id=${encodeURIComponent(id)}` })
     }
   },
 

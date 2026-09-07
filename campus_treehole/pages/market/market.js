@@ -447,11 +447,11 @@ Page({
   goToDetail(e) {
     const id = e.currentTarget.dataset.id
     if (!id) return
-    wx.navigateTo({ url: `/pages/market-detail/market-detail?id=${encodeURIComponent(id)}` })
+    wx.navigateTo({ url: `/packageMarket/pages/market-detail/market-detail?id=${encodeURIComponent(id)}` })
   },
 
   goPublish() {
-    wx.navigateTo({ url: '/pages/market-post/market-post' })
+    wx.navigateTo({ url: '/packageMarket/pages/market-post/market-post' })
   },
 
   onPullDownRefresh() {

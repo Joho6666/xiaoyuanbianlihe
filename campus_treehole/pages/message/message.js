@@ -289,7 +289,7 @@ Page({
       return
     }
     if (targetType === 'goods' && (goodsId || targetId)) {
-      wx.navigateTo({ url: `/pages/market-detail/market-detail?id=${encodeURIComponent(goodsId || targetId)}` })
+      wx.navigateTo({ url: `/packageMarket/pages/market-detail/market-detail?id=${encodeURIComponent(goodsId || targetId)}` })
       return
     }
     if (targetType === 'comment' && postId) {

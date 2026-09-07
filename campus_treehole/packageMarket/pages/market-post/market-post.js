@@ -1,6 +1,6 @@
 // pages/market-post/market-post.js - 发布闲置商品
 const app = getApp()
-const { MARKET_PUBLISH_CATEGORIES, normalizePublishCategory } = require('../../utils/marketCategories')
+const { MARKET_PUBLISH_CATEGORIES, normalizePublishCategory } = require('../../../utils/marketCategories')
 const MARKET_DRAFT_KEY = 'market_post_draft_v1'
 
 Page({

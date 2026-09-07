@@ -1,6 +1,6 @@
 // pages/market-detail/market-detail.js - 商品详情
 const app = getApp()
-const { resolveGoodsIdFromPageOptions } = require('../../utils/shareEntry')
+const { resolveGoodsIdFromPageOptions } = require('../../../utils/shareEntry')
 
 Page({
   data: {
@@ -336,7 +336,7 @@ Page({
     const qid = encodeURIComponent(id)
     return {
       title: g ? `¥${g.price} ${g.title}` : '校园集市好物',
-      path: id ? `/pages/market-detail/market-detail?id=${qid}` : '/pages/market/market',
+      path: id ? `/packageMarket/pages/market-detail/market-detail?id=${qid}` : '/pages/market/market',
       imageUrl: this.data.shareImageUrl || '/images/icon_share.png'
     }
   },
