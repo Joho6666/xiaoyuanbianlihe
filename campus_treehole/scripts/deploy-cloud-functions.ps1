@@ -2,7 +2,7 @@
 $ErrorActionPreference = 'Stop'
 Set-Location $PSScriptRoot + '\..'
 
-$envId = 'xyblh-5gb26qrnf9d30feb'
+$envId = if ($env:CLOUDBASE_ENV_ID) { $env:CLOUDBASE_ENV_ID } else { 'xyblh-5gb26qrnf9d30feb' }
 $names = @(
   'userReferral',
   'bindInviteEmployee',

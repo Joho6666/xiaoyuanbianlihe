@@ -3,8 +3,9 @@
  */
 const { execSync } = require('child_process')
 const path = require('path')
+const { getEnvId } = require('./env')
 
-const ENV_ID = 'xyblh-5gb26qrnf9d30feb'
+const ENV_ID = getEnvId()
 const root = path.resolve(__dirname, '..')
 const tcb = path.join(root, 'node_modules', '.bin', 'tcb.cmd')
 
