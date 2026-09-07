@@ -1,6 +1,7 @@
 // pages/discover/discover.js - 发现全域频道主页
 const app = getApp()
 const { CAMPUSES } = require('../../utils/campuses.js')
+const i18n = require('../../utils/i18n.js')
 
 Page({
   data: {
@@ -12,6 +13,7 @@ Page({
   },
 
   onLoad() {
+    this.setData({ currentLang: i18n.getLocale() })
     this.refreshCampusInfo()
   },
 
@@ -127,6 +129,7 @@ Page({
   // 双语预览语言切换演示
   toggleBilingualLang() {
     const next = this.data.currentLang === 'zh-CN' ? 'en-US' : 'zh-CN'
+    i18n.setLocale(next)
     this.setData({ currentLang: next })
   },
 
