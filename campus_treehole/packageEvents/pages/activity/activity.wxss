@@ -1,4 +1,4 @@
-@import '../index/index.wxss';
+@import '../../../pages/index/index.wxss';
 
 .act-page {
   min-height: 100vh;

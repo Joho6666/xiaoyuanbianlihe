@@ -74,6 +74,43 @@ try {
     }
   }
 
+  // 3. 校验所有 WXSS 文件中的 @import 路径
+  console.log('开始扫描并校验 WXSS @import 引用路径...')
+  let wxssCount = 0
+  let importCount = 0
+  function checkWxssImports(dir) {
+    const entries = fs.readdirSync(dir, { withFileTypes: true })
+    for (const entry of entries) {
+      const fullPath = path.join(dir, entry.name)
+      if (entry.isDirectory()) {
+        if (entry.name !== 'node_modules' && entry.name !== 'cloudfunctions') {
+          checkWxssImports(fullPath)
+        }
+      } else if (entry.name.endsWith('.wxss')) {
+        wxssCount++
+        const content = fs.readFileSync(fullPath, 'utf8')
+        const importRegex = /@import\s+['"]([^'"]+)['"]/g
+        let match
+        while ((match = importRegex.exec(content)) !== null) {
+          importCount++
+          const importPath = match[1]
+          let resolvedPath
+          if (importPath.startsWith('/')) {
+            resolvedPath = path.join(miniprogramRoot, importPath.slice(1))
+          } else {
+            resolvedPath = path.resolve(path.dirname(fullPath), importPath)
+          }
+          if (!fs.existsSync(resolvedPath)) {
+            console.error(`❌ WXSS @import 目标不存在: [${importPath}] (在 ${path.relative(projectRoot, fullPath)} 中，解析为: ${resolvedPath})`)
+            errors++
+          }
+        }
+      }
+    }
+  }
+  checkWxssImports(miniprogramRoot)
+  console.log(`WXSS 扫描完成：检查了 ${wxssCount} 个样式表，验证了 ${importCount} 处 @import 引用`)
+
 } catch (err) {
   console.error('❌ 无法解析 app.json:', err.message)
   errors++

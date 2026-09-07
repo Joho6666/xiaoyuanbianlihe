@@ -2359,7 +2359,7 @@ async function sendMessage(openid, data = {}) {
         actorName: user.nickName || '有人',
         itemTitle: trimSnippet(goods.title || normalizedShareData.title || '商品'),
         summary: '转发了你的商品',
-        page: `/pages/market-detail/market-detail?id=${normalizedShareData.id}`
+        page: `/packageMarket/pages/market-detail/market-detail?id=${normalizedShareData.id}`
       })
     }
   }

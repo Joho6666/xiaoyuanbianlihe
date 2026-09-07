@@ -1,4 +1,4 @@
-@import '../admin-announcement/admin-announcement.wxss';
+@import '../../../pages/admin-announcement/admin-announcement.wxss';
 
 .act-status {
   margin: 16rpx 0 24rpx;

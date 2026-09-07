@@ -19,6 +19,7 @@ yarn-error.log*
 .agents/
 .claude/
 .codebuddy/
+.codex/
 .cursor/
 .qwen/
 .trae/
