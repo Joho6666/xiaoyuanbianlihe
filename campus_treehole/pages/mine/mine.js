@@ -464,7 +464,7 @@ Page({
   goToMarketDetail(e) {
     const id = e.currentTarget.dataset.id
     if (!id) return
-    wx.navigateTo({ url: `/pages/market-detail/market-detail?id=${encodeURIComponent(id)}` })
+    wx.navigateTo({ url: `/packageMarket/pages/market-detail/market-detail?id=${encodeURIComponent(id)}` })
   },
 
   onViewMyProfile() {
@@ -599,7 +599,7 @@ Page({
     } else if (page === 'adminAnnouncement') {
       wx.navigateTo({ url: '/pages/admin-announcement/admin-announcement' })
     } else if (page === 'adminActivityZone') {
-      wx.navigateTo({ url: '/pages/admin-activity-zone/admin-activity-zone' })
+      wx.navigateTo({ url: '/packageEvents/pages/admin-activity-zone/admin-activity-zone' })
     } else if (page === 'referral') {
       wx.navigateTo({ url: '/pages/referral/referral' })
     } else if (page === 'editProfile') {

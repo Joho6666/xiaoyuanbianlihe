@@ -67,9 +67,9 @@ Page({
     })
   },
 
-  // 2. 进入校园活动 (原有功能，完整保留)
+  // 2. 进入校园活动 (进入活动分包)
   goToEvents() {
-    const targetUrl = '/pages/activity/activity'
+    const targetUrl = '/packageEvents/pages/activity/activity'
     wx.navigateTo({
       url: targetUrl,
       fail: (err) => {

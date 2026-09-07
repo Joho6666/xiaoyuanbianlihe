@@ -21,11 +21,25 @@
     "pages/admin-announcement/admin-announcement",
     "pages/admin-announcement-edit/admin-announcement-edit",
     "pages/announcement/announcement",
-    "pages/activity/activity",
-    "pages/admin-activity-zone/admin-activity-zone",
-    "pages/referral/referral",
-    "pages/market-post/market-post",
-    "pages/market-detail/market-detail"
+    "pages/referral/referral"
+  ],
+  "subpackages": [
+    {
+      "root": "packageMarket",
+      "name": "packageMarket",
+      "pages": [
+        "pages/market-detail/market-detail",
+        "pages/market-post/market-post"
+      ]
+    },
+    {
+      "root": "packageEvents",
+      "name": "packageEvents",
+      "pages": [
+        "pages/activity/activity",
+        "pages/admin-activity-zone/admin-activity-zone"
+      ]
+    }
   ],
   "window": {
     "navigationBarBackgroundColor": "#f7f9fc",

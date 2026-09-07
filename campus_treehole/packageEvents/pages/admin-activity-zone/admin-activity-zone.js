@@ -1,5 +1,5 @@
 const app = getApp()
-const { CAMPUSES } = require('../../utils/campuses.js')
+const { CAMPUSES } = require('../../../utils/campuses.js')
 
 function emptySlide() {
   return {

@@ -638,7 +638,7 @@ Page({
       })
       return
     }
-    wx.navigateTo({ url: '/pages/activity/activity' })
+    wx.navigateTo({ url: '/packageEvents/pages/activity/activity' })
   },
 
   onFeedSwitch(e) {
