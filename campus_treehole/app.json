@@ -39,6 +39,33 @@
         "pages/activity/activity",
         "pages/admin-activity-zone/admin-activity-zone"
       ]
+    },
+    {
+      "root": "packageBuddy",
+      "name": "packageBuddy",
+      "pages": [
+        "pages/buddy-square/buddy-square",
+        "pages/buddy-detail/buddy-detail",
+        "pages/buddy-create/buddy-create"
+      ]
+    },
+    {
+      "root": "packageBridge",
+      "name": "packageBridge",
+      "pages": [
+        "pages/bridge-home/bridge-home",
+        "pages/partner-detail/partner-detail",
+        "pages/language-setup/language-setup"
+      ]
+    },
+    {
+      "root": "packageMutual",
+      "name": "packageMutual",
+      "pages": [
+        "pages/mutual-list/mutual-list",
+        "pages/mutual-detail/mutual-detail",
+        "pages/mutual-create/mutual-create"
+      ]
     }
   ],
   "window": {

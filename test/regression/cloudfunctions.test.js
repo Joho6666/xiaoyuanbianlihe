@@ -3,6 +3,9 @@ const assert = require('assert')
 
 const createMarketModule = require('../../campus_treehole/cloudfunctions/dbOperations/modules/market')
 const createEventsModule = require('../../campus_treehole/cloudfunctions/dbOperations/modules/events')
+const createBuddiesModule = require('../../campus_treehole/cloudfunctions/dbOperations/modules/buddies')
+const createBridgeModule = require('../../campus_treehole/cloudfunctions/dbOperations/modules/bridge')
+const createMutualModule = require('../../campus_treehole/cloudfunctions/dbOperations/modules/mutual')
 const { makeDeterministicId } = require('../../campus_treehole/cloudfunctions/dbOperations/shared/id')
 const { resolveCampusIdForRead, campusWhereClause, DEFAULT_CAMPUS_ID } = require('../../campus_treehole/cloudfunctions/dbOperations/shared/campus')
 
@@ -74,6 +77,7 @@ function createMockDb() {
     and: (arr) => ({ operator: 'and', value: arr }),
     or: (arr) => ({ operator: 'or', value: arr }),
     neq: (val) => ({ operator: 'neq', value: val }),
+    in: (arr) => ({ operator: 'in', value: arr }),
     inc: (val) => ({ operator: 'inc', value: val }),
     remove: () => ({ operator: 'remove' }),
     exists: () => ({ operator: 'exists' })
@@ -177,6 +181,100 @@ describe('Cloud Function Modules Regression Tests', () => {
     assert.ok(doc)
     assert.strictEqual(doc.enabled, true)
     assert.strictEqual(doc.roundId, 'r1')
+  })
+
+  test('Buddies Module: addBuddyPost and application workflow', async () => {
+    const { db, _, cloud } = createMockDb()
+    const buddies = createBuddiesModule({
+      db,
+      _,
+      cloud,
+      helpers: {
+        getUserForAction: async () => ({ nickName: '羽毛球手', status: 'active' }),
+        checkRateLimit: async () => true,
+        checkBannedWords: () => ({ pass: true }),
+        wxTextCheck: async () => ({ pass: true }),
+        isCollectionNotExistError: () => false,
+        ensureCollection: async () => {},
+        campusWhereClause: () => ({}),
+        resolveCampusIdForRead: (id) => id || DEFAULT_CAMPUS_ID,
+        DEFAULT_CAMPUS_ID,
+        escapeRegExp: (s) => s,
+        triggerSubscribeNotify: async () => {}
+      }
+    })
+
+    const createRes = await buddies.addBuddyPost('user_mock_001', {
+      title: '周六花江操场羽毛球双打',
+      category: 'sports',
+      startAt: '2026-09-12 15:00',
+      minPeople: 2,
+      maxPeople: 4
+    })
+    assert.strictEqual(createRes.code, 0)
+    assert.ok(createRes.data.id)
+
+    const listRes = await buddies.getBuddyPosts({})
+    assert.strictEqual(listRes.code, 0)
+    assert.ok(listRes.data.length > 0)
+  })
+
+  test('Bridge Module: getLanguagePartners computes match', async () => {
+    const { db, _, cloud } = createMockDb()
+    const bridge = createBridgeModule({
+      db,
+      _,
+      cloud,
+      helpers: {
+        getUserForAction: async () => ({ nickName: '留学生David', status: 'active' }),
+        isCollectionNotExistError: () => false,
+        campusWhereClause: () => ({}),
+        resolveCampusIdForRead: (id) => id || DEFAULT_CAMPUS_ID,
+        DEFAULT_CAMPUS_ID
+      }
+    })
+
+    const res = await bridge.getLanguagePartners({ currentOpenid: 'user_mock_001' })
+    assert.strictEqual(res.code, 0)
+    assert.ok(Array.isArray(res.data))
+  })
+
+  test('Mutual Module: addMutualPost and status update', async () => {
+    const { db, _, cloud } = createMockDb()
+    const mutual = createMutualModule({
+      db,
+      _,
+      cloud,
+      helpers: {
+        getUserForAction: async () => ({ nickName: '互助同学', status: 'active' }),
+        checkBannedWords: () => ({ pass: true }),
+        wxTextCheck: async () => ({ pass: true }),
+        wxImageBatchCheck: async () => ({ pass: true }),
+        isCollectionNotExistError: () => false,
+        ensureCollection: async () => {},
+        campusWhereClause: () => ({}),
+        resolveCampusIdForRead: (id) => id || DEFAULT_CAMPUS_ID,
+        DEFAULT_CAMPUS_ID,
+        escapeRegExp: (s) => s,
+        checkAdmin: async () => false
+      }
+    })
+
+    const addRes = await mutual.addMutualPost('user_mock_001', {
+      type: 'help',
+      category: 'errand',
+      title: '带份外卖到南苑4栋',
+      content: '食堂二楼烤肉拌饭，麻烦顺路同学带一下',
+      reward: '5元'
+    })
+    assert.strictEqual(addRes.code, 0)
+    assert.ok(addRes.data.id)
+
+    const updRes = await mutual.updateMutualPostStatus('user_mock_001', {
+      id: addRes.data.id,
+      status: 'resolved'
+    })
+    assert.strictEqual(updRes.code, 0)
   })
 })
 

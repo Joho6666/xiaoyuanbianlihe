@@ -1,0 +1,133 @@
+<!-- packageBuddy/pages/buddy-detail/buddy-detail.wxml - 搭子组局详情 -->
+<view class="detail-container" wx:if="{{!loading && post}}">
+  <!-- 头部状态横幅 -->
+  <view class="status-banner banner-{{post.status}}">
+    <view class="status-main">
+      <text class="status-text" wx:if="{{post.status === 'OPEN'}}">招募中 · 期待你的加入</text>
+      <text class="status-text" wx:elif="{{post.status === 'FULL'}}">已满员锁定 · 组局已成</text>
+      <text class="status-text" wx:elif="{{post.status === 'FINISHED'}}">活动已顺利完成</text>
+      <text class="status-text" wx:else>该活动已取消</text>
+      <text class="status-sub">目前已有 {{post.acceptedCount || 1}} / {{post.maxPeople}} 人入局</text>
+    </view>
+    <view class="cat-pill">{{post.category}}</view>
+  </view>
+
+  <!-- 核心主卡片 -->
+  <view class="card main-card">
+    <view class="post-title">{{post.title}}</view>
+
+    <view class="spec-grid">
+      <view class="spec-item">
+        <text class="spec-label">活动时间</text>
+        <text class="spec-value">{{post.timeDisplay}}</text>
+      </view>
+      <view class="spec-item" wx:if="{{post.location}}">
+        <text class="spec-label">集合地点</text>
+        <text class="spec-value">{{post.location}}</text>
+      </view>
+      <view class="spec-item">
+        <text class="spec-label">人数限制</text>
+        <text class="spec-value">{{post.minPeople}} ~ {{post.maxPeople}} 人</text>
+      </view>
+      <view class="spec-item">
+        <text class="spec-label">性别要求</text>
+        <text class="spec-value" wx:if="{{post.genderRequirement === 'female_only'}}">仅限女生</text>
+        <text class="spec-value" wx:elif="{{post.genderRequirement === 'male_only'}}">仅限男生</text>
+        <text class="spec-value" wx:else>不限性别</text>
+      </view>
+    </view>
+
+    <view class="desc-box" wx:if="{{post.description}}">
+      <view class="desc-title">详细说明</view>
+      <text class="desc-content">{{post.description}}</text>
+    </view>
+  </view>
+
+  <!-- 发起人卡片 -->
+  <view class="card author-card">
+    <view class="card-head">发起人</view>
+    <view class="author-row">
+      <image class="author-avatar" src="{{post.author.avatarUrl || '/images/avatar_default.png'}}" mode="aspectFill" />
+      <view class="author-detail">
+        <text class="author-name">{{post.author.nickName || '同学'}}</text>
+        <text class="author-tag">桂航实名认证</text>
+      </view>
+      <button class="chat-btn" wx:if="{{!post.isAuthor}}" bindtap="contactAuthor">私信发起人</button>
+    </view>
+  </view>
+
+  <!-- 已成局成员列表 -->
+  <view class="card members-card">
+    <view class="card-head-row">
+      <text class="card-head">已加入成员 ({{post.acceptedCount || 1}}/{{post.maxPeople}})</text>
+    </view>
+    <view class="member-list">
+      <!-- 发起人头像 -->
+      <view class="member-item">
+        <image class="member-avatar avatar-host" src="{{post.author.avatarUrl || '/images/avatar_default.png'}}" mode="aspectFill" />
+        <text class="member-name">{{post.author.nickName || '发起人'}}</text>
+        <view class="host-badge">局长</view>
+      </view>
+      <!-- 其他通过申请的成员 -->
+      <view class="member-item" wx:for="{{post.acceptedMembers}}" wx:key="_id">
+        <image class="member-avatar" src="{{item.applicant.avatarUrl || '/images/avatar_default.png'}}" mode="aspectFill" />
+        <text class="member-name">{{item.applicant.nickName || '搭子'}}</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 发起人专属：待审批申请列表 -->
+  <view class="card admin-card" wx:if="{{post.isAuthor && post.pendingApplications.length > 0}}">
+    <view class="card-head">入局申请待确认 ({{post.pendingApplications.length}})</view>
+    <view class="app-item" wx:for="{{post.pendingApplications}}" wx:key="_id">
+      <image class="app-avatar" src="{{item.applicant.avatarUrl || '/images/avatar_default.png'}}" mode="aspectFill" />
+      <view class="app-info">
+        <text class="app-name">{{item.applicant.nickName || '同学'}}</text>
+        <text class="app-msg" wx:if="{{item.message}}">留言：{{item.message}}</text>
+      </view>
+      <view class="app-actions">
+        <button class="btn-agree" data-id="{{item._id}}" data-action="ACCEPT" bindtap="onHandleApp">通过</button>
+        <button class="btn-reject" data-id="{{item._id}}" data-action="REJECT" bindtap="onHandleApp">婉拒</button>
+      </view>
+    </view>
+  </view>
+
+  <!-- 发起人操作栏 -->
+  <view class="bottom-action-bar" wx:if="{{post.isAuthor}}">
+    <button class="bar-btn btn-secondary" wx:if="{{post.status === 'OPEN'}}" data-status="FULL" bindtap="onUpdateStatus">手动锁定满员</button>
+    <button class="bar-btn btn-secondary" wx:elif="{{post.status === 'FULL'}}" data-status="OPEN" bindtap="onUpdateStatus">重新放开招募</button>
+    <button class="bar-btn btn-primary" wx:if="{{post.status !== 'FINISHED'}}" data-status="FINISHED" bindtap="onUpdateStatus">标记活动结束</button>
+  </view>
+
+  <!-- 访客操作栏 -->
+  <view class="bottom-action-bar" wx:else>
+    <!-- 已经加入 -->
+    <button class="bar-btn btn-disabled" wx:if="{{post.userApplication && post.userApplication.status === 'ACCEPTED'}}">您已成功入局</button>
+    <!-- 待确认 -->
+    <button class="bar-btn btn-pending" wx:elif="{{post.userApplication && post.userApplication.status === 'PENDING'}}">申请待发起人确认</button>
+    <!-- 满员 -->
+    <button class="bar-btn btn-disabled" wx:elif="{{post.status === 'FULL'}}">当前活动已满员</button>
+    <!-- 正常招募中可申请 -->
+    <button class="bar-btn btn-primary" wx:elif="{{post.status === 'OPEN'}}" bindtap="onOpenApply">申请加入组局</button>
+    <!-- 已结束 -->
+    <button class="bar-btn btn-disabled" wx:else>活动已结束</button>
+  </view>
+
+  <!-- 申请弹窗 -->
+  <view class="apply-modal-mask" wx:if="{{showApplyModal}}" bindtap="onCloseApply">
+    <view class="apply-modal-box" catchtap="true">
+      <view class="modal-title">申请加入组局</view>
+      <textarea
+        class="apply-textarea"
+        placeholder="向发起人打个招呼或说明意向（如：自带球拍、已买好门票等）"
+        value="{{applyMessage}}"
+        bindinput="onApplyInput"
+        maxlength="100"
+      />
+      <view class="modal-btn-row">
+        <button class="modal-btn btn-cancel" bindtap="onCloseApply">取消</button>
+        <button class="modal-btn btn-confirm" bindtap="onSubmitApply">提交申请</button>
+      </view>
+    </view>
+  </view>
+</view>

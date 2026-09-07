@@ -35,6 +35,13 @@ const {
   evaluateLanguageExchangeMatch
 } = require('../../shared/domain/language')
 
+const {
+  MUTUAL_TYPES,
+  MUTUAL_STATUS,
+  createMutualPostEntity,
+  canTransitionMutualStatus
+} = require('../../shared/domain/mutual')
+
 describe('Unified Domain Model Tests', () => {
   test('User: deriveDeterministicUserId produces stable valid UUID', () => {
     const openid = 'oUpF8uMuAJO_M2pxb1Q9zNjWeS6o'
@@ -145,6 +152,29 @@ describe('Unified Domain Model Tests', () => {
     assert.ok(match.score >= 100)
     assert.deepStrictEqual(match.aTeachesB, ['zh'])
     assert.deepStrictEqual(match.bTeachesA, ['en'])
+  })
+
+  test('Mutual: createMutualPostEntity validates and creates entity', () => {
+    const post = createMutualPostEntity({
+      authorId: 'user_123',
+      type: MUTUAL_TYPES.HELP,
+      category: 'errand',
+      title: '帮忙带饭至4栋',
+      content: '食堂二楼烤肉拌饭，带到4栋楼下，感谢同学！',
+      reward: '5元红包'
+    })
+
+    assert.ok(post.id.startsWith('mutual_'))
+    assert.strictEqual(post.authorId, 'user_123')
+    assert.strictEqual(post.type, 'help')
+    assert.strictEqual(post.status, 'open')
+    assert.strictEqual(post.reward, '5元红包')
+  })
+
+  test('Mutual: canTransitionMutualStatus enforces lifecycle transitions', () => {
+    assert.strictEqual(canTransitionMutualStatus(MUTUAL_STATUS.OPEN, MUTUAL_STATUS.IN_PROGRESS), true)
+    assert.strictEqual(canTransitionMutualStatus(MUTUAL_STATUS.IN_PROGRESS, MUTUAL_STATUS.RESOLVED), true)
+    assert.strictEqual(canTransitionMutualStatus(MUTUAL_STATUS.RESOLVED, MUTUAL_STATUS.OPEN), false)
   })
 })
 

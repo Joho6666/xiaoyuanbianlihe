@@ -27,7 +27,7 @@
           <view class="channel-icon-wrap icon-buddy-bg">
             <text class="channel-emoji">🎯</text>
           </view>
-          <view class="status-tag tag-upcoming">筹备并网</view>
+          <view class="status-tag tag-active">热门组局</view>
         </view>
         <view class="card-body">
           <text class="channel-name">同频搭子</text>
@@ -46,7 +46,7 @@
           <view class="channel-icon-wrap icon-bridge-bg">
             <text class="channel-emoji">🌐</text>
           </view>
-          <view class="status-tag tag-bilingual">中英双语</view>
+          <view class="status-tag tag-active">语言交换</view>
         </view>
         <view class="card-body">
           <text class="channel-name">友桥 UniBridge</text>

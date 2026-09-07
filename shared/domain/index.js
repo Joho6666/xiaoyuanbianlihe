@@ -4,11 +4,13 @@ const identity = require('./identity')
 const conversation = require('./conversation')
 const buddy = require('./buddy')
 const language = require('./language')
+const mutual = require('./mutual')
 
 module.exports = {
   ...user,
   ...identity,
   ...conversation,
   ...buddy,
-  ...language
+  ...language,
+  ...mutual
 }

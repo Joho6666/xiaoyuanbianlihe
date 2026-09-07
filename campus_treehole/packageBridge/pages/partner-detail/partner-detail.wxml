@@ -1,0 +1,67 @@
+<!-- packageBridge/pages/partner-detail/partner-detail.wxml - 语伴详细资料 -->
+<view class="partner-detail-container" wx:if="{{!loading && partner}}">
+  <!-- 顶部个人资料卡 -->
+  <view class="profile-header-card">
+    <image class="avatar" src="{{partner.avatarUrl || '/images/avatar_default.png'}}" mode="aspectFill" />
+    <view class="profile-info">
+      <view class="name-line">
+        <text class="nickname">{{partner.nickName || '语伴同学'}}</text>
+        <text class="type-pill" wx:if="{{partner.languageProfile.studentType === 'internationalStudent'}}">国际留学生</text>
+        <text class="type-pill" wx:else>中国学生</text>
+      </view>
+      <text class="country-text" wx:if="{{partner.languageProfile.country}}">来自：{{partner.languageProfile.country}}</text>
+    </view>
+  </view>
+
+  <!-- 互补匹配分析横幅 -->
+  <view class="match-analysis-card" wx:if="{{partner.matchAnalysis}}">
+    <view class="match-title-row">
+      <text class="match-badge" wx:if="{{partner.matchAnalysis.isMatch}}">100% 互补匹配</text>
+      <text class="match-score" wx:if="{{partner.matchAnalysis.score}}">契合指数：{{partner.matchAnalysis.score}}分</text>
+    </view>
+    <view class="match-reason">{{partner.matchAnalysis.reason}}</view>
+  </view>
+
+  <!-- 语言能力矩阵 -->
+  <view class="matrix-card">
+    <view class="section-title">语言能力矩阵 / Language Competency</view>
+
+    <view class="matrix-section">
+      <view class="matrix-label">母语与熟练掌握 / Native & Fluent</view>
+      <view class="matrix-chips">
+        <view class="chip-item native-item" wx:for="{{partner.languageProfile.nativeLanguages}}" wx:key="*this">
+          <text class="chip-code">{{item}}</text>
+          <text class="chip-level">Native / Fluent</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="matrix-section">
+      <view class="matrix-label">正在学习目标 / Learning Target</view>
+      <view class="matrix-chips">
+        <view class="chip-item learning-item" wx:for="{{partner.languageProfile.targetLanguages}}" wx:key="*this">
+          <text class="chip-code">{{item}}</text>
+          <text class="chip-level">Learning</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="matrix-section" wx:if="{{partner.languageProfile.exchangeMode}}">
+      <view class="matrix-label">偏好交流形式 / Preferred Mode</view>
+      <text class="mode-text" wx:if="{{partner.languageProfile.exchangeMode === 'offline'}}">校园线下交流（图书馆、咖啡厅、English Corner）</text>
+      <text class="mode-text" wx:elif="{{partner.languageProfile.exchangeMode === 'online'}}">线上语音/文字沟通（支持跨校区灵活交流）</text>
+      <text class="mode-text" wx:else>灵活多模态（根据双方时间安排线上或线下）</text>
+    </view>
+  </view>
+
+  <!-- 个人介绍 -->
+  <view class="bio-card" wx:if="{{partner.languageProfile.bio}}">
+    <view class="section-title">个人介绍 / About</view>
+    <view class="bio-content">{{partner.languageProfile.bio}}</view>
+  </view>
+
+  <!-- 底部打招呼操作栏 -->
+  <view class="bottom-bar">
+    <button class="connect-btn" bindtap="contactPartner">发送语伴交流私信</button>
+  </view>
+</view>

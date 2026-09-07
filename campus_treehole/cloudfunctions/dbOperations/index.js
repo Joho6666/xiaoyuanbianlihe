@@ -76,6 +76,78 @@ function getEventsModule() {
   return eventsModuleInstance
 }
 
+const createBuddiesModule = require('./modules/buddies')
+let buddiesModuleInstance = null
+function getBuddiesModule() {
+  if (!buddiesModuleInstance) {
+    buddiesModuleInstance = createBuddiesModule({
+      db,
+      _,
+      cloud,
+      helpers: {
+        getUserForAction,
+        checkRateLimit,
+        checkBannedWords,
+        wxTextCheck,
+        isCollectionNotExistError,
+        ensureCollection,
+        campusWhereClause,
+        resolveCampusIdForRead,
+        DEFAULT_CAMPUS_ID,
+        escapeRegExp,
+        triggerSubscribeNotify
+      }
+    })
+  }
+  return buddiesModuleInstance
+}
+
+const createBridgeModule = require('./modules/bridge')
+let bridgeModuleInstance = null
+function getBridgeModule() {
+  if (!bridgeModuleInstance) {
+    bridgeModuleInstance = createBridgeModule({
+      db,
+      _,
+      cloud,
+      helpers: {
+        getUserForAction,
+        isCollectionNotExistError,
+        campusWhereClause,
+        resolveCampusIdForRead,
+        DEFAULT_CAMPUS_ID
+      }
+    })
+  }
+  return bridgeModuleInstance
+}
+
+const createMutualModule = require('./modules/mutual')
+let mutualModuleInstance = null
+function getMutualModule() {
+  if (!mutualModuleInstance) {
+    mutualModuleInstance = createMutualModule({
+      db,
+      _,
+      cloud,
+      helpers: {
+        getUserForAction,
+        checkBannedWords,
+        wxTextCheck,
+        wxImageBatchCheck,
+        isCollectionNotExistError,
+        ensureCollection,
+        campusWhereClause,
+        resolveCampusIdForRead,
+        DEFAULT_CAMPUS_ID,
+        escapeRegExp,
+        checkAdmin
+      }
+    })
+  }
+  return mutualModuleInstance
+}
+
 /** 与小程序 utils/campuses.js 中桂林航天工业学院 id 一致 */
 const DEFAULT_CAMPUS_ID = 'guit-hangtian'
 
@@ -119,7 +191,13 @@ const PUBLIC_READ_ACTIONS = new Set([
   'getPostById',
   'getComments',
   'getMarketGoodsById',
-  'getMarketComments'
+  'getMarketComments',
+  'getBuddyPosts',
+  'getBuddyPostById',
+  'getLanguagePartners',
+  'getLanguagePartnerProfile',
+  'getMutualPosts',
+  'getMutualPostById'
 ])
 
 // 检查管理员权限
@@ -765,6 +843,42 @@ exports.main = async (event, context) => {
         return await getAdminMarketGoods(data)
       case 'banUser':
         return await banUser(openid, data.targetOpenid)
+
+      // ===== 同频搭子相关 =====
+      case 'getBuddyPosts':
+        return await getBuddiesModule().getBuddyPosts(data)
+      case 'getBuddyPostById':
+        return await getBuddiesModule().getBuddyPostById({ ...data, openid })
+      case 'addBuddyPost':
+        return await getBuddiesModule().addBuddyPost(openid, data)
+      case 'applyBuddyPost':
+        return await getBuddiesModule().applyBuddyPost(openid, data)
+      case 'handleBuddyApplication':
+        return await getBuddiesModule().handleBuddyApplication(openid, data)
+      case 'updateBuddyPostStatus':
+        return await getBuddiesModule().updateBuddyPostStatus(openid, data)
+      case 'getUserBuddyPosts':
+        return await getBuddiesModule().getUserBuddyPosts(openid, data)
+
+      // ===== 友桥语伴相关 =====
+      case 'getLanguagePartners':
+        return await getBridgeModule().getLanguagePartners({ ...data, currentOpenid: openid })
+      case 'getLanguagePartnerProfile':
+        return await getBridgeModule().getLanguagePartnerProfile({ ...data, currentOpenid: openid })
+      case 'updateLanguageProfile':
+        return await getBridgeModule().updateLanguageProfile(openid, data)
+
+      // ===== 校园互助生活与失物招领相关 =====
+      case 'getMutualPosts':
+        return await getMutualModule().getMutualPosts(data)
+      case 'getMutualPostById':
+        return await getMutualModule().getMutualPostById({ ...data, openid })
+      case 'addMutualPost':
+        return await getMutualModule().addMutualPost(openid, data)
+      case 'updateMutualPostStatus':
+        return await getMutualModule().updateMutualPostStatus(openid, data)
+      case 'deleteMutualPost':
+        return await getMutualModule().deleteMutualPost(openid, data)
 
       default:
         return { code: -1, msg: '未知操作: ' + action }

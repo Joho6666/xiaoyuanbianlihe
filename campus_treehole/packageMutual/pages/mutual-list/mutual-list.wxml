@@ -1,0 +1,142 @@
+<!-- packageMutual/pages/mutual-list/mutual-list.wxml - 校园互助与失物招领 -->
+<view class="mutual-container">
+  <!-- 顶部双通道分段切换 -->
+  <view class="top-nav-bar">
+    <view class="segmented-control">
+      <view
+        class="seg-item {{activeTab === 'help' ? 'seg-item-active' : ''}}"
+        data-tab="help"
+        bindtap="onSwitchTab"
+      >
+        <text class="seg-title">校园互助生活</text>
+      </view>
+      <view
+        class="seg-item {{activeTab === 'lost' ? 'seg-item-active' : ''}}"
+        data-tab="lost"
+        bindtap="onSwitchTab"
+      >
+        <text class="seg-title">失物招领中心</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 失物招领子筛选 (全部 / 寻物 / 招领) -->
+  <view class="sub-tab-bar" wx:if="{{activeTab === 'lost'}}">
+    <view class="sub-tab {{lostSubTab === 'all' ? 'sub-tab-active' : ''}}" data-sub="all" bindtap="onSwitchLostSubTab">全部</view>
+    <view class="sub-tab {{lostSubTab === 'lost' ? 'sub-tab-active' : ''}}" data-sub="lost" bindtap="onSwitchLostSubTab">寻物启事</view>
+    <view class="sub-tab {{lostSubTab === 'found' ? 'sub-tab-active' : ''}}" data-sub="found" bindtap="onSwitchLostSubTab">失物招领</view>
+  </view>
+
+  <!-- 分类水平滚动 -->
+  <scroll-view class="cat-scroll" scroll-x enable-flex show-scrollbar="{{false}}">
+    <block wx:if="{{activeTab === 'help'}}">
+      <view
+        wx:for="{{helpCategories}}"
+        wx:key="id"
+        class="cat-chip {{selectedCategory === item.id ? 'cat-chip-active' : ''}}"
+        data-id="{{item.id}}"
+        bindtap="onSelectCategory"
+      >
+        <text>{{item.name}}</text>
+      </view>
+    </block>
+    <block wx:else>
+      <view
+        wx:for="{{lostCategories}}"
+        wx:key="id"
+        class="cat-chip {{selectedCategory === item.id ? 'cat-chip-active' : ''}}"
+        data-id="{{item.id}}"
+        bindtap="onSelectCategory"
+      >
+        <text>{{item.name}}</text>
+      </view>
+    </block>
+  </scroll-view>
+
+  <!-- 条目列表 -->
+  <view class="post-list">
+    <!-- 互助卡片 -->
+    <block wx:if="{{activeTab === 'help'}}">
+      <view
+        wx:for="{{posts}}"
+        wx:key="_id"
+        class="help-card"
+        data-id="{{item._id}}"
+        bindtap="goToDetail"
+      >
+        <view class="card-header">
+          <view class="header-tags">
+            <text class="help-type-tag">互助求助</text>
+            <text class="reward-tag" wx:if="{{item.reward}}">赏：{{item.reward}}</text>
+          </view>
+          <text class="status-badge status-{{item.status}}">
+            <text wx:if="{{item.status === 'open'}}">待解决</text>
+            <text wx:elif="{{item.status === 'in_progress'}}">进行中</text>
+            <text wx:else>已解决</text>
+          </text>
+        </view>
+
+        <view class="card-title">{{item.title}}</view>
+        <view class="card-content">{{item.content}}</view>
+
+        <view class="card-meta" wx:if="{{item.location}}">
+          <text class="meta-icon">📍</text>
+          <text class="meta-location">{{item.location}}</text>
+        </view>
+
+        <view class="card-footer">
+          <view class="user-box">
+            <image class="avatar" src="{{item.author.avatarUrl || '/images/avatar_default.png'}}" mode="aspectFill" />
+            <text class="username">{{item.author.nickName || '同学'}}</text>
+          </view>
+          <view class="time-text">{{item.timeDisplay}}</view>
+        </view>
+      </view>
+    </block>
+
+    <!-- 失物招领卡片 -->
+    <block wx:else>
+      <view
+        wx:for="{{posts}}"
+        wx:key="_id"
+        class="lost-card"
+        data-id="{{item._id}}"
+        bindtap="goToDetail"
+      >
+        <image class="lost-thumb" wx:if="{{item.images && item.images.length > 0}}" src="{{item.images[0]}}" mode="aspectFill" />
+        <view class="lost-body">
+          <view class="card-header">
+            <text class="lost-type-tag type-{{item.type}}">{{item.type === 'lost' ? '寻物启事' : '失物招领'}}</text>
+            <text class="status-badge status-{{item.status}}">
+              <text wx:if="{{item.status === 'open'}}">待认领/寻找</text>
+              <text wx:else>已寻回/归还</text>
+            </text>
+          </view>
+          <view class="card-title">{{item.title}}</view>
+          <view class="card-meta" wx:if="{{item.location}}">
+            <text class="meta-location">地点：{{item.location}}</text>
+          </view>
+          <view class="card-footer">
+            <text class="username">{{item.author.nickName || '同学'}}</text>
+            <text class="time-text">{{item.timeDisplay}}</text>
+          </view>
+        </view>
+      </view>
+    </block>
+
+    <!-- 空状态 -->
+    <view class="empty-state" wx:if="{{!loading && posts.length === 0}}">
+      <text class="empty-text">当前暂无信息</text>
+      <button class="empty-btn" bindtap="goToCreate">发布第一条信息</button>
+    </view>
+
+    <!-- 加载指示 -->
+    <view class="loading-bar" wx:if="{{loading}}">加载中...</view>
+  </view>
+
+  <!-- 悬浮发布按钮 -->
+  <view class="fab-btn" bindtap="goToCreate">
+    <text class="fab-plus">+</text>
+    <text class="fab-text">发布</text>
+  </view>
+</view>

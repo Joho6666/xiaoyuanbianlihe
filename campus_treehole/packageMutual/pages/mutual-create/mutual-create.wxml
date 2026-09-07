@@ -1,0 +1,112 @@
+<!-- packageMutual/pages/mutual-create/mutual-create.wxml - 发布互助或寻物 -->
+<view class="create-container">
+  <view class="form-card">
+    <view class="group-label">发布类型</view>
+    <radio-group class="type-radio-group" bindchange="onTypeChange">
+      <label class="radio-pill {{type === 'help' ? 'pill-active' : ''}}">
+        <radio value="help" checked="{{type === 'help'}}" /> 校园互助 (跑腿/答疑/借物)
+      </label>
+      <label class="radio-pill {{type === 'lost' ? 'pill-active' : ''}}">
+        <radio value="lost" checked="{{type === 'lost'}}" /> 寻物启事 (丢失求助)
+      </label>
+      <label class="radio-pill {{type === 'found' ? 'pill-active' : ''}}">
+        <radio value="found" checked="{{type === 'found'}}" /> 失物招领 (拾得物品)
+      </label>
+    </radio-group>
+  </view>
+
+  <view class="form-card">
+    <view class="group-label">所属分类</view>
+    <view class="cat-grid" wx:if="{{type === 'help'}}">
+      <view
+        wx:for="{{helpCategories}}"
+        wx:key="id"
+        class="cat-chip {{category === item.id ? 'cat-chip-active' : ''}}"
+        data-id="{{item.id}}"
+        bindtap="onSelectCategory"
+      >
+        <text>{{item.name}}</text>
+      </view>
+    </view>
+    <view class="cat-grid" wx:else>
+      <view
+        wx:for="{{lostCategories}}"
+        wx:key="id"
+        class="cat-chip {{category === item.id ? 'cat-chip-active' : ''}}"
+        data-id="{{item.id}}"
+        bindtap="onSelectCategory"
+      >
+        <text>{{item.name}}</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="form-card">
+    <view class="form-group">
+      <view class="group-label">标题 *</view>
+      <input
+        class="input-control"
+        placeholder="{{type === 'help' ? '例如：南苑求帮带份烤肉拌饭，送至4栋' : '例如：在2教301遗落黑色AirPods充电仓'}}"
+        placeholder-class="placeholder-text"
+        value="{{title}}"
+        bindinput="onTitleInput"
+        maxlength="40"
+      />
+    </view>
+
+    <view class="form-group" wx:if="{{type === 'help'}}">
+      <view class="group-label">报酬或心意赏金</view>
+      <input
+        class="input-control"
+        placeholder="例如：5元红包 / 请喝一杯蜜雪冰城"
+        placeholder-class="placeholder-text"
+        value="{{reward}}"
+        bindinput="onRewardInput"
+        maxlength="30"
+      />
+    </view>
+
+    <view class="form-group">
+      <view class="group-label">相关地点</view>
+      <input
+        class="input-control"
+        placeholder="例如：花江校区 / 食堂一楼 / 崇文楼302"
+        placeholder-class="placeholder-text"
+        value="{{location}}"
+        bindinput="onLocationInput"
+        maxlength="30"
+      />
+    </view>
+
+    <view class="form-group">
+      <view class="group-label">详细情况说明 *</view>
+      <textarea
+        class="textarea-control"
+        placeholder="详细描述物品特征、遗失拾得具体时间或互助诉求与约定..."
+        placeholder-class="placeholder-text"
+        value="{{content}}"
+        bindinput="onContentInput"
+        maxlength="300"
+      />
+    </view>
+
+    <!-- 图片上传 -->
+    <view class="form-group">
+      <view class="group-label">现场照片 / 物品参考图 (最多4张)</view>
+      <view class="image-uploader">
+        <view class="preview-item" wx:for="{{images}}" wx:key="*this">
+          <image class="preview-img" src="{{item}}" mode="aspectFill" />
+          <view class="del-badge" data-index="{{index}}" bindtap="onDeleteImage">✕</view>
+        </view>
+        <view class="add-box" wx:if="{{images.length < 4}}" bindtap="onChooseImages">
+          <text class="add-plus">+</text>
+          <text class="add-tip">上传图片</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <view class="submit-bar">
+    <button class="submit-btn" disabled="{{submitting}}" bindtap="onSubmit">立即发布</button>
+  </view>
+</view>

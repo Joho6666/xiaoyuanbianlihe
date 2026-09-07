@@ -88,44 +88,26 @@ Page({
     })
   },
 
-  // 4. 打开同频找搭子预告与功能预览
+  // 4. 打开同频找搭子广场
   onOpenTongpin() {
-    this.setData({
-      showModal: true,
-      modalData: {
-        title: '同频 · 校园找搭子',
-        badgeText: '核心并网中',
-        badgeClass: 'tag-upcoming',
-        description: 'Tongpin 同频搭子系统正在全量合并入校园便利盒。未来你将无需下载单独 App，即可在此一键组局与找搭子。',
-        features: [
-          '全场景分类：羽毛球/网球运动、图书馆自习、食堂干饭、周末拼车出游',
-          '严格 5 态成局机制：招募中、满员锁定、线下出发、履约结束、互相评价',
-          '校园真实信誉体系：防止放鸽子，建立真实可信的同学圈子'
-        ],
-        isUniBridge: false
+    wx.navigateTo({
+      url: '/packageBuddy/pages/buddy-square/buddy-square',
+      fail: (err) => {
+        console.error('打开搭子广场失败:', err)
+        wx.showToast({ title: '无法打开搭子广场', icon: 'none' })
       }
     })
-    this.toggleTabBar(false)
   },
 
-  // 5. 打开友桥 UniBridge 预告与功能预览
+  // 5. 打开友桥 UniBridge 语伴主页
   onOpenUniBridge() {
-    this.setData({
-      showModal: true,
-      modalData: {
-        title: '友桥 UniBridge · 跨文化伙伴',
-        badgeText: '中英双语',
-        badgeClass: 'tag-bilingual',
-        description: 'UniBridge 友桥频道为中国学生与在华留学生提供纯粹、安全、双向的语言交换与文化交流空间。',
-        features: [
-          '中英文全界面无缝切换（支持留学生英文原生入驻）',
-          '按母语与学习目标精准匹配：如“母语英语学中文 ⇄ 母语中文学英语”',
-          '定期 English Corner、跨文化工作坊与线下语言咖啡角'
-        ],
-        isUniBridge: true
+    wx.navigateTo({
+      url: '/packageBridge/pages/bridge-home/bridge-home',
+      fail: (err) => {
+        console.error('打开友桥失败:', err)
+        wx.showToast({ title: '无法打开友桥主页', icon: 'none' })
       }
     })
-    this.toggleTabBar(false)
   },
 
   toggleTabBar(visible) {
@@ -142,13 +124,17 @@ Page({
     this.setData({ currentLang: next })
   },
 
-  // 快速提示（互助、失物招领）
+  // 校园互助与失物招领通道
   onShowQuickTip(e) {
     const type = e.currentTarget.dataset.type
     if (type === 'help') {
-      wx.showToast({ title: '校园互助通道筹备中', icon: 'none' })
+      wx.navigateTo({
+        url: '/packageMutual/pages/mutual-list/mutual-list?type=help'
+      })
     } else if (type === 'lost') {
-      wx.showToast({ title: '失物招领通道筹备中', icon: 'none' })
+      wx.navigateTo({
+        url: '/packageMutual/pages/mutual-list/mutual-list?type=lost'
+      })
     }
   },
 

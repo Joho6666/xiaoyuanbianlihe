@@ -1,0 +1,69 @@
+<!-- packageMutual/pages/mutual-detail/mutual-detail.wxml - 互助与失物详情 -->
+<view class="detail-container" wx:if="{{!loading && post}}">
+  <!-- 状态横幅 -->
+  <view class="status-banner status-{{post.status}}">
+    <text class="status-title" wx:if="{{post.status === 'open'}}">
+      {{post.type === 'help' ? '正在寻求校园互助' : (post.type === 'lost' ? '寻物启事 · 正在寻找' : '失物招领 · 待认领')}}
+    </text>
+    <text class="status-title" wx:elif="{{post.status === 'in_progress'}}">
+      进行中 · 已有同学正在响应
+    </text>
+    <text class="status-title" wx:else>
+      已顺利解决 / 已寻回归还
+    </text>
+    <text class="status-date">发布于 {{post.timeDisplay}}</text>
+  </view>
+
+  <!-- 主体卡片 -->
+  <view class="card main-card">
+    <view class="tag-row">
+      <text class="type-tag">{{post.type === 'help' ? '校园互助' : (post.type === 'lost' ? '寻物启事' : '失物招领')}}</text>
+      <text class="cat-tag">{{post.category}}</text>
+      <text class="reward-tag" wx:if="{{post.reward}}">赏金：{{post.reward}}</text>
+    </view>
+
+    <view class="post-title">{{post.title}}</view>
+    <view class="post-content">{{post.content}}</view>
+
+    <!-- 图片网格 -->
+    <view class="image-grid" wx:if="{{post.images && post.images.length > 0}}">
+      <image
+        wx:for="{{post.images}}"
+        wx:key="*this"
+        class="post-img"
+        src="{{item}}"
+        mode="aspectFill"
+        data-url="{{item}}"
+        bindtap="previewImage"
+      />
+    </view>
+
+    <view class="location-box" wx:if="{{post.location}}">
+      <text class="loc-label">📍 地点：</text>
+      <text class="loc-val">{{post.location}}</text>
+    </view>
+  </view>
+
+  <!-- 发布者卡片 -->
+  <view class="card author-card">
+    <view class="author-row">
+      <image class="avatar" src="{{post.author.avatarUrl || '/images/avatar_default.png'}}" mode="aspectFill" />
+      <view class="author-info">
+        <text class="nickname">{{post.author.nickName || '同学'}}</text>
+        <text class="auth-tag">实名认证同学</text>
+      </view>
+      <button class="chat-btn" wx:if="{{!post.isAuthor}}" bindtap="contactAuthor">在线联系</button>
+    </view>
+  </view>
+
+  <!-- 底部操作栏 -->
+  <view class="bottom-bar" wx:if="{{post.isAuthor}}">
+    <button class="btn btn-secondary" wx:if="{{post.status === 'open'}}" bindtap="onMarkResolved">标记已解决</button>
+    <button class="btn btn-danger" bindtap="onDelete">删除信息</button>
+  </view>
+  <view class="bottom-bar" wx:else>
+    <button class="btn btn-primary" bindtap="contactAuthor">
+      {{post.type === 'help' ? '我来帮忙 · 私信TA' : (post.type === 'lost' ? '我捡到了 · 联系失主' : '是我遗失的 · 认领联系')}}
+    </button>
+  </view>
+</view>

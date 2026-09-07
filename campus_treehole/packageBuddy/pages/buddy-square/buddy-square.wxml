@@ -1,0 +1,100 @@
+<!-- packageBuddy/pages/buddy-square/buddy-square.wxml - 同频搭子广场 -->
+<view class="square-container">
+  <!-- 顶栏搜索 -->
+  <view class="search-header">
+    <view class="search-box">
+      <icon type="search" size="16" color="#747c81" />
+      <input
+        class="search-input"
+        placeholder="搜索搭子（羽毛球、自习、拼车...）"
+        placeholder-class="search-placeholder"
+        value="{{keyword}}"
+        bindinput="onSearchInput"
+        bindconfirm="onSearchConfirm"
+        confirm-type="search"
+      />
+    </view>
+    <view class="status-tabs">
+      <view class="status-tab {{statusFilter === 'OPEN' ? 'status-tab-active' : ''}}" data-status="OPEN" bindtap="onToggleStatus">招募中</view>
+      <view class="status-tab {{statusFilter === 'all' ? 'status-tab-active' : ''}}" data-status="all" bindtap="onToggleStatus">全部</view>
+    </view>
+  </view>
+
+  <!-- 分类水平滚动栏 -->
+  <scroll-view class="category-scroll" scroll-x enable-flex show-scrollbar="{{false}}">
+    <view
+      wx:for="{{categories}}"
+      wx:key="id"
+      class="cat-chip {{currentCategory === item.id ? 'cat-chip-active' : ''}}"
+      data-id="{{item.id}}"
+      bindtap="onSelectCategory"
+    >
+      <text class="cat-name">{{item.name}}</text>
+    </view>
+  </scroll-view>
+
+  <!-- 搭子卡片列表 -->
+  <view class="card-list">
+    <view
+      wx:for="{{posts}}"
+      wx:key="_id"
+      class="buddy-card"
+      data-id="{{item._id}}"
+      bindtap="goToDetail"
+    >
+      <view class="card-top">
+        <view class="tag-row">
+          <text class="cat-badge">{{item.category}}</text>
+          <text class="gender-badge" wx:if="{{item.genderRequirement === 'female_only'}}">仅限女生</text>
+          <text class="gender-badge" wx:elif="{{item.genderRequirement === 'male_only'}}">仅限男生</text>
+        </view>
+        <view class="status-indicator status-{{item.status}}">
+          <text wx:if="{{item.status === 'OPEN'}}">招募中</text>
+          <text wx:elif="{{item.status === 'FULL'}}">已满员</text>
+          <text wx:elif="{{item.status === 'FINISHED'}}">已结束</text>
+          <text wx:else>已关闭</text>
+        </view>
+      </view>
+
+      <view class="card-title">{{item.title}}</view>
+
+      <view class="card-meta">
+        <view class="meta-row">
+          <text class="meta-label">时间：</text>
+          <text class="meta-val">{{item.timeDisplay}}</text>
+        </view>
+        <view class="meta-row" wx:if="{{item.location}}">
+          <text class="meta-label">地点：</text>
+          <text class="meta-val">{{item.location}}</text>
+        </view>
+      </view>
+
+      <view class="card-bottom">
+        <view class="author-info">
+          <image class="author-avatar" src="{{item.author.avatarUrl || '/images/avatar_default.png'}}" mode="aspectFill" />
+          <text class="author-name">{{item.author.nickName || '发起人'}}</text>
+        </view>
+        <view class="headcount-box">
+          <text class="headcount-now">{{item.acceptedCount || 1}}</text>
+          <text class="headcount-slash">/</text>
+          <text class="headcount-max">{{item.maxPeople}}人</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 空状态 -->
+    <view class="empty-state" wx:if="{{!loading && posts.length === 0}}">
+      <text class="empty-text">当前分类下暂无搭子活动</text>
+      <button class="empty-btn" bindtap="goToCreate">发起第一个组局</button>
+    </view>
+
+    <!-- 加载指示 -->
+    <view class="loading-bar" wx:if="{{loading}}">加载中...</view>
+  </view>
+
+  <!-- 悬浮发起按钮 -->
+  <view class="fab-btn" bindtap="goToCreate">
+    <text class="fab-plus">+</text>
+    <text class="fab-text">组局</text>
+  </view>
+</view>

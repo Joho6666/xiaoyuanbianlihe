@@ -15,6 +15,9 @@ const TARGET_DIRS = [
   path.join(__dirname, '..', 'campus_treehole', 'pages'),
   path.join(__dirname, '..', 'campus_treehole', 'packageMarket'),
   path.join(__dirname, '..', 'campus_treehole', 'packageEvents'),
+  path.join(__dirname, '..', 'campus_treehole', 'packageBuddy'),
+  path.join(__dirname, '..', 'campus_treehole', 'packageBridge'),
+  path.join(__dirname, '..', 'campus_treehole', 'packageMutual'),
   path.join(__dirname, '..', 'campus_treehole', 'cloudfunctions')
 ]
 

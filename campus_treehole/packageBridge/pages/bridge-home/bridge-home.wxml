@@ -1,0 +1,102 @@
+<!-- packageBridge/pages/bridge-home/bridge-home.wxml - 友桥语伴广场 -->
+<view class="bridge-container">
+  <!-- 顶栏与中英切换 -->
+  <view class="top-nav">
+    <view class="nav-brand">
+      <text class="brand-title">UniBridge 友桥</text>
+      <text class="brand-sub">{{currentLang === 'zh-CN' ? '在校园连接世界' : 'Meet the world on campus'}}</text>
+    </view>
+    <view class="locale-toggle" bindtap="toggleLocale">
+      <text class="{{currentLang === 'zh-CN' ? 'locale-active' : 'locale-btn'}}">中</text>
+      <text class="{{currentLang === 'en-US' ? 'locale-active' : 'locale-btn'}}">EN</text>
+    </view>
+  </view>
+
+  <!-- 英语角 / 线下交流公告横幅 -->
+  <view class="notice-banner">
+    <view class="banner-badge">ENGLISH CORNER</view>
+    <view class="banner-title">{{currentLang === 'zh-CN' ? '每周三晚 19:00 校园语言角活动' : 'Every Wednesday 7PM Campus English Corner'}}</view>
+    <view class="banner-meta">{{currentLang === 'zh-CN' ? '桂航大学生活动中心二楼 · 欢迎自由入席' : 'Student Activity Center 2F · Free Admission'}}</view>
+  </view>
+
+  <!-- 引导设置个人语言档案 -->
+  <view class="profile-cta-card" bindtap="goToSetupProfile">
+    <view class="cta-left">
+      <view class="cta-title">{{currentLang === 'zh-CN' ? '设置我的双语档案' : 'Setup Bilingual Profile'}}</view>
+      <view class="cta-sub">{{currentLang === 'zh-CN' ? '选择母语与想学语言，开启互补语伴匹配' : 'Select native & target languages for 100% mutual match'}}</view>
+    </view>
+    <view class="cta-btn">{{currentLang === 'zh-CN' ? '去配置' : 'Setup'}}</view>
+  </view>
+
+  <!-- 身份筛选标签 -->
+  <view class="type-filter-bar">
+    <view
+      wx:for="{{studentTypes}}"
+      wx:key="id"
+      class="type-tab {{selectedType === item.id ? 'type-tab-active' : ''}}"
+      data-id="{{item.id}}"
+      bindtap="onSelectType"
+    >
+      <text>{{currentLang === 'zh-CN' ? item.nameZh : item.nameEn}}</text>
+    </view>
+  </view>
+
+  <!-- 语伴卡片流 -->
+  <view class="partner-list">
+    <view
+      wx:for="{{partners}}"
+      wx:key="id"
+      class="partner-card"
+      data-id="{{item.id}}"
+      bindtap="goToPartnerDetail"
+    >
+      <!-- 互补匹配醒目标记 -->
+      <view class="match-ribbon" wx:if="{{item.isMatch}}">
+        <text class="ribbon-text">{{currentLang === 'zh-CN' ? '互补语伴 · 100% 匹配' : '100% Mutual Match'}}</text>
+      </view>
+
+      <view class="card-main">
+        <image class="partner-avatar" src="{{item.avatarUrl || '/images/avatar_default.png'}}" mode="aspectFill" />
+        <view class="partner-body">
+          <view class="name-row">
+            <text class="partner-name">{{item.nickName || '语伴同学'}}</text>
+            <text class="country-badge" wx:if="{{item.languageProfile.country}}">{{item.languageProfile.country}}</text>
+            <text class="identity-badge" wx:if="{{item.languageProfile.studentType === 'internationalStudent'}}">留学生</text>
+          </view>
+
+          <!-- 语言技能标签 -->
+          <view class="lang-tags-box">
+            <view class="lang-line">
+              <text class="lang-role">{{currentLang === 'zh-CN' ? '母语/精通：' : 'Speaks:'}}</text>
+              <view class="lang-chips">
+                <text class="chip-native" wx:for="{{item.languageProfile.nativeLanguages}}" wx:key="*this" wx:for-item="code">{{code}}</text>
+              </view>
+            </view>
+            <view class="lang-line">
+              <text class="lang-role">{{currentLang === 'zh-CN' ? '正在学习：' : 'Learning:'}}</text>
+              <view class="lang-chips">
+                <text class="chip-learning" wx:for="{{item.languageProfile.targetLanguages}}" wx:key="*this" wx:for-item="code">{{code}}</text>
+              </view>
+            </view>
+          </view>
+
+          <!-- 自我介绍摘要 -->
+          <view class="partner-bio" wx:if="{{item.languageProfile.bio}}">{{item.languageProfile.bio}}</view>
+        </view>
+      </view>
+
+      <view class="card-footer">
+        <text class="exchange-mode" wx:if="{{item.languageProfile.exchangeMode === 'offline'}}">线下交流 · In-person</text>
+        <text class="exchange-mode" wx:elif="{{item.languageProfile.exchangeMode === 'online'}}">线上语音 · Online</text>
+        <text class="exchange-mode" wx:else>灵活多模态 · Hybrid</text>
+        <button class="connect-btn">{{currentLang === 'zh-CN' ? '打招呼' : 'Connect'}}</button>
+      </view>
+    </view>
+
+    <!-- 加载中 -->
+    <view class="loading-bar" wx:if="{{loading}}">Loading partners...</view>
+    <view class="empty-state" wx:if="{{!loading && partners.length === 0}}">
+      <text class="empty-text">{{currentLang === 'zh-CN' ? '暂未找到符合条件的语伴' : 'No partners found'}}</text>
+    </view>
+  </view>
+</view>
