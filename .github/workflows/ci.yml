@@ -1,0 +1,37 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+      - 'refactor/**'
+      - 'feat/**'
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  validate-and-test:
+    name: Validate, Lint & Test
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      - name: Validate Mini Program Configuration & Routing
+        run: node scripts/validate-config.js
+
+      - name: Lint JavaScript Syntax Across Codebase
+        run: node scripts/lint.js
+
+      - name: Run Domain & Cloud Function Test Suite
+        run: node scripts/run-tests.js
