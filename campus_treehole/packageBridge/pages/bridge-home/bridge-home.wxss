@@ -284,3 +284,8 @@
   color: #abb3b9;
   font-size: 24rpx;
 }
+
+.empty-icon { font-size: 72rpx; margin-bottom: 16rpx; }
+.empty-title { font-size: 30rpx; font-weight: 700; color: #334155; margin-bottom: 10rpx; }
+.empty-sub { font-size: 24rpx; color: #94a3b8; margin-bottom: 30rpx; }
+.empty-btn { background: #426089; color: #ffffff; font-size: 28rpx; font-weight: 700; border-radius: 999rpx; padding: 0 48rpx; height: 74rpx; line-height: 74rpx; }

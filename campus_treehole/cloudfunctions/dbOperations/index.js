@@ -141,7 +141,24 @@ function getBuddiesModule() {
 }
 
 const createBridgeModule = require('./modules/bridge')
+const createCampusNowModule = require('./modules/campus-now')
 let bridgeModuleInstance = null
+function getCampusNowModule() {
+  if (!_campusNowModule) {
+    _campusNowModule = createCampusNowModule({
+      db,
+      _,
+      cloud,
+      helpers: {
+        resolveCampusIdForRead,
+        campusWhereClause: (cid) => sharedCampusWhereClause(_, cid),
+        DEFAULT_CAMPUS_ID
+      }
+    })
+  }
+  return _campusNowModule
+}
+
 function getBridgeModule() {
   if (!bridgeModuleInstance) {
     bridgeModuleInstance = createBridgeModule({
@@ -332,7 +349,8 @@ const PUBLIC_READ_ACTIONS = new Set([
   'getMutualPosts',
   'getMutualPostById',
   'getAnnouncementList',
-  'getActivityZone'
+  'getActivityZone',
+  'getCampusNowSummary'
 ])
 
 async function checkAdmin(openid) {
@@ -812,6 +830,10 @@ exports.main = async (event, context) => {
         return await getBuddiesModule().updateBuddyPostStatus(openid, data)
       case 'getUserBuddyPosts':
         return await getBuddiesModule().getUserBuddyPosts(openid, data)
+
+      // ===== 校园此刻轻量聚合相关 (modules/campus-now.js) =====
+      case 'getCampusNowSummary':
+        return await getCampusNowModule().getCampusNowSummary({ ...data, currentOpenid: openid })
 
       // ===== 友桥语伴相关 (modules/bridge.js) =====
       case 'getLanguagePartners':

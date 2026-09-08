@@ -337,3 +337,36 @@
 .footer-btn:active {
   opacity: 0.88;
 }
+
+/* 更多设置折叠卡片 */
+.sub-activity-row {
+  margin-top: 24rpx;
+  padding-top: 20rpx;
+  border-top: 1rpx solid #f1f5f9;
+}
+.sub-label {
+  font-size: 24rpx;
+  color: #64748b;
+  margin-bottom: 12rpx;
+  display: block;
+}
+.optional-toggle {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8rpx 0;
+}
+.optional-title {
+  font-size: 26rpx;
+  color: #64748b;
+  font-weight: 600;
+}
+.optional-arrow {
+  font-size: 22rpx;
+  color: #94a3b8;
+}
+.optional-body {
+  margin-top: 20rpx;
+  padding-top: 20rpx;
+  border-top: 1rpx solid #f1f5f9;
+}

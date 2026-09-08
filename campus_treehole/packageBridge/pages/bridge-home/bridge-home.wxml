@@ -96,7 +96,10 @@
     <!-- 加载中 -->
     <view class="loading-bar" wx:if="{{loading}}">Loading partners...</view>
     <view class="empty-state" wx:if="{{!loading && partners.length === 0}}">
-      <text class="empty-text">{{currentLang === 'zh-CN' ? '暂未找到符合条件的语伴' : 'No partners found'}}</text>
+      <view class="empty-icon">🌍</view>
+      <text class="empty-title">暂时还没有匹配你的语伴</text>
+      <text class="empty-sub">完善语言资料，让更多同学发现你</text>
+      <button class="empty-btn" bindtap="goToSetupProfile">去完善</button>
     </view>
   </view>
 </view>

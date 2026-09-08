@@ -91,7 +91,23 @@ function createBuddiesModule({ db, _, cloud, helpers }) {
         interests: (currentUser && currentUser.interests) || []
       }
 
-      const list = (res.data || []).map((post) => {
+      const list = []
+      for (const post of res.data || []) {
+        const deadline = getBuddyDeadline(post)
+        const isPastDeadline = deadline && now >= deadline
+        if (isPastDeadline) {
+          const nextStatus = post.status === 'OPEN' ? 'EXPIRED' : (post.status === 'FULL' ? 'FINISHED' : post.status)
+          if (post.status !== nextStatus) {
+            post.status = nextStatus
+            db.collection('buddy_posts').doc(post._id).update({
+              data: { status: nextStatus, updateTime: db.serverDate() }
+            }).catch(() => {})
+          }
+          if (!status || status === 'OPEN') {
+            continue
+          }
+        }
+        const postItem = (() => {
         const startMs = post.startAt ? new Date(post.startAt).getTime() : now
         const diffHours = (startMs - now) / (1000 * 3600)
         let urgencyBadge = ''
@@ -109,9 +125,10 @@ function createBuddiesModule({ db, _, cloud, helpers }) {
         const recommendScore = computeBuddyRecommendScore(post, userContext)
 
         // 屏蔽作者内部 openid，向客户端输出安全 authorId
-        const authorId = post.authorId || post._openid || ''
+        const rawAuthorId = post.authorId || post._openid || ''
+        const safeAuthorId = rawAuthorId ? (isValidInternalUserId(rawAuthorId) ? rawAuthorId : deriveDeterministicUserId(rawAuthorId)) : ''
         const authorSafe = {
-          authorId,
+          authorId: safeAuthorId,
           nickName: (post.author && post.author.nickName) || '同学',
           avatarUrl: (post.author && post.author.avatarUrl) || '/images/avatar_default.png',
           gender: (post.author && post.author.gender) || 0
@@ -119,14 +136,16 @@ function createBuddiesModule({ db, _, cloud, helpers }) {
 
         return {
           ...publicBuddyPost(post),
-          authorId: post.userId || deriveDeterministicUserId(authorId),
+          authorId: post.userId || safeAuthorId,
           author: authorSafe,
           remainPeople,
           isFull: acceptedCount >= maxPeople,
           urgencyBadge,
           recommendScore
         }
-      })
+        })()
+        list.push(postItem)
+      }
 
       // 综合推荐排序（推荐高分优先）
       list.sort((a, b) => (b.recommendScore || 0) - (a.recommendScore || 0))
@@ -150,6 +169,17 @@ function createBuddiesModule({ db, _, cloud, helpers }) {
       const postRes = await db.collection('buddy_posts').doc(id).get()
       const post = (postRes && postRes.data) || null
       if (!post) return { code: -1, msg: '搭子组局不存在' }
+
+      const deadline = getBuddyDeadline(post)
+      if (deadline && Date.now() >= deadline) {
+        const nextStatus = post.status === 'OPEN' ? 'EXPIRED' : (post.status === 'FULL' ? 'FINISHED' : post.status)
+        if (post.status !== nextStatus) {
+          post.status = nextStatus
+          db.collection('buddy_posts').doc(id).update({
+            data: { status: nextStatus, updateTime: db.serverDate() }
+          }).catch(() => {})
+        }
+      }
 
       // 获取已通过的成员列表
       let acceptedMembers = []

@@ -2,6 +2,18 @@
 const app = getApp()
 const { BUDDY_CATEGORIES } = require('../../../utils/domain/buddy')
 
+const SUB_ACTIVITIES = {
+  sport: ['羽毛球', '篮球', '夜跑', '乒乓球', '健身', '台球'],
+  meal: ['食堂拼饭', '麻辣烫', '火锅烤肉', '奶茶探店', '校外小吃'],
+  study: ['图书馆自习', '高数刷题', '期末复习', '四六级备考', '考研互勉'],
+  game: ['王者荣耀', '无畏契约', '金铲铲', '英雄联盟', 'Steam联机'],
+  travel: ['两江四湖骑行', '阳朔一日游', '周末露营', '周边短途徒步'],
+  citywalk: ['老街巷漫步', '漓江边吹风', '正阳步行街', '小众路线探索'],
+  movie: ['院线新片', '经典高分片', '草坪露天电影', '周末电影院'],
+  photo: ['校园人像互拍', '日落胶片摄影', '复古红楼采风', '摄影小白互练'],
+  custom: ['做点有趣的事', '同城周末拼车', '吉他乐器弹唱', '顺路代取快递']
+}
+
 const TITLE_SUGGESTIONS = {
   meal: [
     '今晚食堂二楼有人一起吃吗？',
@@ -121,7 +133,11 @@ Page({
     categories: BUDDY_CATEGORIES,
     category: 'sport',
     titleSuggestions: TITLE_SUGGESTIONS.sport,
-    title: '今晚体育馆羽毛球缺1人双打',
+    subActivities: SUB_ACTIVITIES.sport,
+    selectedSubActivity: '羽毛球',
+    userEditedTitle: false,
+    showMoreSettings: false,
+    title: '今晚体育馆羽毛球还差3人',
     description: '',
 
     // Step 2
@@ -164,6 +180,30 @@ Page({
     this.updatePreview()
   },
 
+
+  autoUpdateTitle() {
+    if (this.data.userEditedTitle) return
+    const whenObj = WHEN_PRESETS.find((w) => w.id === this.data.selectedWhen)
+    const timePrefix = (whenObj && whenObj.label !== '自定义') ? whenObj.label : ''
+    const place = this.data.location || '校内'
+    const act = this.data.selectedSubActivity || ''
+    const remain = Math.max(1, (this.data.maxPeople || 2) - 1)
+    const autoTitle = `${timePrefix}${place}${act}还差${remain}人`
+    this.setData({ title: autoTitle })
+  },
+
+  onSelectSubActivity(e) {
+    const act = e.currentTarget.dataset.act
+    this.setData({ selectedSubActivity: act }, () => {
+      this.autoUpdateTitle()
+      this.updatePreview()
+    })
+  },
+
+  onToggleMoreSettings() {
+    this.setData({ showMoreSettings: !this.data.showMoreSettings })
+  },
+
   updatePreview() {
     let timeLabel = ''
     if (this.data.selectedWhen === 'now') timeLabel = '15分钟内马上开始'
@@ -183,21 +223,26 @@ Page({
   onSelectCategory(e) {
     const cat = e.currentTarget.dataset.id
     const suggestions = TITLE_SUGGESTIONS[cat] || TITLE_SUGGESTIONS.custom
+    const subList = SUB_ACTIVITIES[cat] || SUB_ACTIVITIES.custom
+    const defSub = subList[0] || ''
     this.setData({
       category: cat,
       titleSuggestions: suggestions,
-      title: suggestions[0] || this.data.title
+      subActivities: subList,
+      selectedSubActivity: defSub
+    }, () => {
+      this.autoUpdateTitle()
+      this.updatePreview()
     })
-    this.updatePreview()
   },
 
   onSelectSuggestion(e) {
     const text = e.currentTarget.dataset.text
-    this.setData({ title: text })
+    this.setData({ title: text, userEditedTitle: true })
   },
 
   onTitleInput(e) {
-    this.setData({ title: e.detail.value })
+    this.setData({ title: e.detail.value, userEditedTitle: true })
   },
 
   onDescInput(e) {
@@ -206,6 +251,7 @@ Page({
 
   onSelectWhenPreset(e) {
     this.setData({ selectedWhen: e.currentTarget.dataset.id }, () => {
+      this.autoUpdateTitle()
       this.updatePreview()
     })
   },
@@ -223,7 +269,10 @@ Page({
   },
 
   onSelectPlacePreset(e) {
-    this.setData({ location: e.currentTarget.dataset.place })
+    this.setData({ location: e.currentTarget.dataset.place }, () => {
+      this.autoUpdateTitle()
+      this.updatePreview()
+    })
   },
 
   onLocationInput(e) {
@@ -233,12 +282,14 @@ Page({
   onSelectPeopleQuick(e) {
     const val = Number(e.currentTarget.dataset.num)
     this.setData({ maxPeople: val }, () => {
+      this.autoUpdateTitle()
       this.updatePreview()
     })
   },
 
   onMaxPeopleChange(e) {
     this.setData({ maxPeople: Number(e.detail.value) }, () => {
+      this.autoUpdateTitle()
       this.updatePreview()
     })
   },

@@ -100,9 +100,9 @@
     <!-- 空状态 -->
     <view class="empty-state" wx:if="{{!loading && posts.length === 0}}">
       <view class="empty-icon">🏸</view>
-      <text class="empty-title">当前校区暂无搭子活动</text>
-      <text class="empty-sub">做第一个发起组局的人，30秒就能发布！</text>
-      <button class="empty-btn" bindtap="goToCreate">🚀 发起组局</button>
+      <text class="empty-title">今晚还没人约？</text>
+      <text class="empty-sub">做第一个发起组局的人，随时成局！</text>
+      <button class="empty-btn" bindtap="goToCreate">🚀 立即发起</button>
     </view>
 
     <!-- 加载指示 -->

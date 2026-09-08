@@ -138,6 +138,31 @@
     </view>
   </view>
 
+
+  <!-- 校园此刻 (轻量动态聚合区) -->
+  <view class="campus-now-card" wx:if="{{campusNowItems && campusNowItems.length > 0}}">
+    <view class="campus-now-head">
+      <view class="now-pulse-dot"></view>
+      <text class="now-head-title">校园此刻</text>
+      <text class="now-head-sub">实时发现搭子与动态</text>
+    </view>
+    <scroll-view class="campus-now-scroll" scroll-x enable-flex show-scrollbar="{{false}}">
+      <view
+        class="campus-now-item"
+        wx:for="{{campusNowItems}}"
+        wx:key="id"
+        bindtap="onTapCampusNowItem"
+        data-url="{{item.url}}"
+      >
+        <view class="now-item-top">
+          <text class="now-item-badge">{{item.emoji}} {{item.badge}}</text>
+          <text class="now-item-sub">{{item.sub}}</text>
+        </view>
+        <text class="now-item-title">{{item.title}}</text>
+      </view>
+    </scroll-view>
+  </view>
+
   <scroll-view class="category-scroll" scroll-x enable-flex show-scrollbar="{{false}}">
     <view class="category-track">
       <view

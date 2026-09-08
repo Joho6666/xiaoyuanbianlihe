@@ -139,7 +139,35 @@ Page({
     modalAnnouncement: null,
     showSubscribeGuideModal: false,
     subscribeGuideSubmitting: false,
-    subscribeGuideStep: 1
+    subscribeGuideStep: 1,
+    campusNowItems: []
+  },
+
+
+  async loadCampusNowSummary() {
+    if (!app.hasSelectedCampusInStorage()) return
+    try {
+      const campusId = app.getSelectedCampusId()
+      const res = await app.callDB('getCampusNowSummary', { campusId })
+      if (res && res.code === 0 && res.data) {
+        this.setData({
+          campusNowItems: res.data.items || []
+        })
+      }
+    } catch (e) {
+      this.setData({ campusNowItems: [] })
+    }
+  },
+
+  onTapCampusNowItem(e) {
+    const url = e.currentTarget.dataset.url
+    if (!url) return
+    wx.navigateTo({
+      url,
+      fail: () => {
+        wx.switchTab({ url })
+      }
+    })
   },
 
   onLoad(options) {
@@ -171,6 +199,8 @@ Page({
       this._syncCampusUiFromApp()
       this._maybeShowSubscribeGuideModal()
       this.loadLatestAnnouncement()
+      this.loadCampusNowSummary()
+      this.loadCampusNowSummary()
       this.loadPosts()
     })
   },

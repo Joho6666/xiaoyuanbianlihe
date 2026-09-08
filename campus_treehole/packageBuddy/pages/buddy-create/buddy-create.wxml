@@ -38,6 +38,20 @@
           <text class="cat-name">{{item.name}}</text>
         </view>
       </view>
+      <view class="sub-activity-row" wx:if="{{subActivities && subActivities.length}}">
+        <text class="sub-label">常见活动项目 (点选即选)：</text>
+        <view class="chips-flex">
+          <view
+            wx:for="{{subActivities}}"
+            wx:key="*this"
+            class="preset-chip {{selectedSubActivity === item ? 'preset-chip-active' : ''}}"
+            data-act="{{item}}"
+            bindtap="onSelectSubActivity"
+          >
+            {{item}}
+          </view>
+        </view>
+      </view>
     </view>
 
     <view class="card-panel">
@@ -190,21 +204,26 @@
       />
     </view>
 
-    <view class="card-panel">
-      <view class="panel-header">
-        <text class="panel-title">性别偏好</text>
+    <!-- 更多设置：默认折叠，弱化交友倾向，突出活动本身 -->
+    <view class="card-panel optional-settings-card">
+      <view class="optional-toggle" bindtap="onToggleMoreSettings">
+        <text class="optional-title">更多设置（性别要求等）</text>
+        <text class="optional-arrow">{{showMoreSettings ? '收起 ▲' : '展开 ▼'}}</text>
       </view>
-      <radio-group class="radio-flex" bindchange="onGenderChange">
-        <label class="radio-pill">
-          <radio value="any" checked="{{genderRequirement === 'any'}}" color="#426089" /> 不限
-        </label>
-        <label class="radio-pill">
-          <radio value="female_only" checked="{{genderRequirement === 'female_only'}}" color="#426089" /> 仅女生
-        </label>
-        <label class="radio-pill">
-          <radio value="male_only" checked="{{genderRequirement === 'male_only'}}" color="#426089" /> 仅男生
-        </label>
-      </radio-group>
+      <view class="optional-body" wx:if="{{showMoreSettings}}">
+        <view class="sub-label">同行人性别偏好 (默认不限)</view>
+        <radio-group class="radio-flex" bindchange="onGenderChange">
+          <label class="radio-pill">
+            <radio value="any" checked="{{genderRequirement === 'any'}}" color="#426089" /> 不限
+          </label>
+          <label class="radio-pill">
+            <radio value="female_only" checked="{{genderRequirement === 'female_only'}}" color="#426089" /> 仅女生
+          </label>
+          <label class="radio-pill">
+            <radio value="male_only" checked="{{genderRequirement === 'male_only'}}" color="#426089" /> 仅男生
+          </label>
+        </radio-group>
+      </view>
     </view>
 
     <!-- 卡片即时预览 -->

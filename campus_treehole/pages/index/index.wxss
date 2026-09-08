@@ -1194,3 +1194,76 @@
     font-size: 28rpx;
   }
 }
+
+/* 校园此刻 聚合卡片 */
+.campus-now-card {
+  margin: 16rpx 24rpx 12rpx;
+  background: #ffffff;
+  border-radius: 20rpx;
+  padding: 16rpx 20rpx;
+  box-shadow: 0 4rpx 14rpx rgba(66, 96, 137, 0.06);
+}
+.campus-now-head {
+  display: flex;
+  align-items: center;
+  gap: 10rpx;
+  margin-bottom: 14rpx;
+}
+.now-pulse-dot {
+  width: 12rpx;
+  height: 12rpx;
+  border-radius: 50%;
+  background: #10b981;
+}
+.now-head-title {
+  font-size: 26rpx;
+  font-weight: 700;
+  color: #1e293b;
+}
+.now-head-sub {
+  font-size: 22rpx;
+  color: #94a3b8;
+}
+.campus-now-scroll {
+  display: flex;
+  white-space: nowrap;
+  gap: 16rpx;
+}
+.campus-now-item {
+  display: inline-flex;
+  flex-direction: column;
+  background: #f8fafc;
+  border: 1rpx solid #e2e8f0;
+  border-radius: 16rpx;
+  padding: 14rpx 18rpx;
+  min-width: 280rpx;
+  max-width: 360rpx;
+  box-sizing: border-box;
+}
+.now-item-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8rpx;
+}
+.now-item-badge {
+  font-size: 20rpx;
+  font-weight: 700;
+  color: #426089;
+  background: #e9eff8;
+  padding: 2rpx 10rpx;
+  border-radius: 8rpx;
+}
+.now-item-sub {
+  font-size: 20rpx;
+  color: #f59e0b;
+  font-weight: 600;
+}
+.now-item-title {
+  font-size: 24rpx;
+  color: #334155;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

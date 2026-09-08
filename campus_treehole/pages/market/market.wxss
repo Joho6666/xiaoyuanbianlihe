@@ -447,3 +447,7 @@
   from { opacity: 0; transform: translateY(30rpx); }
   to   { opacity: 1; transform: translateY(0); }
 }
+
+.empty-title { font-size: 30rpx; font-weight: 700; color: #334155; margin: 12rpx 0 8rpx; display: block; }
+.empty-sub { font-size: 24rpx; color: #94a3b8; margin-bottom: 28rpx; display: block; }
+.empty-action-btn { background: #426089; color: #ffffff; font-size: 26rpx; font-weight: 700; border-radius: 999rpx; padding: 0 44rpx; height: 68rpx; line-height: 68rpx; margin-top: 10rpx; display: inline-block; }
