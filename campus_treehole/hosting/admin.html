@@ -572,7 +572,7 @@
           <div class="bg-white rounded-xl border border-border/60 p-4 shadow-card">
             <h3 class="font-bold text-sm mb-3">关于</h3>
             <p class="text-xs text-gray-500">校园便利盒 Admin v7.0</p>
-            <p class="text-xs text-gray-400 mt-1">云环境: xyblh-5gb26qrnf9d30feb</p>
+            <p class="text-xs text-gray-400 mt-1">云环境: 请在此页配置 CLOUD_ENV_ID</p>
             <p class="text-xs text-gray-400">密钥状态: <span id="secret-status" class="font-mono"></span></p>
           </div>
         </div>
@@ -604,7 +604,7 @@
 <script>
 // ============ 配置（与小程序 campus_treehole/app.js 中 CLOUD_ENV_ID 保持一致）============
 const CONFIG = {
-  CLOUD_ENV_ID: 'xyblh-5gb26qrnf9d30feb',
+  CLOUD_ENV_ID: 'YOUR_CLOUD_ENV_ID',
   /** 与云函数环境变量一致：adminPanel、dbOperations 均需 ADMIN_WEB_SECRET。可在控制台配置，或在 campus_treehole 目录执行 npm run cloud:push-fn-env（读取 cloudbaserc.json） */
   ADMIN_WEB_SECRET: ''
 };
@@ -878,33 +878,33 @@ function assertCloudOk(raw, fallbackMsg) {
   return raw;
 }
 
-/** 有密钥时先走云函数，遇 PERMISSION_DENIED 则走 dbLoader（依赖库安全规则允许匿名读） */
+/** 管理后台所有读操作都必须经云函数鉴权，禁止降级直连数据库。 */
 async function adminReadWithDbFallback(adminAction, adminData, dbLoader) {
   if (!hasAdminSecret()) {
-    const data = await dbLoader();
-    return { code: 0, data };
+    const err = new Error('管理密钥未配置，已拒绝读取（安全模式）');
+    toast('管理密钥未配置：请配置 ADMIN_WEB_SECRET 后再加载后台。', 'error');
+    throw err;
   }
   try {
     return assertCloudOk(await adminCall(adminAction, adminData), '请求失败');
   } catch (e) {
-    if (!isCloudPermissionDenied(e)) throw e;
-    const data = await dbLoader();
-    return { code: 0, data };
+    console.error('adminRead failed:', e);
+    toast('管理读取失败：请检查 ADMIN_WEB_SECRET 配置与云函数状态。', 'error');
+    throw e;
   }
 }
 
 async function adminWriteWithDbFallback(runAdmin, runDb) {
   if (!hasAdminSecret()) {
-    await runDb();
-    return;
+    const err = new Error('管理密钥未配置，已拒绝写入（安全模式）');
+    toast('管理密钥未配置：请配置 ADMIN_WEB_SECRET 后再执行操作。', 'error');
+    throw err;
   }
   try {
     await runAdmin();
   } catch (e) {
-    if (isCloudPermissionDenied(e)) {
-      await runDb();
-      return;
-    }
+    console.error('adminWrite failed:', e);
+    toast('管理操作失败：请检查 ADMIN_WEB_SECRET 配置与云函数状态。', 'error');
     throw e;
   }
 }
@@ -1329,7 +1329,7 @@ async function initAdmin() {
     await auth.anonymousAuthProvider().signIn();
     setStatus('已连接','bg-green-500');
     if (!hasAdminSecret()) {
-      toast('未配置 CONFIG.ADMIN_WEB_SECRET：写操作将直连数据库。请在云函数 adminPanel 设置环境变量 ADMIN_WEB_SECRET 后在此页填写相同密钥。', 'error');
+      toast('未配置 CONFIG.ADMIN_WEB_SECRET：后台已进入安全模式，读写操作均被拒绝。请先配置密钥。', 'error');
     }
     await loadAllData();
     const ar = document.getElementById('dash-auto-refresh');

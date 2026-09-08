@@ -12,6 +12,7 @@ function makeDeterministicId(scope, ...parts) {
   return `${scope}_${crypto.createHash('md5').update(raw).digest('hex')}`
 }
 const createWebAdminDispatch = require('./webAdminHandlers')
+const { normalizeCloudFileList, filterAccessibleFileList, collectFileIds } = require('./fileAccess')
 // triggerSubscribeNotify 在文件靠后定义，使用 lazy wrapper 避免循环引用
 const webAdminDispatch = createWebAdminDispatch(db, _, cloud, {
   triggerSubscribeNotify: (payload) => triggerSubscribeNotify(payload)
@@ -272,7 +273,7 @@ async function removeFollowBetween(a, b) {
 
 async function toggleUserBlock(openid, targetOpenid) {
   await getUserForAction(openid, { requireActive: true })
-  const normalizedTarget = typeof targetOpenid === 'string' ? targetOpenid.trim() : ''
+  const normalizedTarget = await resolveUserRef(targetOpenid)
   if (!normalizedTarget) return { code: -1, msg: '目标用户参数缺失' }
   if (openid === normalizedTarget) return { code: -1, msg: '不能拉黑自己' }
 
@@ -323,7 +324,7 @@ async function toggleUserBlock(openid, targetOpenid) {
 }
 
 async function getBlockRelation(openid, targetOpenid) {
-  const normalizedTarget = typeof targetOpenid === 'string' ? targetOpenid.trim() : ''
+  const normalizedTarget = await resolveUserRef(targetOpenid)
   if (!normalizedTarget || normalizedTarget === openid) {
     return {
       code: 0,
@@ -479,12 +480,56 @@ exports.main = async (event, context) => {
     if (!OPENID && !adminSecretOk) {
       return { code: -403, msg: '未授权：请登录后再获取临时链接' }
     }
-    const rawFileList = Array.isArray(data.fileList) ? data.fileList : []
-    const safeList = rawFileList
-      .filter((f) => typeof f === 'string' && f.startsWith('cloud://'))
-      .slice(0, 50)
+    const safeList = normalizeCloudFileList(data.fileList)
     if (!safeList.length) return { code: 0, data: [] }
-    const res = await cloud.getTempFileURL({ fileList: safeList })
+    // 管理员场景需要审核任意文件；普通用户只能读取与自己相关或公开内容中的文件。
+    if (adminSecretOk) {
+      const res = await cloud.getTempFileURL({ fileList: safeList })
+      return { code: 0, data: res.fileList }
+    }
+    if (!OPENID) return { code: -403, msg: '未授权' }
+
+    const accessible = new Set()
+    const fields = {
+      images: true,
+      videos: true,
+      thumbImages: true,
+      image: true,
+      imageUrl: true,
+      avatar: true,
+      avatarUrl: true,
+      coverImage: true,
+      fileId: true,
+      audioUrl: true
+    }
+    const queryFiles = async (collection, where, limit = 100) => {
+      try {
+        const res = await db.collection(collection).where(where).field(fields).limit(limit).get()
+        collectFileIds(res.data, accessible)
+      } catch (err) {
+        if (!isCollectionNotExistError(err)) throw err
+      }
+    }
+
+    await Promise.all([
+      // 自己拥有的帖子、商品、消息、公告、举报与个人资料文件。
+      ...['posts', 'market_goods', 'messages', 'announcements', 'reports', 'users']
+        .map((collection) => queryFiles(collection, { _openid: OPENID })),
+      // 会话双方都可以查看会话中已经收到或发出的媒体。
+      queryFiles('messages', _.or([
+        { fromOpenid: OPENID },
+        { toOpenid: OPENID }
+      ]), 200),
+      // 对外展示的个人头像/封面与活跃帖子、商品、公告。
+      queryFiles('users', { status: 'active' }, 200),
+      queryFiles('posts', { status: 'active' }),
+      queryFiles('market_goods', { status: 'active' }),
+      queryFiles('announcements', { status: 'published' })
+    ])
+
+    const allowed = filterAccessibleFileList(safeList, accessible)
+    if (!allowed.length) return { code: 0, data: [] }
+    const res = await cloud.getTempFileURL({ fileList: allowed })
     return { code: 0, data: res.fileList }
   }
 
@@ -1658,7 +1703,7 @@ async function getLikedPosts(openid, { page = 1, pageSize = 20 }) {
 
 async function toggleFollow(openid, targetOpenid) {
   await getUserForAction(openid, { requireActive: true })
-  const normalizedTarget = typeof targetOpenid === 'string' ? targetOpenid.trim() : ''
+  const normalizedTarget = await resolveUserRef(targetOpenid)
   if (!normalizedTarget) return { code: -1, msg: '目标用户参数缺失' }
   if (openid === normalizedTarget) return { code: -1, msg: '不能关注自己' }
 
@@ -1709,7 +1754,11 @@ async function getFollowingList(openid, { page = 1, pageSize = 50 }) {
 
   const users = await getUsersByOpenids(targetIds, { status: 'active' })
 
-  return { code: 0, data: users, total: targetIds.length }
+  return {
+    code: 0,
+    data: users.map((user) => sanitizeUserForClient(user, { userRef: user.numericId || user._id || '' })),
+    total: targetIds.length
+  }
 }
 
 async function getFollowerList(openid, { page = 1, pageSize = 50 }) {
@@ -1722,12 +1771,60 @@ async function getFollowerList(openid, { page = 1, pageSize = 50 }) {
 
   const users = await getUsersByOpenids(followerIds, { status: 'active' })
 
-  return { code: 0, data: users, total: followerIds.length }
+  return {
+    code: 0,
+    data: users.map((user) => sanitizeUserForClient(user, { userRef: user.numericId || user._id || '' })),
+    total: followerIds.length
+  }
 }
 
 // ========== 用户操作 ==========
 
+/** 公开用户档案白名单：手机号、角色、学号、openid 等内部字段不得下发。 */
+const USER_PUBLIC_FIELDS = [
+  'nickName',
+  'avatarUrl',
+  'college',
+  'campusId',
+  'campusName',
+  'bio',
+  'tags',
+  'coverImage',
+  'numericId'
+]
+
+function sanitizeUserForClient(user, extra = {}) {
+  if (!user || typeof user !== 'object') return {}
+  const out = {}
+  for (const key of USER_PUBLIC_FIELDS) {
+    if (user[key] !== undefined) out[key] = user[key]
+  }
+  for (const [key, value] of Object.entries(extra)) {
+    if (value !== undefined) out[key] = value
+  }
+  return out
+}
+
+/** 将公开的 numericId 或历史 openid 解析为内部 openid；客户端无需再接收 openid。 */
+async function resolveUserRef(userRef) {
+  const ref = userRef == null ? '' : String(userRef).trim()
+  if (!ref) return ''
+  const byOpenid = await db.collection('users').where({ _openid: ref }).limit(1).get()
+  if (byOpenid.data && byOpenid.data[0] && byOpenid.data[0]._openid) return byOpenid.data[0]._openid
+
+  const numeric = Number(ref)
+  const conditions = Number.isFinite(numeric) && /^\d+$/.test(ref)
+    ? _.or([{ numericId: ref }, { numericId: numeric }])
+    : { numericId: ref }
+  const byNumericId = await db.collection('users').where(conditions).limit(1).get()
+  if (byNumericId.data && byNumericId.data[0] && byNumericId.data[0]._openid) return byNumericId.data[0]._openid
+
+  const byDocumentId = await db.collection('users').doc(ref).get().catch(() => ({ data: null }))
+  return (byDocumentId.data && byDocumentId.data._openid) || ''
+}
+
 async function getUserInfo(openid, targetOpenid) {
+  targetOpenid = await resolveUserRef(targetOpenid)
   const res = await db.collection('users').where({ _openid: targetOpenid }).get()
   if (res.data.length === 0) return { code: -1, msg: '用户不存在' }
 
@@ -1758,13 +1855,13 @@ async function getUserInfo(openid, targetOpenid) {
 
   return {
     code: 0,
-    data: {
-      ...user,
+    data: sanitizeUserForClient(user, {
       followingCount: followingRes.total,
       followerCount: followerRes.total,
       isFollowing,
-      iBlockedThem
-    }
+      iBlockedThem,
+      ...(openid && targetOpenid && openid === targetOpenid ? { _openid: user._openid } : {})
+    })
   }
 }
 
@@ -1919,7 +2016,7 @@ async function searchUsers(openid, keyword) {
     const cond = baseFilters.length > 1 ? _.and(baseFilters) : baseFilters[0]
     const res = await db.collection('users').where(cond)
       .limit(20).get()
-    return { code: 0, data: res.data }
+    return { code: 0, data: (res.data || []).map((user) => sanitizeUserForClient(user, { userRef: user.numericId || user._id || '' })) }
   }
 
   // 搜索昵称、学院或用户 ID（云数据库模糊匹配用正则；纯数字同时做精确匹配兼容 number / string 存库）
@@ -1940,7 +2037,7 @@ async function searchUsers(openid, keyword) {
   ])
   const res = await db.collection('users').where(cond).limit(20).get()
 
-  return { code: 0, data: res.data }
+  return { code: 0, data: (res.data || []).map((user) => sanitizeUserForClient(user, { userRef: user.numericId || user._id || '' })) }
 }
 
 async function getMyPosts(openid, { page = 1, pageSize = 20 }) {
@@ -1952,6 +2049,7 @@ async function getMyPosts(openid, { page = 1, pageSize = 20 }) {
 }
 
 async function getUserPosts(viewerOpenid, targetOpenid, { page = 1, pageSize = 20 }) {
+  targetOpenid = await resolveUserRef(targetOpenid)
   if (!targetOpenid) {
     return { code: -1, msg: '缺少用户标识' }
   }
@@ -1981,6 +2079,7 @@ async function getUserPosts(viewerOpenid, targetOpenid, { page = 1, pageSize = 2
 
 /** 用户主页：TA 上架中的闲置商品 */
 async function getUserMarketGoods(viewerOpenid, targetOpenid, { page = 1, pageSize = 15 }) {
+  targetOpenid = await resolveUserRef(targetOpenid)
   if (!targetOpenid) {
     return { code: -1, msg: '缺少用户标识' }
   }
@@ -2161,7 +2260,7 @@ async function getUnreadMessageCount(openid) {
 }
 
 async function getMessages(openid, targetOpenid, sinceTime) {
-  const normalizedTarget = typeof targetOpenid === 'string' ? targetOpenid.trim() : ''
+  const normalizedTarget = await resolveUserRef(targetOpenid)
   if (!normalizedTarget) return { code: -1, msg: '缺少会话对象' }
   if (normalizedTarget === openid) return { code: -1, msg: '无效会话对象' }
 
@@ -2207,7 +2306,7 @@ async function sendMessage(openid, data = {}) {
   const user = await getUserForAction(openid, { requireActive: true })
   if (user.isMuted) return { code: -1, msg: '您已被禁言，无法发送消息' }
 
-  const targetOpenid = typeof data.targetOpenid === 'string' ? data.targetOpenid.trim() : ''
+  const targetOpenid = await resolveUserRef(data.targetOpenid)
   if (!targetOpenid) return { code: -1, msg: '接收方参数缺失' }
   if (targetOpenid === openid) return { code: -1, msg: '不能给自己发消息' }
 

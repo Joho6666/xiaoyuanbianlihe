@@ -4,6 +4,6 @@ H5 管理后台源文件请维护在仓库外 `Desktop/admin后台`，部署前�
 
 访问地址：
 
-https://xyblh-5gb26qrnf9d30feb-1420065347.tcloudbaseapp.com/admin.html
+https://<your-env-id>-<your-app-id>.tcloudbaseapp.com/admin.html
 
 部署：在项目根目录执行 `npm run admin:deploy`（需已登录 CloudBase CLI）。

@@ -149,8 +149,8 @@ stitch_mvp/
 ### 1. 克隆仓库
 
 ```bash
-git clone https://github.com/Joho6666/xyblh426.git
-cd xyblh426
+git clone https://github.com/Joho6666/xiaoyuanbianlihe.git
+cd xiaoyuanbianlihe
 ```
 
 ### 2. 打开小程序项目
@@ -258,7 +258,7 @@ chore: 工程维护
 
 ## 许可证
 
-当前仓库暂未声明开源许可证。未经作者明确授权，请勿直接用于商业分发。
+本项目采用 MIT License，详见 [LICENSE](LICENSE)。
 
 ---
 

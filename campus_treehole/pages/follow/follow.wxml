@@ -49,8 +49,8 @@
       <text class="empty-icon">👥</text>
       <text class="empty-text">还没有关注任何人</text>
     </view>
-    <view class="user-card" wx:for="{{followingList}}" wx:key="_openid">
-      <view class="user-card-left" bindtap="onUserTap" data-openid="{{item._openid}}" data-nickname="{{item.nickName}}">
+    <view class="user-card" wx:for="{{followingList}}" wx:key="userRef">
+      <view class="user-card-left" bindtap="onUserTap" data-user-ref="{{item.userRef}}" data-nickname="{{item.nickName}}">
         <image class="user-card-avatar" src="{{item.avatarUrl}}" mode="aspectFill"></image>
         <view class="user-card-info">
           <text class="user-card-name">{{item.nickName}}</text>
@@ -58,10 +58,10 @@
         </view>
       </view>
       <view class="user-card-actions">
-        <view class="btn-follow followed" catchtap="onToggleFollow" data-openid="{{item._openid}}">
+        <view class="btn-follow followed" catchtap="onToggleFollow" data-user-ref="{{item.userRef}}">
           <text>已关注</text>
         </view>
-        <view class="btn-chat" catchtap="onChatTap" data-openid="{{item._openid}}" data-nickname="{{item.nickName}}">
+        <view class="btn-chat" catchtap="onChatTap" data-user-ref="{{item.userRef}}" data-nickname="{{item.nickName}}">
           <text>💬</text>
         </view>
       </view>
@@ -74,8 +74,8 @@
       <text class="empty-icon">🌟</text>
       <text class="empty-text">还没有粉丝</text>
     </view>
-    <view class="user-card" wx:for="{{followerList}}" wx:key="_openid">
-      <view class="user-card-left" bindtap="onUserTap" data-openid="{{item._openid}}" data-nickname="{{item.nickName}}">
+    <view class="user-card" wx:for="{{followerList}}" wx:key="userRef">
+      <view class="user-card-left" bindtap="onUserTap" data-user-ref="{{item.userRef}}" data-nickname="{{item.nickName}}">
         <image class="user-card-avatar" src="{{item.avatarUrl}}" mode="aspectFill"></image>
         <view class="user-card-info">
           <text class="user-card-name">{{item.nickName}}</text>
@@ -83,7 +83,7 @@
         </view>
       </view>
       <view class="user-card-actions">
-        <view class="btn-chat" catchtap="onChatTap" data-openid="{{item._openid}}" data-nickname="{{item.nickName}}">
+        <view class="btn-chat" catchtap="onChatTap" data-user-ref="{{item.userRef}}" data-nickname="{{item.nickName}}">
           <text>💬</text>
         </view>
       </view>
@@ -104,8 +104,8 @@
       <text class="empty-text">{{discoverUserQuery ? '没有找到相关用户' : '这里会推荐活跃用户'}}</text>
       <text class="empty-sub">{{discoverUserQuery ? '试试换个昵称、学院或 ID' : '输入关键词可以更快找到同学'}}</text>
     </view>
-    <view class="user-card" wx:for="{{searchList}}" wx:key="_openid">
-      <view class="user-card-left" bindtap="onUserTap" data-openid="{{item._openid}}" data-nickname="{{item.nickName}}">
+    <view class="user-card" wx:for="{{searchList}}" wx:key="userRef">
+      <view class="user-card-left" bindtap="onUserTap" data-user-ref="{{item.userRef}}" data-nickname="{{item.nickName}}">
         <image class="user-card-avatar" src="{{item.avatarUrl}}" mode="aspectFill"></image>
         <view class="user-card-info">
           <text class="user-card-name">{{item.nickName}}</text>
@@ -113,7 +113,7 @@
         </view>
       </view>
       <view class="user-card-actions">
-        <view class="btn-chat" catchtap="onChatTap" data-openid="{{item._openid}}" data-nickname="{{item.nickName}}">
+        <view class="btn-chat" catchtap="onChatTap" data-user-ref="{{item.userRef}}" data-nickname="{{item.nickName}}">
           <text>💬</text>
         </view>
       </view>
