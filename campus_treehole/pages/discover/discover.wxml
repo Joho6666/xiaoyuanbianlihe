@@ -151,8 +151,8 @@
       <view class="pulse-item" bindtap="onOpenUniBridge">
         <view class="pulse-badge bridge-badge">友桥语伴</view>
         <view class="pulse-content">
-          <text class="pulse-text">David (来自法国) 寻找中文交流伙伴</text>
-          <text class="pulse-meta">母语法语 · 流利英语 · 学习中文日常</text>
+          <text class="pulse-text">Emma 寻找中文练习伙伴 · 期待互补交流</text>
+          <text class="pulse-meta">母语英语 · 学习中文日常 · 桂航校区</text>
         </view>
         <text class="pulse-arrow">→</text>
       </view>

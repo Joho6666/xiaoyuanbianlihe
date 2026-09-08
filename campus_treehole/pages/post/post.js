@@ -110,7 +110,26 @@ Page({
   },
 
   onSelectCategory(e) {
-    this.setData({ currentCategory: e.currentTarget.dataset.index })
+    const idx = e.currentTarget.dataset.index
+    const cat = this.data.categoryList[idx]
+    if (cat && cat.name === '找搭子') {
+      wx.showModal({
+        title: '同频找搭子',
+        content: '是否进入 30 秒三步极速发起搭子组局？',
+        confirmText: '极速发起',
+        cancelText: '普通发帖',
+        confirmColor: '#426089',
+        success: (res) => {
+          if (res.confirm) {
+            wx.navigateTo({ url: '/packageBuddy/pages/buddy-create/buddy-create' })
+          } else {
+            this.setData({ currentCategory: idx })
+          }
+        }
+      })
+      return
+    }
+    this.setData({ currentCategory: idx })
   },
 
   onTitleInput(e) {
