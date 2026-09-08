@@ -22,27 +22,31 @@ function createMutualModule({ db, _, cloud, helpers }) {
   async function getMutualPosts({ page = 1, pageSize = 20, type = 'help', category, status, keyword, campusId }) {
     try {
       let query = db.collection('mutual_posts')
+      const parts = []
       const targetCampus = resolveCampusIdForRead(campusId)
-      let condition = campusWhereClause(targetCampus)
+      const cw = campusWhereClause(targetCampus)
+      if (cw) parts.push(cw)
 
       if (type && ['help', 'lost', 'found'].includes(type)) {
-        condition.type = type
+        parts.push({ type })
       }
 
       if (category && category !== 'all') {
-        condition.category = category
+        parts.push({ category })
       }
 
       if (status && status !== 'all') {
-        condition.status = status
+        parts.push({ status })
       } else if (!status) {
-        condition.status = _.neq('closed')
+        parts.push({ status: (_ && typeof _.neq === 'function') ? _.neq('closed') : 'open' })
       }
 
       if (keyword && String(keyword).trim()) {
         const kw = escapeRegExp(String(keyword).trim())
-        condition.title = db.RegExp({ regexp: kw, options: 'i' })
+        parts.push({ title: db.RegExp({ regexp: kw, options: 'i' }) })
       }
+
+      const condition = parts.length === 0 ? {} : (parts.length === 1 ? parts[0] : _.and(parts))
 
       const skip = (Math.max(1, page) - 1) * pageSize
       const res = await query

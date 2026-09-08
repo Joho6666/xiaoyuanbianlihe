@@ -18,6 +18,11 @@ const webAdminDispatch = createWebAdminDispatch(db, _, cloud, {
 })
 const { buildMarketCategoryWhere, normalizePublishCategory } = require('./marketCategories')
 const activityZoneCore = require('./activityZoneCore')
+const {
+  DEFAULT_CAMPUS_ID,
+  resolveCampusIdForRead,
+  campusWhereClause: sharedCampusWhereClause
+} = require('./shared/campus')
 const createMarketModule = require('./modules/market')
 
 let marketModuleInstance = null
@@ -148,24 +153,8 @@ function getMutualModule() {
   return mutualModuleInstance
 }
 
-/** 与小程序 utils/campuses.js 中桂林航天工业学院 id 一致 */
-const DEFAULT_CAMPUS_ID = 'guit-hangtian'
-
-function resolveCampusIdForRead(data) {
-  const raw = data && data.campusId
-  if (typeof raw === 'string' && raw.trim()) return raw.trim()
-  return null
-}
-
 function campusWhereClause(campusId) {
-  if (!campusId) return null
-  if (campusId === DEFAULT_CAMPUS_ID) {
-    return _.or([
-      { campusId: DEFAULT_CAMPUS_ID },
-      { campusId: _.exists(false) }
-    ])
-  }
-  return { campusId }
+  return sharedCampusWhereClause(_, campusId)
 }
 
 // ========== 工具函数 ==========

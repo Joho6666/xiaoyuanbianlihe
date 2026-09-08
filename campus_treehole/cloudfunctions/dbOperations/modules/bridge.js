@@ -18,14 +18,15 @@ function createBridgeModule({ db, _, cloud, helpers }) {
   async function getLanguagePartners({ page = 1, pageSize = 20, studentType, nativeLang, learningLang, campusId, currentOpenid }) {
     try {
       let query = db.collection('users')
+      const parts = [{ status: 'active' }]
       const targetCampus = resolveCampusIdForRead(campusId)
-      let condition = campusWhereClause(targetCampus)
+      const cw = campusWhereClause(targetCampus)
+      if (cw) parts.push(cw)
 
-      // 只展示正常状态且已填写或设置了语言档案的用户（或已发布过语言互助的用户）
-      condition.status = 'active'
       if (studentType && ['chineseStudent', 'internationalStudent'].includes(studentType)) {
-        condition['languageProfile.studentType'] = studentType
+        parts.push({ 'languageProfile.studentType': studentType })
       }
+      const condition = parts.length === 1 ? parts[0] : _.and(parts)
 
       const skip = (Math.max(1, page) - 1) * pageSize
       const res = await query
