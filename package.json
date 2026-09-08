@@ -4,10 +4,12 @@
   "private": true,
   "description": "校园便利盒 · 统一校园综合生活与社交平台 (微信小程序宿主)",
   "scripts": {
-    "test": "node scripts/run-tests.js",
+    "sync:domain": "node scripts/sync-domain.js",
+    "check:domain": "node scripts/check-domain.js",
+    "test": "node scripts/check-domain.js && node scripts/run-tests.js",
     "lint": "node scripts/lint.js",
     "validate": "node scripts/validate-config.js",
-    "ci": "npm run validate && npm run lint && npm run test"
+    "ci": "npm run check:domain && npm run validate && npm run lint && npm run test"
   },
   "keywords": [
     "wechat-miniprogram",

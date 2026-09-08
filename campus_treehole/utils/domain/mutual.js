@@ -1,4 +1,4 @@
-// campus_treehole/utils/domain/mutual.js - 校园互助生活与失物招领领域模型
+// shared/domain/mutual.js - 校园互助生活与失物招领领域模型
 const MUTUAL_TYPES = {
   HELP: 'help',   // 校园互助 / 跑腿 / 答疑
   LOST: 'lost',   // 寻物启事
