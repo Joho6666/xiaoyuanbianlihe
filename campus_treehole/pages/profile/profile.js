@@ -39,7 +39,9 @@ Page({
       if (resolvedTargetOpenid !== this.data.targetOpenid) {
         this.setData({ targetOpenid: resolvedTargetOpenid })
       }
-      const isMe = resolvedTargetOpenid === app.globalData.openid
+      const currentUser = app.globalData.userInfo || {}
+      const isMe = resolvedTargetOpenid === app.globalData.openid ||
+        String(resolvedTargetOpenid) === String(currentUser.numericId || '')
       const isAdmin =
         app.globalData.userInfo && app.globalData.userInfo.role === 'admin'
       this.setData({

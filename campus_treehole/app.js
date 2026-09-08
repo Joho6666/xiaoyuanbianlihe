@@ -19,7 +19,8 @@ function stableStringify(value) {
  * 查看：开发者工具 → 云开发 → 设置 → 环境设置 → 环境 ID（形如 cloud1-xxxx）。
  * 若你新建了环境，把下面改成新 ID；勿用 DYNAMIC_CURRENT_ENV（体验版/真机未绑默认环境时常报错）。
  */
-const CLOUD_ENV_ID = 'xyblh-5gb26qrnf9d30feb'
+const CLOUD_ENV_ID = ('' + (typeof wx !== 'undefined' && wx.getExtConfigSync ? (wx.getExtConfigSync().envId || '') : '')).trim()
+  || 'YOUR_CLOUD_ENV_ID' // TODO: 部署前改为自己的环境 ID（勿提交真实环境）
 
 const campuses = require('./utils/campuses.js')
 const SELECTED_CAMPUS_ID_KEY = 'selectedCampusId_v1'
@@ -51,7 +52,7 @@ App({
     this._campusCache = { id: undefined, name: undefined }
 
     if (wx.cloud) {
-      const envId = String(CLOUD_ENV_ID || '').trim() || 'xyblh-5gb26qrnf9d30feb'
+      const envId = String(CLOUD_ENV_ID || '').trim() || 'YOUR_CLOUD_ENV_ID'
       wx.cloud.init({
         env: envId,
         traceUser: true
@@ -620,7 +621,7 @@ App({
   },
 
   /**
-   * 分享落地读帖：云函数失败时用客户端只读库兜底（posts 集合需 READONLY）
+   * 分享落地读帖：统一经云函数读取，确保状态、屏蔽和脱敏规则一致。
    */
   async fetchPostForShare(postId) {
     const id = String(postId || '').trim()
@@ -640,16 +641,7 @@ App({
       console.warn('[fetchPostForShare] 云函数失败，尝试直连数据库', err && (err.msg || err.message) ? (err.msg || err.message) : err)
     }
 
-    if (!this.globalData.cloudReady) return null
-    try {
-      const res = await wx.cloud.database().collection('posts').doc(id).get()
-      const post = res && res.data
-      if (!post || !post._id || post.status !== 'active') return null
-      return { ...post, isLiked: false, isFavored: false }
-    } catch (dbErr) {
-      console.warn('[fetchPostForShare] 直连数据库失败', dbErr)
-      return null
-    }
+    return null
   },
 
   async fetchCommentsForShare(postId, sortBy = 'hot') {
@@ -657,18 +649,7 @@ App({
       const result = await this.callDB('getComments', { postId, sortBy })
       return result.data || []
     } catch (err) {
-      if (!this.globalData.cloudReady) return []
-      try {
-        let query = wx.cloud.database().collection('comments').where({ postId, status: 'active' })
-        query = sortBy === 'hot'
-          ? query.orderBy('likes', 'desc')
-          : query.orderBy('createTime', 'desc')
-        const res = await query.limit(100).get()
-        return res.data || []
-      } catch (dbErr) {
-        console.warn('[fetchCommentsForShare] 直连失败', dbErr)
-        return []
-      }
+      return []
     }
   },
 
@@ -681,18 +662,7 @@ App({
     } catch (err) {
       console.warn('[fetchMarketGoodsForShare] 云函数失败，尝试直连数据库', err && (err.msg || err.message) ? (err.msg || err.message) : err)
     }
-    if (!this.globalData.cloudReady) return { data: null, isFavored: false }
-    try {
-      const res = await wx.cloud.database().collection('market_goods').doc(id).get()
-      const goods = res && res.data
-      if (!goods || !goods._id || goods.status !== 'active') {
-        return { data: null, isFavored: false }
-      }
-      return { code: 0, data: goods, isFavored: false }
-    } catch (dbErr) {
-      console.warn('[fetchMarketGoodsForShare] 直连数据库失败', dbErr)
-      return { data: null, isFavored: false }
-    }
+    return { data: null, isFavored: false }
   },
 
   async fetchMarketCommentsForShare(goodsId) {
@@ -700,18 +670,7 @@ App({
       const result = await this.callDB('getMarketComments', { goodsId })
       return result.data || []
     } catch (err) {
-      if (!this.globalData.cloudReady) return []
-      try {
-        const res = await wx.cloud.database().collection('market_comments')
-          .where({ goodsId, status: 'active' })
-          .orderBy('createTime', 'desc')
-          .limit(100)
-          .get()
-        return res.data || []
-      } catch (dbErr) {
-        console.warn('[fetchMarketCommentsForShare] 直连失败', dbErr)
-        return []
-      }
+      return []
     }
   },
 
@@ -1480,37 +1439,7 @@ App({
       return normalizedList.filter((fid) => map[fid]).map((fid) => map[fid])
     }
 
-    if (this.globalData.cloudReady && typeof wx !== 'undefined' && wx.cloud && typeof wx.cloud.getTempFileURL === 'function') {
-      for (let i = 0; i < missingBeforeFetch.length; i += chunkSize) {
-        const chunk = missingBeforeFetch.slice(i, i + chunkSize)
-        try {
-          const fetchPromise = new Promise((resolve, reject) => {
-            wx.cloud.getTempFileURL({
-              fileList: chunk,
-              success: resolve,
-              fail: reject
-            })
-          })
-          chunk.forEach((fid) => {
-            this._tempUrlInflight.set(fid, fetchPromise.then((res) => {
-              const item = ((res && res.fileList) || []).find((x) =>
-                (x.fileID || x.FileID || x.fileId) === fid
-              )
-              if (!item) return null
-              const url = item.tempFileURL || item.TempFileURL || item.download_url || item.download_URL
-              return url ? { fileID: fid, tempFileURL: url } : null
-            }))
-          })
-          const res = await fetchPromise
-          ingest(res && res.fileList)
-        } catch (err) {
-          console.error('[getTempFileUrls] 客户端解析失败:', err)
-        } finally {
-          chunk.forEach((fid) => this._tempUrlInflight.delete(fid))
-        }
-      }
-    }
-
+    // 统一走云函数归属校验；不要在客户端直调 wx.cloud.getTempFileURL 绕过 allow-list。
     const missing = missingBeforeFetch.filter((fid) => typeof fid === 'string' && fid.startsWith('cloud://') && !map[fid])
     if (missing.length > 0) {
       for (let i = 0; i < missing.length; i += chunkSize) {

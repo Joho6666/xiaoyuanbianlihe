@@ -1,0 +1,24 @@
+name: quality
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  static-checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Run dependency-free regression tests
+        working-directory: campus_treehole
+        run: npm test
+      - name: Check all JavaScript syntax
+        shell: bash
+        run: |
+          set -euo pipefail
+          while IFS= read -r file; do
+            node --check "$file"
+          done < <(find campus_treehole -type f -name '*.js' -not -path '*/node_modules/*' -print)

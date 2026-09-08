@@ -178,8 +178,8 @@ Page({
   },
 
   async onToggleFollow(e) {
-    const targetOpenid = e.currentTarget.dataset.openid
-    const isFollowing = await app.toggleFollow(targetOpenid)
+    const targetRef = e.currentTarget.dataset.userRef || e.currentTarget.dataset.openid
+    const isFollowing = await app.toggleFollow(targetRef)
     if (isFollowing !== null) {
       wx.showToast({ title: isFollowing ? '已关注' : '取消关注', icon: 'none' })
       this.refreshData()
@@ -193,30 +193,30 @@ Page({
   },
 
   onUserTap(e) {
-    const openid = e.currentTarget.dataset.openid
-    if (!openid) return
+    const userRef = e.currentTarget.dataset.userRef || e.currentTarget.dataset.openid
+    if (!userRef) return
     if (this.data.mode === 'chat') {
       const nickname = e.currentTarget.dataset.nickname || ''
       const extra = this.data.shareType && this.data.shareId
         ? `&shareType=${encodeURIComponent(this.data.shareType)}&shareId=${encodeURIComponent(this.data.shareId)}&autoShare=${encodeURIComponent(this.data.autoShare || '')}`
         : ''
       wx.navigateTo({
-        url: `/pages/chat/chat?openid=${encodeURIComponent(openid)}&nickname=${encodeURIComponent(nickname)}${extra}`
+        url: `/pages/chat/chat?userId=${encodeURIComponent(userRef)}&nickname=${encodeURIComponent(nickname)}${extra}`
       })
     } else {
-      wx.navigateTo({ url: `/pages/profile/profile?openid=${encodeURIComponent(openid)}` })
+      wx.navigateTo({ url: `/pages/profile/profile?userId=${encodeURIComponent(userRef)}` })
     }
   },
 
   onChatTap(e) {
-    const openid = e.currentTarget.dataset.openid
-    if (!openid) return
+    const userRef = e.currentTarget.dataset.userRef || e.currentTarget.dataset.openid
+    if (!userRef) return
     const nickname = e.currentTarget.dataset.nickname || ''
     const extra = this.data.shareType && this.data.shareId
       ? `&shareType=${encodeURIComponent(this.data.shareType)}&shareId=${encodeURIComponent(this.data.shareId)}&autoShare=${encodeURIComponent(this.data.autoShare || '')}`
       : ''
     wx.navigateTo({
-      url: `/pages/chat/chat?openid=${encodeURIComponent(openid)}&nickname=${encodeURIComponent(nickname)}${extra}`
+      url: `/pages/chat/chat?userId=${encodeURIComponent(userRef)}&nickname=${encodeURIComponent(nickname)}${extra}`
     })
   },
 

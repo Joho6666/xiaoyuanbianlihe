@@ -184,15 +184,8 @@ Page({
   async _fetchMyGoodsSlice(page) {
     const skip = (page - 1) * LIST_PAGE_SIZE
     try {
-      const db = wx.cloud.database()
-      const goodsRes = await db
-        .collection('market_goods')
-        .where({ _openid: app.globalData.openid, status: 'active' })
-        .orderBy('createTime', 'desc')
-        .skip(skip)
-        .limit(LIST_PAGE_SIZE)
-        .get()
-      const rawGoods = goodsRes.data || []
+      const goodsPack = await app.getUserMarketGoods(app.globalData.openid, page, LIST_PAGE_SIZE)
+      const rawGoods = (goodsPack && goodsPack.list) || []
       const goodsResolved =
         app.globalData.cloudReady && rawGoods.length
           ? await app.resolvePostsMedia(rawGoods)
@@ -202,7 +195,11 @@ Page({
         time: app.formatTime(g.createTime),
         _coverSrc: firstCoverSrc(g)
       }))
-      return { list, hasMore: rawGoods.length >= LIST_PAGE_SIZE }
+      const total = Number(goodsPack && goodsPack.total)
+      const hasMore = Number.isFinite(total) && total > 0
+        ? skip + rawGoods.length < total
+        : rawGoods.length >= LIST_PAGE_SIZE
+      return { list, hasMore }
     } catch (e) {
       return { list: [], hasMore: false }
     }

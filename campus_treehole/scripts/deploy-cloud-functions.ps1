@@ -2,7 +2,13 @@
 $ErrorActionPreference = 'Stop'
 Set-Location $PSScriptRoot + '\..'
 
-$envId = 'xyblh-5gb26qrnf9d30feb'
+$envId = $env:CLOUD_ENV_ID
+if (-not $envId -and (Test-Path (Join-Path (Get-Location) 'cloudbaserc.json'))) {
+  $envId = (Get-Content -Raw (Join-Path (Get-Location) 'cloudbaserc.json') | ConvertFrom-Json).envId
+}
+if (-not $envId -or $envId -match '^(YOUR_CLOUD_ENV_ID|你的云环境ID)$') {
+  throw '请先设置 CLOUD_ENV_ID，或在 campus_treehole/cloudbaserc.json 配置 envId'
+}
 $names = @(
   'userReferral',
   'bindInviteEmployee',
