@@ -22,24 +22,28 @@ function createBuddiesModule({ db, _, cloud, helpers }) {
   async function getBuddyPosts({ page = 1, pageSize = 20, category, status, keyword, campusId }) {
     try {
       let query = db.collection('buddy_posts')
+      const parts = []
       const targetCampus = resolveCampusIdForRead(campusId)
-      let condition = campusWhereClause(targetCampus)
+      const cw = campusWhereClause(targetCampus)
+      if (cw) parts.push(cw)
 
       if (category && category !== 'all') {
-        condition.category = category
+        parts.push({ category })
       }
 
       if (status && status !== 'all') {
-        condition.status = status
+        parts.push({ status })
       } else if (!status) {
         // 默认优先展示招募中与满员状态
-        condition.status = (_ && typeof _.in === 'function') ? _.in(['OPEN', 'FULL']) : 'OPEN'
+        parts.push({ status: (_ && typeof _.in === 'function') ? _.in(['OPEN', 'FULL']) : 'OPEN' })
       }
 
       if (keyword && String(keyword).trim()) {
         const kw = escapeRegExp(String(keyword).trim())
-        condition.title = db.RegExp({ regexp: kw, options: 'i' })
+        parts.push({ title: db.RegExp({ regexp: kw, options: 'i' }) })
       }
+
+      const condition = parts.length === 0 ? {} : (parts.length === 1 ? parts[0] : _.and(parts))
 
       const skip = (Math.max(1, page) - 1) * pageSize
       const res = await query
@@ -250,7 +254,7 @@ function createBuddiesModule({ db, _, cloud, helpers }) {
   }
 
   /**
-   * 发起人审批申请 (通过 / 拒绝)
+   * 发起人审批申请 (通过 / 拒绝) - 使用事务防止并发超员
    */
   async function handleBuddyApplication(openid, { applicationId, action }) {
     if (!openid) return { code: -1, msg: '未授权访问' }
@@ -258,35 +262,109 @@ function createBuddiesModule({ db, _, cloud, helpers }) {
       return { code: -1, msg: '参数不合法' }
     }
 
-    const appRes = await db.collection('buddy_applications').doc(applicationId).get()
-    const appData = (appRes && appRes.data) || null
-    if (!appData) return { code: -1, msg: '申请记录不存在' }
-    if (appData.authorOpenid !== openid) return { code: -1, msg: '无权处理该申请' }
-    if (appData.status !== 'PENDING') return { code: -1, msg: '该申请已处理' }
+    if (action === 'REJECT') {
+      const appRes = await db.collection('buddy_applications').doc(applicationId).get()
+      const appData = (appRes && appRes.data) || null
+      if (!appData) return { code: -1, msg: '申请记录不存在' }
+      if (appData.authorOpenid !== openid) return { code: -1, msg: '无权处理该申请' }
+      if (appData.status !== 'PENDING') return { code: -1, msg: '该申请已处理' }
 
-    const postRes = await db.collection('buddy_posts').doc(appData.postId).get()
-    const post = (postRes && postRes.data) || null
-    if (!post) return { code: -1, msg: '组局不存在' }
-
-    if (action === 'ACCEPT') {
-      if (post.acceptedCount >= post.maxPeople) {
-        return { code: -1, msg: '人数已满，无法再通过新成员' }
-      }
-      await db.collection('buddy_applications').doc(applicationId).update({
-        data: { status: 'ACCEPTED', decidedAt: db.serverDate() }
-      })
-      const nextCount = (post.acceptedCount || 1) + 1
-      const updatePayload = { acceptedCount: nextCount, updateTime: db.serverDate() }
-      if (nextCount >= post.maxPeople) {
-        updatePayload.status = 'FULL'
-      }
-      await db.collection('buddy_posts').doc(appData.postId).update({ data: updatePayload })
-      return { code: 0, msg: '已通过申请' }
-    } else {
       await db.collection('buddy_applications').doc(applicationId).update({
         data: { status: 'REJECTED', decidedAt: db.serverDate() }
       })
       return { code: 0, msg: '已婉拒申请' }
+    }
+
+    // ACCEPT 操作：开启事务，防并发超员
+    if (typeof db.startTransaction === 'function') {
+      const transaction = await db.startTransaction()
+      try {
+        const appRes = await transaction.collection('buddy_applications').doc(applicationId).get()
+        const appData = (appRes && appRes.data) || null
+        if (!appData) {
+          await transaction.rollback()
+          return { code: -1, msg: '申请记录不存在' }
+        }
+        if (appData.authorOpenid !== openid) {
+          await transaction.rollback()
+          return { code: -1, msg: '无权处理该申请' }
+        }
+        if (appData.status !== 'PENDING') {
+          await transaction.rollback()
+          return { code: -1, msg: '该申请已处理' }
+        }
+
+        const postRes = await transaction.collection('buddy_posts').doc(appData.postId).get()
+        const post = (postRes && postRes.data) || null
+        if (!post) {
+          await transaction.rollback()
+          return { code: -1, msg: '组局不存在' }
+        }
+        if (post.status !== 'OPEN') {
+          await transaction.rollback()
+          return { code: -1, msg: '该组局当前不在招募状态' }
+        }
+
+        const currentCount = Number(post.acceptedCount) || 1
+        const maxLimit = Number(post.maxPeople) || 2
+        if (currentCount >= maxLimit) {
+          await transaction.rollback()
+          return { code: -1, msg: '人数已满，无法再通过新成员' }
+        }
+
+        await transaction.collection('buddy_applications').doc(applicationId).update({
+          data: { status: 'ACCEPTED', decidedAt: db.serverDate() }
+        })
+
+        const nextCount = currentCount + 1
+        const updatePayload = {
+          acceptedCount: nextCount,
+          updateTime: db.serverDate()
+        }
+        if (nextCount >= maxLimit) {
+          updatePayload.status = 'FULL'
+        }
+
+        await transaction.collection('buddy_posts').doc(appData.postId).update({
+          data: updatePayload
+        })
+
+        await transaction.commit()
+        return { code: 0, msg: '已通过申请' }
+      } catch (err) {
+        try {
+          await transaction.rollback()
+        } catch (e) {}
+        console.error('handleBuddyApplication transaction error:', err)
+        return { code: -1, msg: '处理审批失败: ' + err.message }
+      }
+    } else {
+      // 降级兜底（环境无 startTransaction 时）
+      const appRes = await db.collection('buddy_applications').doc(applicationId).get()
+      const appData = (appRes && appRes.data) || null
+      if (!appData) return { code: -1, msg: '申请记录不存在' }
+      if (appData.authorOpenid !== openid) return { code: -1, msg: '无权处理该申请' }
+      if (appData.status !== 'PENDING') return { code: -1, msg: '该申请已处理' }
+
+      const postRes = await db.collection('buddy_posts').doc(appData.postId).get()
+      const post = (postRes && postRes.data) || null
+      if (!post) return { code: -1, msg: '组局不存在' }
+      if (post.status !== 'OPEN') return { code: -1, msg: '该组局当前不在招募状态' }
+
+      const currentCount = Number(post.acceptedCount) || 1
+      const maxLimit = Number(post.maxPeople) || 2
+      if (currentCount >= maxLimit) return { code: -1, msg: '人数已满，无法再通过新成员' }
+
+      await db.collection('buddy_applications').doc(applicationId).update({
+        data: { status: 'ACCEPTED', decidedAt: db.serverDate() }
+      })
+      const nextCount = currentCount + 1
+      const updatePayload = { acceptedCount: nextCount, updateTime: db.serverDate() }
+      if (nextCount >= maxLimit) {
+        updatePayload.status = 'FULL'
+      }
+      await db.collection('buddy_posts').doc(appData.postId).update({ data: updatePayload })
+      return { code: 0, msg: '已通过申请' }
     }
   }
 
