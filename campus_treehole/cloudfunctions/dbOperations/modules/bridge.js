@@ -2,7 +2,7 @@
 // 负责语伴发现、双语档案维护与互补语言匹配计算
 // 严格杜绝基于 gender 推测国籍/语言假数据
 
-const { evaluateLanguageExchangeMatch } = require('../../../../shared/domain/language')
+const { evaluateLanguageExchangeMatch } = require('../domain/language')
 
 function createBridgeModule({ db, _, cloud, helpers }) {
   const {

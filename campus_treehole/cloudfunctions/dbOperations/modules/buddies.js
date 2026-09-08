@@ -1,6 +1,6 @@
 // modules/buddies.js - 同频找搭子业务模块
 // 负责搭子组局发布、5 态成局流转、申请与审批看板、轻量推荐排序
-const { computeBuddyRecommendScore, BUDDY_CATEGORIES } = require('../../../../shared/domain/buddy')
+const { computeBuddyRecommendScore, BUDDY_CATEGORIES } = require('../domain/buddy')
 
 function createBuddiesModule({ db, _, cloud, helpers }) {
   const {
