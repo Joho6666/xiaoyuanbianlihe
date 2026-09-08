@@ -11,7 +11,9 @@
     "validate": "node scripts/validate-config.js",
     "ci": "npm run check:schools && npm run check:domain && npm run validate && npm run lint && npm run test",
     "sync:schools": "node scripts/sync-schools.js",
-    "check:schools": "node scripts/sync-schools.js --check"
+    "check:schools": "node scripts/sync-schools.js --check",
+    "test:integration:memory": "node scripts/smoke/run-smoke.js",
+    "smoke:cloudbase": "node scripts/cloudbase-smoke/run-real-smoke.js"
   },
   "keywords": [
     "wechat-miniprogram",
