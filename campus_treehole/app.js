@@ -22,6 +22,7 @@ function stableStringify(value) {
 const CLOUD_ENV_ID = 'xyblh-5gb26qrnf9d30feb'
 
 const campuses = require('./utils/campuses.js')
+const schools = require('./config/schools.js')
 const SELECTED_CAMPUS_ID_KEY = 'selectedCampusId_v1'
 const SELECTED_CAMPUS_NAME_KEY = 'selectedCampusName_v1'
 const SUBSCRIBE_TEMPLATE_IDS = {
@@ -89,15 +90,50 @@ App({
       }
     }
     const scene = this._parseInviteSceneFromOptions(options)
-    if (!scene) return
-    try {
-      if (/^u_[0-9]+$/.test(scene)) {
-        wx.setStorageSync(USER_PEER_REF_STORAGE_KEY, scene)
-      } else {
-        wx.setStorageSync(INVITE_SCENE_STORAGE_KEY, scene)
+    if (scene) {
+      try {
+        if (/^u_[0-9]+$/.test(scene)) {
+          wx.setStorageSync(USER_PEER_REF_STORAGE_KEY, scene)
+        } else {
+          wx.setStorageSync(INVITE_SCENE_STORAGE_KEY, scene)
+        }
+      } catch (e) {
+        console.warn('[promo] 写入失败', e)
       }
-    } catch (e) {
-      console.warn('[promo] 写入失败', e)
+    }
+
+    // 二维码扫码落地参数解析：schoolId, campusId, source
+    let targetSchoolId = q.schoolId || ''
+    let targetCampusId = q.campusId || ''
+    const landingSource = q.source || ''
+
+    if (scene) {
+      // 支持场景值: school_<schoolId>_campus_<campusId> 或 s_<schoolId>_c_<campusId>
+      const matchFull = scene.match(/school_([a-zA-Z0-9_-]+)_campus_([a-zA-Z0-9_-]+)/)
+      if (matchFull) {
+        targetSchoolId = targetSchoolId || matchFull[1]
+        targetCampusId = targetCampusId || matchFull[2]
+      } else {
+        const matchShort = scene.match(/s_([a-zA-Z0-9_-]+)_c_([a-zA-Z0-9_-]+)/)
+        if (matchShort) {
+          targetSchoolId = targetSchoolId || matchShort[1]
+          targetCampusId = targetCampusId || matchShort[2]
+        }
+      }
+    }
+
+    if (landingSource) {
+      try { wx.setStorageSync('landing_source', landingSource) } catch (e) {}
+    }
+
+    // 首次进入自动选定学校与校区
+    if (targetCampusId || targetSchoolId) {
+      const schoolObj = targetSchoolId ? schools.getSchoolById(targetSchoolId) : null
+      const resolved = schools.getCampusByCampusId(targetCampusId) || (schoolObj && schoolObj.campuses && schoolObj.campuses[0])
+      if (resolved && !this.hasChosenCampus()) {
+        console.log('[二维码落地] 自动绑定学校与校区:', resolved)
+        this.setSelectedCampus(resolved.id, { syncCloud: false })
+      }
     }
   },
 
