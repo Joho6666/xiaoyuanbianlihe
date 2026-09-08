@@ -1,3 +1,4 @@
+const schoolDirectory = require('./shared/schools')
 // 数据库操作云函数 - 统一处理所有 CRUD 操作
 // 已实现高聚合低耦合的模块化架构 (modules/)，保持 100% API 契约向后兼容
 const cloud = require('wx-server-sdk')
@@ -593,7 +594,23 @@ async function triggerSubscribeNotify(payload) {
 
 // ========== 主入口分发 ==========
 exports.main = async (event, context) => {
-  const { action, data = {}, webSecret } = event
+  const { action, webSecret } = event
+  const data = { ...(event.data || {}) }
+  const campusActions = new Set(['getPosts','getMarketGoods','getBuddyPosts','getLanguagePartners','getMutualPosts','addPost','updatePost','addMarketGoods','addBuddyPost','addMutualPost','updateProfile','updateLanguageProfile'])
+  if (campusActions.has(action)) {
+    let requestedCampus = data.campusId
+    if (!requestedCampus) {
+      const actor = getOpenidFromContext()
+      if (actor) {
+        const rows = await db.collection('users').where({ _openid: actor }).limit(1).get()
+        requestedCampus = rows.data[0] && rows.data[0].campusId
+      }
+    }
+    const campus = schoolDirectory.getCampusById(requestedCampus || DEFAULT_CAMPUS_ID)
+    if (!campus) return { code: -1, msg: '无效或未开放的校区' }
+    data.campusId = campus.id
+    data.schoolId = campus.schoolId
+  }
 
   if (action === 'getTempFileUrls') {
     const { OPENID } = cloud.getWXContext()

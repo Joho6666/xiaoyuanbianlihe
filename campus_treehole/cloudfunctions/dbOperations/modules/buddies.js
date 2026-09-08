@@ -1,3 +1,4 @@
+const { getCampusById } = require('../shared/schools')
 const { createContentValidator } = require('../shared/content-safety')
 // modules/buddies.js - 同频找搭子业务模块
 // 负责搭子组局发布、5 态成局流转、申请与审批看板、轻量推荐排序
@@ -259,6 +260,7 @@ function createBuddiesModule({ db, _, cloud, helpers }) {
       genderRequirement: ['any', 'male_only', 'female_only'].includes(postData.genderRequirement) ? postData.genderRequirement : 'any',
       schoolOnly: !!postData.schoolOnly,
       campusId,
+      schoolId: (getCampusById(campusId) || {}).schoolId || '',
       status: 'OPEN',
       createTime: db.serverDate(),
       updateTime: db.serverDate()

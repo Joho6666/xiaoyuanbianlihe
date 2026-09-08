@@ -1,0 +1,13 @@
+const assert=require('assert')
+const schools=require('../../campus_treehole/config/schools')
+const campuses=require('../../campus_treehole/utils/campuses')
+const {campusWhereClause}=require('../../campus_treehole/cloudfunctions/dbOperations/shared/campus')
+assert.strictEqual(schools.getSchoolById('gxmu').id,'glmu')
+assert.strictEqual(schools.getCampusById('gxmu').id,'glmu-lingui')
+assert.strictEqual(schools.getSchoolById('glmu').campuses.length,3)
+for(const q of ['桂医','桂林医学院','glmu'])assert.ok(campuses.filterCampusesByQuery(q).every(c=>c.schoolId==='glmu'))
+assert.ok(!campuses.filterCampusesByQuery('完全不存在的学校').length)
+assert.deepStrictEqual(campusWhereClause({in:xs=>({in:xs})},'glmu-lingui'),{campusId:{in:['glmu-lingui','gxmu']}})
+assert.strictEqual(new Set(schools.CAMPUSES.map(c=>c.id)).size,schools.CAMPUSES.length)
+for(const s of schools.SCHOOLS.filter(s=>s.enabled)){assert.ok(s.source);assert.strictEqual(s.campuses.filter(c=>c.isDefault).length,1)}
+console.log('PASS school directory aliases, official metadata, search and legacy read query')

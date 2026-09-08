@@ -1,3 +1,4 @@
+const { resolveCampusId, getCampusById } = require('../shared/schools')
 const { createContentValidator } = require('../shared/content-safety')
 // modules/market.js - 校园集市业务模块
 // 拆分自 dbOperations/index.js，保持 100% 协议与行为兼容
@@ -191,7 +192,8 @@ function createMarketModule({ db, _, cloud, helpers }) {
     const newGoods = {
       _openid: openid,
       numericId: user.numericId || '',
-      campusId: campusIdGoods,
+      campusId: resolveCampusId(campusIdGoods),
+      schoolId: (getCampusById(campusIdGoods) || {}).schoolId || '',
       nickname: user.nickName || '未知卖家',
       avatar: user.avatarUrl || '/images/avatar_default.png',
       title: data.title,

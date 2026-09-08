@@ -9,7 +9,9 @@
     "test": "node scripts/check-domain.js && node scripts/run-tests.js",
     "lint": "node scripts/lint.js",
     "validate": "node scripts/validate-config.js",
-    "ci": "npm run check:domain && npm run validate && npm run lint && npm run test"
+    "ci": "npm run check:schools && npm run check:domain && npm run validate && npm run lint && npm run test",
+    "sync:schools": "node scripts/sync-schools.js",
+    "check:schools": "node scripts/sync-schools.js --check"
   },
   "keywords": [
     "wechat-miniprogram",

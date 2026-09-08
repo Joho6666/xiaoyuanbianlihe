@@ -1,3 +1,4 @@
+const { resolveCampusId, LEGACY_CAMPUS_ALIASES } = require('./schools')
 // shared/campus.js - 校区辅助函数与默认校区约定
 const DEFAULT_CAMPUS_ID = 'guit-hangtian'
 
@@ -9,10 +10,10 @@ const DEFAULT_CAMPUS_ID = 'guit-hangtian'
  */
 function resolveCampusIdForRead(input) {
   if (typeof input === 'string') {
-    return input.trim() || null
+    return resolveCampusId(input) || null
   }
   if (input && typeof input.campusId === 'string') {
-    return input.campusId.trim() || null
+    return resolveCampusId(input.campusId) || null
   }
   return null
 }
@@ -35,7 +36,7 @@ function campusWhereClause(arg1, arg2) {
   }
 
   if (!campusId || typeof campusId !== 'string') return null
-  const cid = campusId.trim()
+  const cid = resolveCampusId(campusId)
   if (!cid) return null
 
   if (cid === DEFAULT_CAMPUS_ID) {
@@ -49,6 +50,8 @@ function campusWhereClause(arg1, arg2) {
     return { campusId: DEFAULT_CAMPUS_ID }
   }
 
+  const aliases = Object.keys(LEGACY_CAMPUS_ALIASES).filter(key => LEGACY_CAMPUS_ALIASES[key] === cid)
+  if (aliases.length && cmd && typeof cmd.in === 'function') return { campusId: cmd.in([cid, ...aliases]) }
   return { campusId: cid }
 }
 

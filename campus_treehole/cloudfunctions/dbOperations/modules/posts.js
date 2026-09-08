@@ -1,3 +1,4 @@
+const { resolveCampusId, getCampusById } = require('../shared/schools')
 const { createContentValidator } = require('../shared/content-safety')
 // modules/posts.js - 校园圈动态、评论、点赞与收藏业务模块
 // 负责帖子 CRUD、评论流转、防并发幂等点赞与收藏聚合
@@ -342,7 +343,8 @@ function createPostsModule({ db, _, cloud, helpers }) {
       nickname: user.nickName || '未知用户',
       avatar: user.avatarUrl || '/images/avatar_default.png',
       college: displayCollege,
-      campusId: campusIdPost,
+      campusId: resolveCampusId(campusIdPost),
+      schoolId: (getCampusById(campusIdPost) || {}).schoolId || '',
       userId: openid,
       category: data.category || '校园生活',
       title: data.title || '',
@@ -424,7 +426,8 @@ function createPostsModule({ db, _, cloud, helpers }) {
       nickname: user.nickName || post.nickname || '未知用户',
       avatar: user.avatarUrl || post.avatar || '/images/avatar_default.png',
       college: displayCollegeUpdate,
-      campusId: campusIdUpdate,
+      campusId: resolveCampusId(campusIdUpdate),
+      schoolId: (getCampusById(campusIdUpdate) || {}).schoolId || '',
       updateTime: db.serverDate()
     }
 

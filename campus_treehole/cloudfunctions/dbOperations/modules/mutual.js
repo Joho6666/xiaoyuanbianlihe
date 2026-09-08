@@ -1,3 +1,4 @@
+const { getCampusById } = require('../shared/schools')
 const { createContentValidator } = require('../shared/content-safety')
 // modules/mutual.js - 校园互助生活与失物招领业务模块
 // 负责跑腿求助、课业答疑、借物寻物及失物归还全生命周期
@@ -122,6 +123,7 @@ function createMutualModule({ db, _, cloud, helpers }) {
       reward: String(postData.reward || '').trim(),
       contactPreference: postData.contactPreference || 'in_app',
       campusId,
+      schoolId: (getCampusById(campusId) || {}).schoolId || '',
       status: 'open',
       createTime: db.serverDate(),
       updateTime: db.serverDate()
