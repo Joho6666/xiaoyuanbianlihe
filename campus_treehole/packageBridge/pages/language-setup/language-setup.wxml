@@ -1,27 +1,18 @@
-<!-- packageBridge/pages/language-setup/language-setup.wxml - 设置双语档案 -->
+<!-- packageBridge/pages/language-setup/language-setup.wxml - 友桥极简双语档案设置 -->
 <view class="setup-container">
-  <!-- 身份与国籍 -->
-  <view class="form-card">
-    <view class="card-title">学生身份与国籍 / Identity</view>
-    <radio-group class="radio-list" bindchange="onStudentTypeChange">
-      <label class="radio-item">
-        <radio value="chineseStudent" checked="{{studentType === 'chineseStudent'}}" color="#0284c7" /> 中国学生 (Chinese Student)
-      </label>
-      <label class="radio-item">
-        <radio value="internationalStudent" checked="{{studentType === 'internationalStudent'}}" color="#0284c7" /> 国际留学生 (International Student)
-      </label>
-    </radio-group>
-
-    <view class="input-group">
-      <text class="input-label">来自国家或地区 / Country/Region</text>
-      <input class="text-input" value="{{country}}" placeholder="例如：中国 / France / USA" bindinput="onCountryInput" />
-    </view>
+  <!-- 引导头部 -->
+  <view class="hero-header">
+    <view class="hero-title">想找语言伙伴吗？</view>
+    <view class="hero-sub">选择你的母语和想学的语言，两步快速开启匹配！</view>
   </view>
 
-  <!-- 母语与熟练掌握语言 -->
-  <view class="form-card">
-    <view class="card-title">母语与精通语言 / Speaks</view>
-    <view class="card-hint">可多选，系统将优先为你匹配想学习该语言的语伴</view>
+  <!-- 必填项 1: 母语与精通语言 -->
+  <view class="form-card required-card">
+    <view class="card-head">
+      <text class="card-title">1. 我的母语 / 精通语言 *</text>
+      <text class="card-tag">必选</text>
+    </view>
+    <view class="card-hint">系统将优先为你匹配想学习该语言的同学</view>
     <view class="chips-grid">
       <view
         wx:for="{{languages}}"
@@ -36,10 +27,13 @@
     </view>
   </view>
 
-  <!-- 想学习的目标语言 -->
-  <view class="form-card">
-    <view class="card-title">正在学习的语言 / Learning</view>
-    <view class="card-hint">可多选，系统将为你优先匹配以该语言为母语的伙伴</view>
+  <!-- 必填项 2: 想学习交流的语言 -->
+  <view class="form-card required-card">
+    <view class="card-head">
+      <text class="card-title">2. 我想学习 / 交流的语言 *</text>
+      <text class="card-tag">必选</text>
+    </view>
+    <view class="card-hint">系统将优先为你推荐以此为母语的语伴</view>
     <view class="chips-grid">
       <view
         wx:for="{{languages}}"
@@ -54,36 +48,63 @@
     </view>
   </view>
 
-  <!-- 偏好交流方式 -->
-  <view class="form-card">
-    <view class="card-title">偏好交流形式 / Preferred Mode</view>
-    <radio-group class="radio-list" bindchange="onModeChange">
-      <label class="radio-item">
-        <radio value="offline" checked="{{exchangeMode === 'offline'}}" color="#0284c7" /> 校园线下交流（图书馆、咖啡厅、English Corner）
-      </label>
-      <label class="radio-item">
-        <radio value="online" checked="{{exchangeMode === 'online'}}" color="#0284c7" /> 线上语音/文字沟通（灵活跨校区交流）
-      </label>
-      <label class="radio-item">
-        <radio value="hybrid" checked="{{exchangeMode === 'hybrid'}}" color="#0284c7" /> 灵活多模态（根据双方时间弹性安排）
-      </label>
-    </radio-group>
+  <!-- 选填信息卡片 (可随时补充，不阻碍冷启动) -->
+  <view class="form-card optional-card">
+    <view class="card-head optional-toggle" bindtap="onToggleMoreOptions">
+      <text class="card-title">更多个性化设置 (选填)</text>
+      <text class="toggle-arrow">{{showMoreOptions ? '收起 ▲' : '展开 ▼'}}</text>
+    </view>
+
+    <view class="optional-content" wx:if="{{showMoreOptions}}">
+      <view class="sub-section">
+        <text class="sub-label">身份类型</text>
+        <radio-group class="radio-list" bindchange="onStudentTypeChange">
+          <label class="radio-item">
+            <radio value="chineseStudent" checked="{{studentType === 'chineseStudent'}}" color="#426089" /> 中国学生
+          </label>
+          <label class="radio-item">
+            <radio value="internationalStudent" checked="{{studentType === 'internationalStudent'}}" color="#426089" /> 留学生 / 国际学生
+          </label>
+        </radio-group>
+      </view>
+
+      <view class="sub-section">
+        <text class="sub-label">来自国家 / 地区</text>
+        <input class="text-input" value="{{country}}" placeholder="例如：中国 / France / USA (选填)" bindinput="onCountryInput" />
+      </view>
+
+      <view class="sub-section">
+        <text class="sub-label">偏好交流形式</text>
+        <radio-group class="radio-list" bindchange="onModeChange">
+          <label class="radio-item">
+            <radio value="offline" checked="{{exchangeMode === 'offline'}}" color="#426089" /> 校园线下面对面（图书馆/英语角）
+          </label>
+          <label class="radio-item">
+            <radio value="online" checked="{{exchangeMode === 'online'}}" color="#426089" /> 线上文字/语音沟通
+          </label>
+          <label class="radio-item">
+            <radio value="hybrid" checked="{{exchangeMode === 'hybrid'}}" color="#426089" /> 灵活多模态交流
+          </label>
+        </radio-group>
+      </view>
+
+      <view class="sub-section">
+        <text class="sub-label">个人简短介绍</text>
+        <textarea
+          class="bio-textarea"
+          placeholder="简单聊聊你的专业、兴趣爱好或期待的话题交流..."
+          value="{{bio}}"
+          bindinput="onBioInput"
+          maxlength="150"
+        />
+      </view>
+    </view>
   </view>
 
-  <!-- 个人双语介绍 -->
-  <view class="form-card">
-    <view class="card-title">双语自我介绍 / Bio</view>
-    <textarea
-      class="bio-textarea"
-      placeholder="简单介绍你的专业、兴趣爱好或期待交流的话题..."
-      value="{{bio}}"
-      bindinput="onBioInput"
-      maxlength="200"
-    />
-  </view>
-
-  <!-- 保存按钮 -->
+  <!-- 底部固定保存 -->
   <view class="submit-bar">
-    <button class="save-btn" disabled="{{submitting}}" bindtap="onSave">保存双语档案</button>
+    <button class="save-btn" disabled="{{submitting}}" bindtap="onSave">
+      🌍 开启互补语伴匹配
+    </button>
   </view>
 </view>

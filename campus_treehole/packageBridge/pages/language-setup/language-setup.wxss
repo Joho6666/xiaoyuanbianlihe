@@ -1,70 +1,72 @@
-/* packageBridge/pages/language-setup/language-setup.wxss */
+/* packageBridge/pages/language-setup/language-setup.wxss - 友桥极简双语档案 */
 .setup-container {
   min-height: 100vh;
   background-color: #f7f9fc;
   padding: 24rpx;
-  padding-bottom: calc(140rpx + env(safe-area-inset-bottom));
+  padding-bottom: calc(160rpx + env(safe-area-inset-bottom));
   box-sizing: border-box;
+}
+
+.hero-header {
+  background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+  border-radius: 28rpx;
+  padding: 36rpx 32rpx;
+  color: #ffffff;
+  margin-bottom: 24rpx;
+  box-shadow: 0 6rpx 20rpx rgba(2, 132, 199, 0.25);
+}
+
+.hero-title {
+  font-size: 36rpx;
+  font-weight: 800;
+  margin-bottom: 10rpx;
+}
+
+.hero-sub {
+  font-size: 24rpx;
+  opacity: 0.9;
+  line-height: 1.4;
 }
 
 .form-card {
   background: #ffffff;
   border-radius: 28rpx;
-  padding: 32rpx;
+  padding: 30rpx;
   margin-bottom: 24rpx;
   box-shadow: 0 4rpx 16rpx rgba(44, 51, 56, 0.03);
   border: 1rpx solid rgba(116, 124, 129, 0.06);
 }
 
+.required-card {
+  border-left: 8rpx solid #0284c7;
+}
+
+.card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10rpx;
+}
+
 .card-title {
   font-size: 28rpx;
   font-weight: 800;
-  color: #2c3338;
-  margin-bottom: 12rpx;
+  color: #1e293b;
+}
+
+.card-tag {
+  font-size: 20rpx;
+  font-weight: 700;
+  background: #e0f2fe;
+  color: #0369a1;
+  padding: 4rpx 12rpx;
+  border-radius: 8rpx;
 }
 
 .card-hint {
   font-size: 22rpx;
-  color: #747c81;
+  color: #64748b;
   margin-bottom: 20rpx;
-}
-
-.radio-list {
-  display: flex;
-  flex-direction: column;
-  gap: 18rpx;
-  margin-top: 12rpx;
-}
-
-.radio-item {
-  font-size: 26rpx;
-  color: #596065;
-  display: flex;
-  align-items: center;
-}
-
-.input-group {
-  margin-top: 24rpx;
-  padding-top: 20rpx;
-  border-top: 1rpx solid rgba(116, 124, 129, 0.08);
-}
-
-.input-label {
-  display: block;
-  font-size: 24rpx;
-  color: #747c81;
-  margin-bottom: 12rpx;
-}
-
-.text-input {
-  width: 100%;
-  height: 80rpx;
-  background: #f8fafc;
-  border-radius: 16rpx;
-  padding: 0 24rpx;
-  box-sizing: border-box;
-  font-size: 26rpx;
-  color: #2c3338;
 }
 
 .chips-grid {
@@ -81,6 +83,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  transition: all 0.2s ease;
 }
 
 .chip-native-active {
@@ -110,22 +113,80 @@
 
 .chip-sub {
   font-size: 20rpx;
-  color: #747c81;
+  color: #94a3b8;
   text-transform: uppercase;
+}
+
+/* 选填折叠卡片 */
+.optional-toggle {
+  margin-bottom: 0;
+  cursor: pointer;
+}
+
+.toggle-arrow {
+  font-size: 22rpx;
+  color: #64748b;
+}
+
+.optional-content {
+  margin-top: 24rpx;
+  padding-top: 20rpx;
+  border-top: 1rpx solid rgba(116, 124, 129, 0.08);
+}
+
+.sub-section {
+  margin-bottom: 24rpx;
+}
+
+.sub-section:last-child {
+  margin-bottom: 0;
+}
+
+.sub-label {
+  display: block;
+  font-size: 24rpx;
+  font-weight: 600;
+  color: #475569;
+  margin-bottom: 12rpx;
+}
+
+.radio-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+
+.radio-item {
+  font-size: 26rpx;
+  color: #475569;
+  display: flex;
+  align-items: center;
+}
+
+.text-input {
+  width: 100%;
+  height: 80rpx;
+  background: #f8fafc;
+  border-radius: 16rpx;
+  padding: 0 24rpx;
+  box-sizing: border-box;
+  font-size: 26rpx;
+  color: #2c3338;
 }
 
 .bio-textarea {
   width: 100%;
-  height: 180rpx;
+  height: 150rpx;
   background: #f8fafc;
   border-radius: 16rpx;
   padding: 20rpx 24rpx;
   box-sizing: border-box;
-  font-size: 26rpx;
+  font-size: 24rpx;
   color: #2c3338;
   line-height: 1.5;
 }
 
+/* 底部保存条 */
 .submit-bar {
   position: fixed;
   left: 0;
@@ -133,7 +194,7 @@
   bottom: 0;
   background: #ffffff;
   padding: 20rpx 32rpx calc(24rpx + env(safe-area-inset-bottom));
-  box-shadow: 0 -4rpx 16rpx rgba(44, 51, 56, 0.04);
+  box-shadow: 0 -4rpx 16rpx rgba(44, 51, 56, 0.06);
   z-index: 100;
 }
 

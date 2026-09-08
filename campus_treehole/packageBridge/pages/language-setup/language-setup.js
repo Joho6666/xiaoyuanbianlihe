@@ -1,15 +1,18 @@
-// packageBridge/pages/language-setup/language-setup.js - 双语档案配置
+// packageBridge/pages/language-setup/language-setup.js - 友桥极简双语档案配置
 const app = getApp()
-const { SUPPORTED_LANGUAGES, PROFICIENCY_LEVELS } = require('../../../utils/domain/language')
+const { SUPPORTED_LANGUAGES } = require('../../../utils/domain/language')
 
 Page({
   data: {
-    studentType: 'chineseStudent',
-    country: '中国',
     languages: SUPPORTED_LANGUAGES,
+    // 2 个核心必填项
     nativeLanguages: ['zh'],
     targetLanguages: ['en'],
-    proficiencyLevels: { zh: 'native', en: 'beginner' },
+
+    // 选填项
+    showMoreOptions: false,
+    studentType: 'chineseStudent',
+    country: '',
     exchangeMode: 'offline',
     bio: '',
     submitting: false
@@ -24,23 +27,19 @@ Page({
     const lp = userInfo.languageProfile
     if (lp) {
       this.setData({
+        nativeLanguages: (Array.isArray(lp.nativeLanguages) && lp.nativeLanguages.length > 0) ? lp.nativeLanguages : ['zh'],
+        targetLanguages: (Array.isArray(lp.targetLanguages) && lp.targetLanguages.length > 0) ? lp.targetLanguages : ['en'],
         studentType: lp.studentType || 'chineseStudent',
-        country: lp.country || '中国',
-        nativeLanguages: lp.nativeLanguages || ['zh'],
-        targetLanguages: lp.targetLanguages || ['en'],
-        proficiencyLevels: lp.proficiencyLevels || { zh: 'native', en: 'beginner' },
+        country: lp.country || '',
         exchangeMode: lp.exchangeMode || 'offline',
-        bio: lp.bio || ''
+        bio: lp.bio || '',
+        showMoreOptions: !!(lp.country || lp.bio || (lp.studentType && lp.studentType !== 'chineseStudent'))
       })
     }
   },
 
-  onStudentTypeChange(e) {
-    this.setData({ studentType: e.detail.value })
-  },
-
-  onCountryInput(e) {
-    this.setData({ country: e.detail.value })
+  onToggleMoreOptions() {
+    this.setData({ showMoreOptions: !this.data.showMoreOptions })
   },
 
   onToggleNativeLang(e) {
@@ -48,7 +47,7 @@ Page({
     let list = [...this.data.nativeLanguages]
     if (list.includes(code)) {
       if (list.length > 1) list = list.filter((c) => c !== code)
-      else wx.showToast({ title: '至少保留一种熟练语言', icon: 'none' })
+      else wx.showToast({ title: '至少保留一种母语/精通语言', icon: 'none' })
     } else {
       list.push(code)
     }
@@ -60,11 +59,19 @@ Page({
     let list = [...this.data.targetLanguages]
     if (list.includes(code)) {
       if (list.length > 1) list = list.filter((c) => c !== code)
-      else wx.showToast({ title: '至少保留一种想学语言', icon: 'none' })
+      else wx.showToast({ title: '至少保留一种想学习的语言', icon: 'none' })
     } else {
       list.push(code)
     }
     this.setData({ targetLanguages: list })
+  },
+
+  onStudentTypeChange(e) {
+    this.setData({ studentType: e.detail.value })
+  },
+
+  onCountryInput(e) {
+    this.setData({ country: e.detail.value })
   },
 
   onModeChange(e) {
@@ -77,15 +84,23 @@ Page({
 
   async onSave() {
     if (this.data.submitting) return
+    if (!this.data.nativeLanguages || this.data.nativeLanguages.length === 0) {
+      wx.showToast({ title: '请选择您的母语', icon: 'none' })
+      return
+    }
+    if (!this.data.targetLanguages || this.data.targetLanguages.length === 0) {
+      wx.showToast({ title: '请选择想学的语言', icon: 'none' })
+      return
+    }
+
     this.setData({ submitting: true })
     wx.showLoading({ title: '保存中...' })
 
     const payload = {
-      studentType: this.data.studentType,
-      country: this.data.country.trim() || '中国',
       nativeLanguages: this.data.nativeLanguages,
       targetLanguages: this.data.targetLanguages,
-      proficiencyLevels: this.data.proficiencyLevels,
+      studentType: this.data.studentType,
+      country: this.data.country.trim(),
       exchangeMode: this.data.exchangeMode,
       bio: this.data.bio.trim()
     }
@@ -99,8 +114,8 @@ Page({
         if (app.globalData && app.globalData.userInfo) {
           app.globalData.userInfo.languageProfile = payload
         }
-        wx.showToast({ title: '档案已更新', icon: 'success' })
-        setTimeout(() => wx.navigateBack(), 800)
+        wx.showToast({ title: '语言档案已开启！', icon: 'success' })
+        setTimeout(() => wx.navigateBack(), 600)
       } else {
         wx.showToast({ title: (res && res.msg) || '保存失败', icon: 'none' })
       }
