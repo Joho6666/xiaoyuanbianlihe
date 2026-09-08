@@ -10,6 +10,46 @@ function getNumericId(openid) {
   return String((raw % 90000000) + 10000000)
 }
 
+/**
+ * 登录响应用户白名单：只返回客户端明确需要的字段。
+ * ⚠️ 新增敏感字段（手机号/学号/内部标记等）必须显式加入此列表才会返回，
+ *    绝不能依赖 `...user` 全量展开（否则数据库加字段即自动泄露）。
+ */
+const SELF_USER_FIELDS = [
+  '_id',
+  '_openid',
+  'numericId',
+  'nickName',
+  'avatarUrl',
+  'college',
+  'campusId',
+  'campusName',
+  'bio',
+  'tags',
+  'coverImage',
+  'role',
+  'status',
+  'postCount',
+  'likeCount',
+  'followerCount',
+  'followingCount',
+  'isMuted',
+  'isLikeBanned',
+  'agreedPrivacy',
+  'profileCompleted',
+  'createTime',
+  'lastLoginTime'
+]
+
+function sanitizeSelfUser(user) {
+  if (!user || typeof user !== 'object') return user
+  const next = {}
+  for (const k of SELF_USER_FIELDS) {
+    if (k in user) next[k] = user[k]
+  }
+  return next
+}
+
 exports.main = async (event, context) => {
   const { OPENID } = cloud.getWXContext()
 
@@ -97,7 +137,7 @@ exports.main = async (event, context) => {
           numericId: nextUser.numericId
         }
       })
-      return { code: 0, msg: '登录成功', user: nextUser, openid: OPENID }
+      return { code: 0, msg: '登录成功', user: sanitizeSelfUser(nextUser), openid: OPENID }
     } else {
       // 新用户 - 创建用户记录
       const newUser = {
@@ -120,7 +160,7 @@ exports.main = async (event, context) => {
       }
       const addRes = await db.collection('users').add({ data: newUser })
       newUser._id = addRes._id
-      return { code: 0, msg: '注册成功', user: newUser, openid: OPENID, isNew: true }
+      return { code: 0, msg: '注册成功', user: sanitizeSelfUser(newUser), openid: OPENID, isNew: true }
     }
   } catch (err) {
     console.error('登录失败:', err)

@@ -4,10 +4,11 @@
   <meta charset="utf-8"/>
   <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
   <title>校园便利盒 - 管理后台</title>
+  <!-- ⚠️ 生产环境建议：固定 SDK 版本 + SRI 完整性校验 + CSP，避免可变 CDN 内容被替换 -->
   <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
   <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Fira+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
-  <script src="https://static.cloudbase.net/cloudbase-js-sdk/latest/cloudbase.full.js"></script>
+  <script src="https://static.cloudbase.net/cloudbase-js-sdk/2.16.0/cloudbase.full.js"></script>
   <script>
     tailwind.config = {
       theme: {
@@ -572,8 +573,13 @@
           <div class="bg-white rounded-xl border border-border/60 p-4 shadow-card">
             <h3 class="font-bold text-sm mb-3">关于</h3>
             <p class="text-xs text-gray-500">校园便利盒 Admin v7.0</p>
-            <p class="text-xs text-gray-400 mt-1">云环境: xyblh-5gb26qrnf9d30feb</p>
+            <p class="text-xs text-gray-400 mt-1">云环境: <span id="about-env-id">YOUR_CLOUD_ENV_ID</span></p>
             <p class="text-xs text-gray-400">密钥状态: <span id="secret-status" class="font-mono"></span></p>
+            <div class="mt-2 flex gap-2">
+              <input type="password" id="admin-secret-input" placeholder="管理密钥（≥16位）" class="flex-1 text-xs rounded-lg border border-border/60 px-2 py-1.5" autocomplete="off"/>
+              <button type="button" onclick="saveAdminSecret()" class="px-3 py-1.5 bg-primary text-white rounded-lg text-xs font-semibold cursor-pointer">保存</button>
+            </div>
+            <p class="text-xs text-gray-400 mt-1">密钥仅存于本浏览器，不会写入源码/服务器。</p>
           </div>
         </div>
       </div>
@@ -603,14 +609,48 @@
 
 <script>
 // ============ 配置（与小程序 campus_treehole/app.js 中 CLOUD_ENV_ID 保持一致）============
+// ⚠️ 安全提示：不要把 ADMIN_WEB_SECRET 硬编码在此文件！
+// 本文件随 hosting 公开托管，写死的密钥等于公开。正确做法：
+//   1) 云函数环境变量配置 ADMIN_WEB_SECRET（adminPanel + dbOperations）
+//   2) 部署后在本页「设置」面板输入密钥，仅存于浏览器 sessionStorage
+//   3) 密钥建议 16 位以上随机串；泄露后在控制台轮换
 const CONFIG = {
-  CLOUD_ENV_ID: 'xyblh-5gb26qrnf9d30feb',
-  /** 与云函数环境变量一致：adminPanel、dbOperations 均需 ADMIN_WEB_SECRET。可在控制台配置，或在 campus_treehole 目录执行 npm run cloud:push-fn-env（读取 cloudbaserc.json） */
-  ADMIN_WEB_SECRET: ''
+  CLOUD_ENV_ID: 'YOUR_CLOUD_ENV_ID',
+  /** 运行时从 sessionStorage 读取，避免硬编码进公开源码 */
+  get ADMIN_WEB_SECRET() {
+    try {
+      return sessionStorage.getItem('xyblh_admin_secret') || '';
+    } catch (e) { return ''; }
+  },
+  set ADMIN_WEB_SECRET(v) {
+    try {
+      if (v) sessionStorage.setItem('xyblh_admin_secret', String(v));
+      else sessionStorage.removeItem('xyblh_admin_secret');
+    } catch (e) { /* ignore */ }
+  }
 };
 
 function hasAdminSecret() {
-  return typeof CONFIG.ADMIN_WEB_SECRET === 'string' && CONFIG.ADMIN_WEB_SECRET.length >= 8;
+  return typeof CONFIG.ADMIN_WEB_SECRET === 'string' && CONFIG.ADMIN_WEB_SECRET.length >= 16;
+}
+
+/** 保存管理密钥到 sessionStorage（不写入源码）；刷新 secret-status 并重新加载数据 */
+function saveAdminSecret() {
+  const input = document.getElementById('admin-secret-input');
+  const val = input ? input.value.trim() : '';
+  if (!val) { toast('请输入管理密钥', 'error'); return; }
+  if (val.length < 16) { toast('密钥过短：建议 16 位以上随机串', 'error'); return; }
+  CONFIG.ADMIN_WEB_SECRET = val;
+  if (input) input.value = '';
+  updateSecretStatus();
+  toast('管理密钥已保存（仅本浏览器 sessionStorage）', 'success');
+  loadAllData();
+}
+
+/** 更新“密钥状态”指示 */
+function updateSecretStatus() {
+  const el = document.getElementById('secret-status');
+  if (el) el.textContent = hasAdminSecret() ? '已配置' : '未配置（只读模式）';
 }
 
 // ============ 初始化 ============
@@ -878,18 +918,20 @@ function assertCloudOk(raw, fallbackMsg) {
   return raw;
 }
 
-/** 有密钥时先走云函数，遇 PERMISSION_DENIED 则走 dbLoader（依赖库安全规则允许匿名读） */
+/** 有密钥时走云函数；无密钥或云函数拒绝时也不直连数据库读（fail-closed），由调用方处理空态 */
 async function adminReadWithDbFallback(adminAction, adminData, dbLoader) {
   if (!hasAdminSecret()) {
-    const data = await dbLoader();
-    return { code: 0, data };
+    // 🔒 FAIL-CLOSED：无管理密钥 → 拒绝读取，绝不匿名直连数据库
+    console.warn('adminRead blocked: 管理密钥未配置（安全模式拒绝读）', adminAction);
+    return { code: -403, msg: '管理密钥未配置，已拒绝读取（安全模式）' };
   }
   try {
     return assertCloudOk(await adminCall(adminAction, adminData), '请求失败');
   } catch (e) {
     if (!isCloudPermissionDenied(e)) throw e;
-    const data = await dbLoader();
-    return { code: 0, data };
+    // 🔒 云函数权限失败时同样不降级直连；记录日志便于排查
+    console.error('adminRead failed (no db fallback):', adminAction, e);
+    return { code: -403, msg: '读取失败：云函数权限被拒（安全模式，未降级直连）' };
   }
 }
 
@@ -1186,6 +1228,19 @@ const PAGE_SIZE = 50;
 function setStatus(t,c) { const el=document.getElementById('connection-status'); el.className=`fixed top-0 left-0 w-full text-white text-center py-1.5 text-xs font-bold z-[100] ${c}`; el.textContent=t; }
 function fmt(d) { if(!d)return'-'; const dt=new Date(d); if(isNaN(dt))return'-'; const p=n=>String(n).padStart(2,'0'); return `${dt.getMonth()+1}-${p(dt.getDate())} ${p(dt.getHours())}:${p(dt.getMinutes())}`; }
 function esc(s) { if(!s)return''; const d=document.createElement('div'); d.textContent=s; return d.innerHTML; }
+/** 用于 JS 字符串上下文（onclick="fn('...')"）：转义反斜杠/单引号/换行，防存储型 XSS */
+function jsStr(s) {
+  if (s == null) return '';
+  return String(s)
+    .replace(/\\/g, '\\\\')
+    .replace(/'/g, "\\'")
+    .replace(/"/g, '\\"')
+    .replace(/\r/g, '\\r')
+    .replace(/\n/g, '\\n')
+    .replace(/</g, '\\u003c')
+    .replace(/>/g, '\\u003e')
+    .replace(/&/g, '\\u0026');
+}
 /** 用于 img/video src：不要用 esc()，否则 URL 里的 & 会被转成 &amp; 导致加载失败 */
 function attrUrl(s) {
   if (s == null || s === '') return '';
@@ -1329,8 +1384,9 @@ async function initAdmin() {
     await auth.anonymousAuthProvider().signIn();
     setStatus('已连接','bg-green-500');
     if (!hasAdminSecret()) {
-      toast('未配置 CONFIG.ADMIN_WEB_SECRET：写操作将直连数据库。请在云函数 adminPanel 设置环境变量 ADMIN_WEB_SECRET 后在此页填写相同密钥。', 'error');
+      toast('管理密钥未配置：当前为安全只读模式，读写均被拒绝。请在「设置 → 关于」输入密钥（≥16 位，与云函数环境变量一致）。', 'error');
     }
+    updateSecretStatus();
     await loadAllData();
     const ar = document.getElementById('dash-auto-refresh');
     if (ar) ar.checked = true;
@@ -1672,11 +1728,11 @@ function renderPosts(posts) {
         ${p.location?`<span class="truncate max-w-[200px]">📍 ${esc(p.location)}</span>`:''}
       </div>
       <div class="flex flex-wrap gap-2 mt-4">
-        <button onclick="doPost('top','${p._id}')" class="card-action flex-1 min-w-[100px] text-xs font-bold rounded-xl ${p.isTop?'bg-amber-50 text-amber-800 border border-amber-100':'bg-slate-50 text-slate-700 border border-slate-100'} active:scale-95">${p.isTop?'取消置顶':'置顶'}</button>
-        <button onclick="doPost('hide','${p._id}')" class="card-action flex-1 min-w-[100px] text-xs font-bold rounded-xl bg-orange-50 text-orange-700 border border-orange-100 active:scale-95">下架</button>
-        <button onclick="doPost('del','${p._id}')" class="card-action flex-1 min-w-[100px] text-xs font-bold rounded-xl bg-red-50 text-red-700 border border-red-100 active:scale-95">删除</button>
-        ${p.status==='hidden'?`<button onclick="doPost('restore','${p._id}')" class="card-action flex-1 min-w-[100px] text-xs font-bold rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-100 active:scale-95">恢复</button>`:''}
-        ${p.status==='pending'?`<button onclick="doPost('approve','${p._id}')" class="card-action flex-1 min-w-[88px] text-xs font-bold rounded-xl bg-sky-50 text-sky-800 border border-sky-100">通过</button><button onclick="doPost('reject','${p._id}')" class="card-action flex-1 min-w-[88px] text-xs font-bold rounded-xl bg-rose-50 text-rose-700 border border-rose-100">驳回</button>`:''}
+        <button onclick="doPost('top','${jsStr(p._id)}')" class="card-action flex-1 min-w-[100px] text-xs font-bold rounded-xl ${p.isTop?'bg-amber-50 text-amber-800 border border-amber-100':'bg-slate-50 text-slate-700 border border-slate-100'} active:scale-95">${p.isTop?'取消置顶':'置顶'}</button>
+        <button onclick="doPost('hide','${jsStr(p._id)}')" class="card-action flex-1 min-w-[100px] text-xs font-bold rounded-xl bg-orange-50 text-orange-700 border border-orange-100 active:scale-95">下架</button>
+        <button onclick="doPost('del','${jsStr(p._id)}')" class="card-action flex-1 min-w-[100px] text-xs font-bold rounded-xl bg-red-50 text-red-700 border border-red-100 active:scale-95">删除</button>
+        ${p.status==='hidden'?`<button onclick="doPost('restore','${jsStr(p._id)}')" class="card-action flex-1 min-w-[100px] text-xs font-bold rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-100 active:scale-95">恢复</button>`:''}
+        ${p.status==='pending'?`<button onclick="doPost('approve','${jsStr(p._id)}')" class="card-action flex-1 min-w-[88px] text-xs font-bold rounded-xl bg-sky-50 text-sky-800 border border-sky-100">通过</button><button onclick="doPost('reject','${jsStr(p._id)}')" class="card-action flex-1 min-w-[88px] text-xs font-bold rounded-xl bg-rose-50 text-rose-700 border border-rose-100">驳回</button>`:''}
         ${!p.isLocked?`<button onclick="doPost('lock','${p._id}')" class="card-action flex-1 min-w-[88px] text-xs font-bold rounded-xl bg-slate-50 text-slate-600 border border-slate-100">锁定</button>`:''}
       </div>
     </div>`}).join('');
@@ -1686,58 +1742,39 @@ async function doPost(act,id) {
   const execPost = async () => {
     try {
       if (act === 'reject') {
-        await adminWriteWithDbFallback(
-          async () => { assertCloudOk(await adminCall('rejectPost', { postId: id }), '驳回失败'); toast('已驳回'); },
-          async () => { await db.collection('posts').doc(id).update({ status: 'rejected' }); toast('已驳回'); }
-        );
+        await (
+          async () => { assertCloudOk(await adminCall('rejectPost', { postId: id }), '驳回失败'); toast('已驳回'); });
         logAuditAction('驳回帖子', id); loadPosts(); return;
       }
       if (act === 'lock') {
-        await adminWriteWithDbFallback(
-          async () => { assertCloudOk(await adminCall('lockPost', { postId: id }), '锁定失败'); toast('已锁定'); },
-          async () => { await db.collection('posts').doc(id).update({ isLocked: true }); toast('已锁定'); }
-        );
+        await (
+          async () => { assertCloudOk(await adminCall('lockPost', { postId: id }), '锁定失败'); toast('已锁定'); });
         logAuditAction('锁定帖子', id); loadPosts(); return;
       }
       if (act === 'top') {
-        await adminWriteWithDbFallback(
+        await (
           async () => {
             const raw = assertCloudOk(await adminCall('toggleTopPost', { postId: id }), '置顶失败');
             toast(raw.data && raw.data.isTop ? '已置顶' : '已取消置顶');
-          },
-          async () => {
-            const p = await db.collection('posts').doc(id).get(); const d = p.data[0] || p.data;
-            await db.collection('posts').doc(id).update({ isTop: !d.isTop });
-            toast(d.isTop ? '已取消置顶' : '已置顶');
-          }
-        );
+          });
         logAuditAction('置顶帖子', id); loadPosts(); return;
       }
       if (act === 'hide') {
-        await adminWriteWithDbFallback(
-          async () => { assertCloudOk(await adminCall('setPostStatus', { postId: id, status: 'hidden' }), '下架失败'); toast('已下架'); },
-          async () => { await db.collection('posts').doc(id).update({ status: 'hidden' }); toast('已下架'); }
-        );
+        await (
+          async () => { assertCloudOk(await adminCall('setPostStatus', { postId: id, status: 'hidden' }), '下架失败'); toast('已下架'); });
         logAuditAction('下架帖子', id); animRm(id, 'post'); return;
       }
       if (act === 'del') {
-        await adminWriteWithDbFallback(
-          async () => { assertCloudOk(await adminCall('setPostStatus', { postId: id, status: 'deleted' }), '删除失败'); toast('已删除'); },
-          async () => { await db.collection('posts').doc(id).update({ status: 'deleted' }); toast('已删除'); }
-        );
+        await (
+          async () => { assertCloudOk(await adminCall('setPostStatus', { postId: id, status: 'deleted' }), '删除失败'); toast('已删除'); });
         logAuditAction('删除帖子', id); animRm(id, 'post'); return;
       }
       if (act === 'restore' || act === 'approve') {
-        await adminWriteWithDbFallback(
+        await (
           async () => {
             assertCloudOk(await adminCall('setPostStatus', { postId: id, status: 'active' }), '更新失败');
             toast(act === 'approve' ? '已审核通过！前台可见' : '已恢复');
-          },
-          async () => {
-            await db.collection('posts').doc(id).update({ status: 'active' });
-            toast(act === 'approve' ? '已审核通过！前台可见' : '已恢复');
-          }
-        );
+          });
         logAuditAction(act === 'approve' ? '审核通过' : '恢复帖子', id); loadPosts(); return;
       }
     } catch(e) { toast('失败: '+e.message,'error'); }
@@ -1794,24 +1831,18 @@ async function doGoods(act,id) {
   const execGoods = async () => {
     try {
       if (act === 'hide') {
-        await adminWriteWithDbFallback(
-          async () => { assertCloudOk(await adminCall('setGoodsStatus', { goodsId: id, status: 'hidden' }), '下架失败'); toast('已下架'); },
-          async () => { await db.collection('market_goods').doc(id).update({ status: 'hidden' }); toast('已下架'); }
-        );
+        await (
+          async () => { assertCloudOk(await adminCall('setGoodsStatus', { goodsId: id, status: 'hidden' }), '下架失败'); toast('已下架'); });
         logAuditAction('下架商品', id); animRm(id, 'goods'); return;
       }
       if (act === 'del') {
-        await adminWriteWithDbFallback(
-          async () => { assertCloudOk(await adminCall('setGoodsStatus', { goodsId: id, status: 'deleted' }), '删除失败'); toast('已删除'); },
-          async () => { await db.collection('market_goods').doc(id).update({ status: 'deleted', deleteTime: new Date() }); toast('已删除'); }
-        );
+        await (
+          async () => { assertCloudOk(await adminCall('setGoodsStatus', { goodsId: id, status: 'deleted' }), '删除失败'); toast('已删除'); });
         logAuditAction('删除商品', id); animRm(id, 'goods'); return;
       }
       if (act === 'restore') {
-        await adminWriteWithDbFallback(
-          async () => { assertCloudOk(await adminCall('setGoodsStatus', { goodsId: id, status: 'active' }), '恢复失败'); toast('已恢复'); },
-          async () => { await db.collection('market_goods').doc(id).update({ status: 'active' }); toast('已恢复'); }
-        );
+        await (
+          async () => { assertCloudOk(await adminCall('setGoodsStatus', { goodsId: id, status: 'active' }), '恢复失败'); toast('已恢复'); });
         logAuditAction('恢复商品', id); loadGoods(); return;
       }
     } catch(e) { toast('失败: '+e.message,'error'); }
@@ -1968,7 +1999,7 @@ async function showUserSheet(openid) {
           ?`<button onclick="doUser('unbanlike','${openid}')" class="card-action text-xs font-bold rounded-xl bg-green-50 text-green-600 active:scale-95">恢复点赞</button>`
           :`<button onclick="doUser('banlike','${openid}')" class="card-action text-xs font-bold rounded-xl bg-pink-50 text-pink-600 active:scale-95">禁止点赞</button>`}
         ${u.status!=='banned'
-          ?`<button onclick="showBanOptions('${openid}','${esc(u.nickName)}')" class="card-action text-xs font-bold rounded-xl bg-red-50 text-red-600 active:scale-95">封禁账号</button>`
+          ?`<button onclick="showBanOptions('${jsStr(openid)}','${jsStr(u.nickName)}')" class="card-action text-xs font-bold rounded-xl bg-red-50 text-red-600 active:scale-95">封禁账号</button>`
           :`<button onclick="doUser('unban','${openid}')" class="card-action text-xs font-bold rounded-xl bg-green-50 text-green-600 active:scale-95">解除封禁</button>`}
       </div>
     `);
@@ -2011,25 +2042,10 @@ function showBanOptions(openid, name) {
 
 async function doBan(openid, days) {
   try {
-    await adminWriteWithDbFallback(
+    await (
       async () => {
         assertCloudOk(await adminCall('banUserDays', { targetOpenid: openid, days: days > 0 ? days : 0 }), '封禁失败');
-      },
-      async () => {
-        const update = { status: 'banned', banTime: new Date() };
-        if (days > 0) {
-          const expiry = new Date(); expiry.setDate(expiry.getDate() + days);
-          update.banExpiry = expiry;
-        } else { update.banExpiry = null; }
-        await db.collection('users').where({ _openid: openid }).update(update);
-        await Promise.all([
-          safeUpdateWhere('posts', { _openid: openid, status: 'active' }, { status: 'hidden' }),
-          safeUpdateWhere('market_goods', { _openid: openid, status: 'active' }, { status: 'hidden' }),
-          safeUpdateWhere('comments', { _openid: openid, status: 'active' }, { status: 'hidden' }),
-          safeUpdateWhere('market_comments', { _openid: openid, status: 'active' }, { status: 'hidden' })
-        ]);
-      }
-    );
+      });
     closeSheet(); toast(days > 0 ? `已封禁 ${days} 天` : '已永久封禁');
     logAuditAction(days > 0 ? `封禁用户 ${days} 天` : '永久封禁用户', openid);
     loadUsers(); loadDashboard();
@@ -2048,67 +2064,32 @@ function doCustomBan(openid) {
 async function doUser(act, openid) {
   try {
     if (act === 'setAdmin') {
-      await adminWriteWithDbFallback(
-        async () => { assertCloudOk(await adminCall('setAdmin', { targetOpenid: openid }), '操作失败'); },
-        async () => {
-          const ur = await db.collection('users').where({ _openid: openid }).limit(1).get();
-          if (!ur.data.length) throw new Error('未找到该用户');
-          await db.collection('users').doc(ur.data[0]._id).update({
-            role: 'admin',
-            status: 'active',
-            banTime: null,
-            banExpiry: null
-          });
-        }
-      );
+      await (
+        async () => { assertCloudOk(await adminCall('setAdmin', { targetOpenid: openid }), '操作失败'); });
       toast('已设为管理员');
     } else if (act === 'removeAdmin') {
-      await adminWriteWithDbFallback(
-        async () => { assertCloudOk(await adminCall('removeAdmin', { targetOpenid: openid }), '操作失败'); },
-        async () => {
-          const ur = await db.collection('users').where({ _openid: openid }).limit(1).get();
-          if (!ur.data.length) throw new Error('未找到该用户');
-          await db.collection('users').doc(ur.data[0]._id).update({ role: 'user' });
-        }
-      );
+      await (
+        async () => { assertCloudOk(await adminCall('removeAdmin', { targetOpenid: openid }), '操作失败'); });
       toast('已取消管理员');
     } else if (act === 'mute') {
-      await adminWriteWithDbFallback(
-        async () => { assertCloudOk(await adminCall('muteUser', { targetOpenid: openid }), '操作失败'); },
-        async () => { await db.collection('users').where({ _openid: openid }).update({ isMuted: true }); }
-      );
+      await (
+        async () => { assertCloudOk(await adminCall('muteUser', { targetOpenid: openid }), '操作失败'); });
       toast('已禁言');
     } else if (act === 'unmute') {
-      await adminWriteWithDbFallback(
-        async () => { assertCloudOk(await adminCall('unmuteUser', { targetOpenid: openid }), '操作失败'); },
-        async () => { await db.collection('users').where({ _openid: openid }).update({ isMuted: false }); }
-      );
+      await (
+        async () => { assertCloudOk(await adminCall('unmuteUser', { targetOpenid: openid }), '操作失败'); });
       toast('已解除禁言');
     } else if (act === 'banlike') {
-      await adminWriteWithDbFallback(
-        async () => { assertCloudOk(await adminCall('banLikeUser', { targetOpenid: openid }), '操作失败'); },
-        async () => { await db.collection('users').where({ _openid: openid }).update({ isLikeBanned: true }); }
-      );
+      await (
+        async () => { assertCloudOk(await adminCall('banLikeUser', { targetOpenid: openid }), '操作失败'); });
       toast('已禁止点赞');
     } else if (act === 'unbanlike') {
-      await adminWriteWithDbFallback(
-        async () => { assertCloudOk(await adminCall('unbanLikeUser', { targetOpenid: openid }), '操作失败'); },
-        async () => { await db.collection('users').where({ _openid: openid }).update({ isLikeBanned: false }); }
-      );
+      await (
+        async () => { assertCloudOk(await adminCall('unbanLikeUser', { targetOpenid: openid }), '操作失败'); });
       toast('已恢复点赞');
     } else if (act === 'unban') {
-      await adminWriteWithDbFallback(
-        async () => { assertCloudOk(await adminCall('unbanUser', { targetOpenid: openid }), '操作失败'); },
-        async () => {
-          await db.collection('users').where({ _openid: openid }).update({ status: 'active', banTime: null, banExpiry: null });
-          await Promise.all([
-            safeUpdateWhere('posts', { _openid: openid, status: 'hidden' }, { status: 'active' }),
-            safeUpdateWhere('market_goods', { _openid: openid, status: 'hidden' }, { status: 'active' }),
-            safeUpdateWhere('comments', { _openid: openid, status: 'hidden' }, { status: 'active' }),
-            safeUpdateWhere('market_comments', { _openid: openid, status: 'hidden' }, { status: 'active' })
-          ]);
-        }
-      );
+      await (
+        async () => { assertCloudOk(await adminCall('unbanUser', { targetOpenid: openid }), '操作失败'); });
       toast('已解封');
     }
     logAuditAction(act, openid);
@@ -2156,7 +2137,7 @@ function renderReports(reports) {
         <p class="text-xs text-gray-700 line-clamp-3">${esc(r._tc||'')}</p>
       </div>
       ${r.status==='pending'?`<div class="flex gap-2">
-        <button onclick="doReport('${r._id}','resolved','${r.targetId}','${r.targetType}')" class="card-action flex-1 text-[11px] font-bold rounded-xl bg-red-50 text-red-600 active:scale-95">违规删除</button>
+        <button onclick="doReport('${jsStr(r._id)}','resolved','${jsStr(r.targetId)}','${jsStr(r.targetType)}')" class="card-action flex-1 text-[11px] font-bold rounded-xl bg-red-50 text-red-600 active:scale-95">违规删除</button>
         <button onclick="doReport('${r._id}','dismissed')" class="card-action flex-1 text-[11px] font-bold rounded-xl bg-gray-50 text-gray-600 active:scale-95">驳回</button>
       </div>`:''}
     </div>`).join('');
@@ -2188,10 +2169,8 @@ async function doReport(rid, result, tid, ttype) {
         }
       }
     };
-    await adminWriteWithDbFallback(
-      async () => { assertCloudOk(await adminCall('handleReport', { reportId: rid, result }), '处理失败'); },
-      runReportDb
-    );
+    await (
+      async () => { assertCloudOk(await adminCall('handleReport', { reportId: rid, result }), '处理失败'); });
     toast(result === 'resolved' ? '已处理，内容已删除' : '已驳回'); loadReports(); loadDashboard();
   } catch(e) { toast('处理失败','error'); }
 }
@@ -2253,7 +2232,7 @@ function renderComments(comments) {
       </div>
       ${cc.status==='deleted'
         ? `<span class="text-[10px] text-gray-400 px-2 py-1">已删除</span>`
-        : `<button onclick="doDelComment('${cc._id}','${cc.postId || cc.goodsId || ''}','${cc._commentType || 'post'}')" class="p-2 rounded-xl bg-red-50 text-red-500 active:scale-90 flex-shrink-0"><span class="material-symbols-outlined text-base">delete</span></button>`
+        : `<button onclick="doDelComment('${jsStr(cc._id)}','${jsStr(cc.postId || cc.goodsId || '')}','${jsStr(cc._commentType || 'post')}')" class="p-2 rounded-xl bg-red-50 text-red-500 active:scale-90 flex-shrink-0"><span class="material-symbols-outlined text-base">delete</span></button>`
       }
     </div>`).join('');
 }
@@ -2286,12 +2265,10 @@ async function doDelComment(cid, parentId, commentType='post') {
         }
       }
     };
-    await adminWriteWithDbFallback(
+    await (
       async () => {
         assertCloudOk(await adminCall('deleteCommentAdmin', { commentId: cid, scope }), '删除失败');
-      },
-      runDb
-    );
+      });
     toast('评论已删除'); animRm(cid, 'comment');
   } catch(e) { toast('删除失败','error'); }
 }

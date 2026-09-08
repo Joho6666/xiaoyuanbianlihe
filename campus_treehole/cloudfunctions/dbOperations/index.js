@@ -57,6 +57,19 @@ function getOpenid(context) {
   return openid
 }
 
+/**
+ * 统一分页参数校验：page ≥ 1 的整数，pageSize 限制在 [1, MAX]
+ * 防止 NaN/负数/超大数导致的异常查询与过量读取
+ */
+function normalizePagination(page, pageSize, maxPageSize = 50) {
+  let p = parseInt(page, 10)
+  if (!Number.isFinite(p) || p < 1) p = 1
+  let ps = parseInt(pageSize, 10)
+  if (!Number.isFinite(ps) || ps < 1) ps = 20
+  if (ps > maxPageSize) ps = maxPageSize
+  return { page: p, pageSize: ps, skip: (p - 1) * ps }
+}
+
 /** 朋友圈单页/未登录也可读的接口（仍会在有 OPENID 时返回点赞收藏状态） */
 const PUBLIC_READ_ACTIONS = new Set([
   'getPostById',
@@ -579,14 +592,16 @@ exports.main = async (event, context) => {
     return await getPostById(data.postId, openid)
   }
   if (action === 'getComments') {
-    return await getComments(data.postId, data.sortBy)
+    const openid = getOpenidFromContext()
+    return await getComments(openid, data.postId, data.sortBy)
   }
   if (action === 'getMarketGoodsById') {
     const openid = getOpenidFromContext()
     return await getMarketGoodsById(data.goodsId, openid)
   }
   if (action === 'getMarketComments') {
-    return await getMarketComments(data.goodsId)
+    const openid = getOpenidFromContext()
+    return await getMarketComments(openid, data.goodsId)
   }
 
   // 与 callAdminPanel 相同密钥：供本机 CloudBase CLI「tcb fn invoke」执行迁移（无 OPENID）
@@ -649,7 +664,7 @@ exports.main = async (event, context) => {
 
       // ===== 评论相关 =====
       case 'getComments':
-        return await getComments(data.postId, data.sortBy)
+        return await getComments(openid, data.postId, data.sortBy)
       case 'addComment':
         return await addComment(openid, data)
 
@@ -693,7 +708,7 @@ exports.main = async (event, context) => {
       case 'searchUsers':
         return await searchUsers(openid, data.keyword)
       case 'getMyPosts':
-        return await getMyPosts(openid, data)
+        return await getUserPosts(openid, openid, data)
       case 'getUserPosts':
         return await getUserPosts(openid, data.targetOpenid, data)
       case 'getUserMarketGoods':
@@ -763,7 +778,7 @@ exports.main = async (event, context) => {
       case 'deleteMarketGoods':
         return await deleteMarketGoods(openid, data.goodsId)
       case 'getMarketComments':
-        return await getMarketComments(data.goodsId)
+        return await getMarketComments(openid, data.goodsId)
       case 'addMarketComment':
         return await addMarketComment(openid, data)
 
@@ -1011,6 +1026,9 @@ function sortPostsByTimeDesc(arr) {
 
 /** 关注数 >20 时 _.in 需分批查询再合并（微信端单次 in 最多 20 条） */
 async function getPostsFollowMultiChunk(targetIds, { category, keyword, page, pageSize, campusId }) {
+  const { page: safePage, pageSize: safePageSize, skip: safeSkip } = normalizePagination(page, pageSize, 50)
+  page = safePage
+  pageSize = safePageSize
   const parts = [{ status: 'active' }]
   const cw = campusWhereClause(campusId || DEFAULT_CAMPUS_ID)
   if (cw) parts.push(cw)
@@ -1078,6 +1096,10 @@ async function getFollowTargetOpenids(openid, maxFollowCount = 2000) {
 }
 
 async function getPosts(openid, { category, keyword, page = 1, pageSize = 20, feedType = 'discover', campusId: campusIdRaw }) {
+  const { page: safePage, pageSize: safePageSize, skip: safeSkip } = normalizePagination(page, pageSize, 50)
+  page = safePage
+  pageSize = safePageSize
+
   const campusIdRead = resolveCampusIdForRead({ campusId: campusIdRaw })
   if (campusIdRead === null) {
     return { code: 0, data: [] }
@@ -1150,8 +1172,8 @@ async function getPosts(openid, { category, keyword, page = 1, pageSize = 20, fe
 
   const normalPosts = await db.collection('posts').where(_.and([baseCondition, { isTop: _.neq(true) }]))
     .orderBy('createTime', 'desc')
-    .skip((page - 1) * pageSize)
-    .limit(pageSize)
+    .skip(safeSkip)
+    .limit(safePageSize)
     .get()
 
   let allPosts = [...topPosts.data, ...normalPosts.data]
@@ -1223,7 +1245,18 @@ async function addPost(openid, data) {
   const localCheck = checkBannedWords(textToCheck)
   if (!localCheck.pass) return { code: -2, msg: `内容包含违规词"${localCheck.word}"`, word: localCheck.word }
 
+  // 🔒 输入长度/数量上限（服务端强制，防超大内容与过量媒体）
+  const titleStr = String(data.title || '').trim()
+  const contentStr = String(data.content || '').trim()
+  if (titleStr.length > 60) return { code: -1, msg: '标题不能超过 60 字' }
+  if (contentStr.length > 5000) return { code: -1, msg: '内容不能超过 5000 字' }
   const images = Array.isArray(data.images) ? data.images : []
+  const thumbImages = Array.isArray(data.thumbImages) ? data.thumbImages : []
+  if (images.length > 9) return { code: -1, msg: '图片最多 9 张' }
+  if (thumbImages.length > 9) return { code: -1, msg: '缩略图数量超限' }
+  const videos = Array.isArray(data.videos) ? data.videos : []
+  if (videos.length > 1) return { code: -1, msg: '视频最多 1 个' }
+
   const imagePromise = wxImageBatchCheck(openid, images)
   const wxCheck = await wxTextCheck(openid, textToCheck)
   if (!wxCheck.pass) {
@@ -1233,8 +1266,6 @@ async function addPost(openid, data) {
   const wxImageRes = await imagePromise
   if (!wxImageRes.pass) return { code: -2, msg: '图片未通过安全审核' }
 
-  const videos = Array.isArray(data.videos) ? data.videos : []
-  const thumbImages = Array.isArray(data.thumbImages) ? data.thumbImages : []
   if (videos.length > 0 && !isAdmin) {
     return { code: -1, msg: '仅管理员可发布视频' }
   }
@@ -1336,10 +1367,15 @@ async function updatePost(openid, data) {
     thumbImages,
     videos,
     image: images.length > 0 ? images[0] : '',
-    isAnonymous: false,
+    // 🔒 保留原帖匿名状态：编辑不强制实名化（除非管理员显式操作）
+    isAnonymous: post.isAnonymous === true,
     location: data.location || '',
-    nickname: user.nickName || post.nickname || '未知用户',
-    avatar: user.avatarUrl || post.avatar || '/images/avatar_default.png',
+    nickname: post.isAnonymous === true
+      ? (post.nickname || '匿名用户')
+      : (user.nickName || post.nickname || '未知用户'),
+    avatar: post.isAnonymous === true
+      ? (post.avatar || '/images/avatar_default.png')
+      : (user.avatarUrl || post.avatar || '/images/avatar_default.png'),
     college: displayCollegeUpdate,
     campusId: campusIdUpdate,
     updateTime: db.serverDate()
@@ -1410,7 +1446,17 @@ async function toggleTopPost(openid, postId) {
 
 // ========== 评论操作 ==========
 
-async function getComments(postId, sortBy = 'hot') {
+async function getComments(openid, postId, sortBy = 'hot') {
+  // 🔒 读取侧访问控制：校验父帖子存在且 active，并检查拉黑关系
+  const postPre = await db.collection('posts').doc(postId).get().catch(() => ({ data: null }))
+  const parent = postPre && postPre.data
+  if (!parent || !parent._openid || parent.status !== 'active') {
+    return { code: -1, msg: '帖子不存在或已删除' }
+  }
+  if (openid && await contentDetailBlocked(openid, parent._openid)) {
+    return { code: -1, msg: '无法查看该帖子的评论' }
+  }
+
   let query = db.collection('comments').where({ postId, status: 'active' })
 
   if (sortBy === 'hot') {
@@ -1420,7 +1466,16 @@ async function getComments(postId, sortBy = 'hot') {
   }
 
   const res = await query.limit(100).get()
-  return { code: 0, data: res.data }
+  // 🔒 评论列表脱敏：移除 _openid（前端展示不需要，防内部标识泄露）
+  const data = (res.data || []).map((c) => {
+    if (c && typeof c === 'object') {
+      const next = { ...c }
+      delete next._openid
+      return next
+    }
+    return c
+  })
+  return { code: 0, data }
 }
 
 async function addComment(openid, data) {
@@ -1448,6 +1503,19 @@ async function addComment(openid, data) {
 
   const userRes = await db.collection('users').where({ _openid: openid }).get()
   const user = userRes.data[0] || {}
+
+  // 🔒 防重复提交：3 秒内同一用户对同一帖子发相同内容 → 拒绝（幂等兜底）
+  try {
+    const dupCheck = await db.collection('comments').where({
+      _openid: openid,
+      postId: data.postId,
+      content: String(data.content || ''),
+      createTime: _.gte(new Date(Date.now() - 3000))
+    }).count()
+    if (dupCheck.total > 0) {
+      return { code: 0, msg: '评论成功' }
+    }
+  } catch (e) { /* 检查失败不阻断主流程 */ }
 
   const newComment = {
     _openid: openid,
@@ -1493,24 +1561,29 @@ async function addComment(openid, data) {
   if (data.replyTo && data.replyTo.commentId) {
     const parentCommentRes = await db.collection('comments').doc(data.replyTo.commentId).get().catch(() => ({ data: null }))
     const parentComment = parentCommentRes.data || {}
-    await addNotification({
-      toOpenid: parentComment._openid,
-      fromOpenid: openid,
-      type: 'comment_reply',
-      targetType: 'post',
-      targetId: data.postId,
-      postId: data.postId,
-      commentId: addRes._id,
-      content: trimSnippet(data.content),
-      itemTitle: trimSnippet(post.title || post.content || '帖子')
-    })
-    await triggerSubscribeNotify({
-      toOpenid: parentComment._openid,
-      sceneType: 'comment',
-      actorName: user.nickName || '有人',
-      summary: `回复了你的评论：${trimSnippet(post.title || post.content || '帖子')}`,
-      page: `/pages/detail/detail?id=${data.postId}`
-    })
+    // 🔒 校验父评论属于同一帖子且状态有效，防止跨帖伪造回复通知
+    const parentPostId = parentComment.postId || ''
+    const parentActive = parentComment.status === undefined || parentComment.status === 'active'
+    if (parentComment._openid && parentPostId === data.postId && parentActive) {
+      await addNotification({
+        toOpenid: parentComment._openid,
+        fromOpenid: openid,
+        type: 'comment_reply',
+        targetType: 'post',
+        targetId: data.postId,
+        postId: data.postId,
+        commentId: addRes._id,
+        content: trimSnippet(data.content),
+        itemTitle: trimSnippet(post.title || post.content || '帖子')
+      })
+      await triggerSubscribeNotify({
+        toOpenid: parentComment._openid,
+        sceneType: 'comment',
+        actorName: user.nickName || '有人',
+        summary: `回复了你的评论：${trimSnippet(post.title || post.content || '帖子')}`,
+        page: `/pages/detail/detail?id=${data.postId}`
+      })
+    }
   }
 
   newComment._id = addRes._id
@@ -1694,8 +1767,11 @@ async function toggleFavorPost(openid, postId) {
 }
 
 async function getFavoredPosts(openid, { page = 1, pageSize = 20 }) {
+  const { page: safePage, pageSize: safePageSize, skip: safeSkip } = normalizePagination(page, pageSize, 50)
+  page = safePage
+  pageSize = safePageSize
   const favors = await db.collection('favors').where({ _openid: openid })
-    .orderBy('createTime', 'desc').skip((page - 1) * pageSize).limit(pageSize).get()
+    .orderBy('createTime', 'desc').skip(safeSkip).limit(safePageSize).get()
 
   const postIds = favors.data.map(f => f.postId)
   if (postIds.length === 0) return { code: 0, data: [] }
@@ -1707,8 +1783,11 @@ async function getFavoredPosts(openid, { page = 1, pageSize = 20 }) {
 }
 
 async function getLikedPosts(openid, { page = 1, pageSize = 20 }) {
+  const { page: safePage, pageSize: safePageSize, skip: safeSkip } = normalizePagination(page, pageSize, 50)
+  page = safePage
+  pageSize = safePageSize
   const likes = await db.collection('likes').where({ _openid: openid, targetType: 'post' })
-    .orderBy('createTime', 'desc').skip((page - 1) * pageSize).limit(pageSize).get()
+    .orderBy('createTime', 'desc').skip(safeSkip).limit(safePageSize).get()
 
   const postIds = likes.data.map(item => item.targetId)
   if (postIds.length === 0) return { code: 0, data: [] }
@@ -2046,6 +2125,9 @@ async function searchUsers(openid, keyword) {
 }
 
 async function getUserPosts(viewerOpenid, targetOpenid, { page = 1, pageSize = 20 }) {
+  const { page: safePage, pageSize: safePageSize, skip: safeSkip } = normalizePagination(page, pageSize, 50)
+  page = safePage
+  pageSize = safePageSize
   if (!targetOpenid) {
     return { code: -1, msg: '缺少用户标识' }
   }
@@ -2067,7 +2149,7 @@ async function getUserPosts(viewerOpenid, targetOpenid, { page = 1, pageSize = 2
 
   const res = await db.collection('posts').where(base)
     .orderBy('createTime', 'desc')
-    .skip((page - 1) * pageSize).limit(pageSize).get()
+    .skip(safeSkip).limit(safePageSize).get()
 
   const rows = await sanitizePostsForClient(res.data || [], viewerOpenid)
   return { code: 0, data: rows }
@@ -2075,6 +2157,9 @@ async function getUserPosts(viewerOpenid, targetOpenid, { page = 1, pageSize = 2
 
 /** 用户主页：TA 上架中的闲置商品 */
 async function getUserMarketGoods(viewerOpenid, targetOpenid, { page = 1, pageSize = 15 }) {
+  const { page: safePage, pageSize: safePageSize, skip: safeSkip } = normalizePagination(page, pageSize, 50)
+  page = safePage
+  pageSize = safePageSize
   if (!targetOpenid) {
     return { code: -1, msg: '缺少用户标识' }
   }
@@ -2096,8 +2181,8 @@ async function getUserMarketGoods(viewerOpenid, targetOpenid, { page = 1, pageSi
   }
   const res = await db.collection('market_goods').where(where)
     .orderBy('createTime', 'desc')
-    .skip((page - 1) * pageSize)
-    .limit(pageSize)
+    .skip(safeSkip)
+    .limit(safePageSize)
     .get()
   return { code: 0, data: res.data, total }
 }
@@ -2178,15 +2263,31 @@ async function deleteAccount(openid) {
 // ========== 私信操作 ==========
 
 async function getConversations(openid) {
-  const allRes = await db.collection('messages')
-    .where(_.or([
-      { fromOpenid: openid },
-      { toOpenid: openid }
-    ]))
-    .orderBy('createTime', 'desc')
-    .limit(200)
-    .get()
-  const allMessages = allRes.data || []
+  // 🔧 原实现只取最近 200 条，会话多时会漏旧会话/未读数失真。
+  // 改为分批拉取：按 createTime 倒序，最多 5 批（1000 条）覆盖绝大多数会话。
+  // 若仍需更大范围，建议后续改为独立的会话摘要集合（conversations 表）。
+  const BATCH = 200
+  const MAX_BATCHES = 5
+  const allMessages = []
+  let lastCreateTime = null
+  for (let i = 0; i < MAX_BATCHES; i++) {
+    let query = db.collection('messages')
+      .where(_.or([
+        { fromOpenid: openid },
+        { toOpenid: openid }
+      ]))
+      .orderBy('createTime', 'desc')
+      .limit(BATCH)
+    if (lastCreateTime) {
+      query = query.where({ createTime: _.lt(lastCreateTime) })
+    }
+    const res = await query.get()
+    const batch = res.data || []
+    allMessages.push(...batch)
+    if (batch.length < BATCH) break
+    lastCreateTime = batch[batch.length - 1].createTime
+    if (lastCreateTime === undefined || lastCreateTime === null) break
+  }
   const convMap = {}
   const unreadMap = {}
 
@@ -3064,11 +3165,29 @@ async function getUnreadAnnouncementCount(openid) {
 
 async function reportContent(openid, data) {
   await getUserForAction(openid, { requireActive: true })
+  // 🔒 校验 targetType 枚举与 reason 长度，防脏数据与超长理由
+  const ALLOWED_TARGET_TYPES = new Set(['post', 'comment', 'goods', 'market_comment', 'user', 'message'])
+  const targetType = String(data.targetType || '').trim()
+  if (!ALLOWED_TARGET_TYPES.has(targetType)) {
+    return { code: -1, msg: '无效的举报类型' }
+  }
+  const targetId = String(data.targetId || '').trim()
+  if (!targetId || targetId.length > 128) {
+    return { code: -1, msg: '无效的举报目标' }
+  }
+  const reason = String(data.reason || '').trim().slice(0, 200)
+  if (!reason) {
+    return { code: -1, msg: '请填写举报理由' }
+  }
+  // 🔒 举报频控：每用户每分钟最多 5 次
+  const rateOk = await checkRateLimit(openid, 'reports', 1, 5)
+  if (!rateOk) return { code: -1, msg: '举报太频繁，请稍后再试' }
+
   // 检查是否重复举报
   const existing = await db.collection('reports').where({
     _openid: openid,
-    targetId: data.targetId,
-    targetType: data.targetType
+    targetId,
+    targetType
   }).count()
 
   if (existing.total > 0) return { code: -1, msg: '您已举报过该内容' }
@@ -3076,9 +3195,9 @@ async function reportContent(openid, data) {
   await db.collection('reports').add({
     data: {
       _openid: openid,
-      targetId: data.targetId,
-      targetType: data.targetType,
-      reason: data.reason,
+      targetId,
+      targetType,
+      reason,
       status: 'pending',
       createTime: db.serverDate()
     }
@@ -3199,14 +3318,32 @@ async function getMarketGoodsById(goodsId, openid) {
   return { code: 0, data: goods, isFavored }
 }
 
-async function getMarketComments(goodsId) {
+async function getMarketComments(openid, goodsId) {
+  // 🔒 读取侧访问控制：校验父商品存在且 active，并检查拉黑关系
+  const goodsPre = await db.collection('market_goods').doc(goodsId).get().catch(() => ({ data: null }))
+  const parent = goodsPre && goodsPre.data
+  if (!parent || !parent._openid || parent.status !== 'active') {
+    return { code: -1, msg: '商品不存在或已下架' }
+  }
+  if (openid && await contentDetailBlocked(openid, parent._openid)) {
+    return { code: -1, msg: '无法查看该商品的评论' }
+  }
   try {
     const res = await db.collection('market_comments').where({
       goodsId,
       status: 'active'
     }).orderBy('createTime', 'desc').limit(100).get()
 
-    return { code: 0, data: res.data }
+    // 🔒 评论列表脱敏：移除 _openid（前端展示不需要，防内部标识泄露）
+    const data = (res.data || []).map((c) => {
+      if (c && typeof c === 'object') {
+        const next = { ...c }
+        delete next._openid
+        return next
+      }
+      return c
+    })
+    return { code: 0, data }
   } catch (err) {
     if (err.message && err.message.includes('not exist')) {
       return { code: 0, data: [] }
@@ -3335,6 +3472,15 @@ async function addMarketGoods(openid, data) {
 
 async function toggleFavorGoods(openid, goodsId) {
   const actor = await getUserForAction(openid, { requireActive: true })
+  // 🔒 先校验商品存在且 active，并检查拉黑关系
+  const goodsPre = await db.collection('market_goods').doc(goodsId).get().catch(() => ({ data: null }))
+  const goodsPeek = goodsPre && goodsPre.data
+  if (!goodsPeek || !goodsPeek._openid || goodsPeek.status !== 'active') {
+    return { code: -1, msg: '商品不存在或已下架' }
+  }
+  if (await contentDetailBlocked(openid, goodsPeek._openid)) {
+    return { code: -1, msg: '无法收藏该商品' }
+  }
   const existing = await db.collection('market_favors').where({
     _openid: openid, goodsId
   }).get()
@@ -3374,6 +3520,15 @@ async function toggleFavorGoods(openid, goodsId) {
 
 async function wantMarketGoods(openid, goodsId) {
   await getUserForAction(openid, { requireActive: true })
+  // 🔒 先校验商品存在且 active，并检查拉黑关系
+  const goodsPre = await db.collection('market_goods').doc(goodsId).get().catch(() => ({ data: null }))
+  const goodsPeek = goodsPre && goodsPre.data
+  if (!goodsPeek || !goodsPeek._openid || goodsPeek.status !== 'active') {
+    return { code: -1, msg: '商品不存在或已下架' }
+  }
+  if (await contentDetailBlocked(openid, goodsPeek._openid)) {
+    return { code: -1, msg: '无法标记该商品' }
+  }
   // 使用确定性 _id 保证幂等：并发重复点击只会写入一次
   const wantId = makeDeterministicId('want', openid, goodsId)
   const existingDoc = await db.collection('market_wants').doc(wantId).get().catch(() => ({ data: null }))
@@ -3497,6 +3652,19 @@ async function addMarketComment(openid, data) {
       }
     : null
 
+  // 🔒 防重复提交：3 秒内同一用户对同一商品发相同内容 → 拒绝（幂等兜底）
+  try {
+    const dupCheck = await db.collection('market_comments').where({
+      _openid: openid,
+      goodsId,
+      content: String(content || ''),
+      createTime: _.gte(new Date(Date.now() - 3000))
+    }).count()
+    if (dupCheck.total > 0) {
+      return { code: 0, msg: '评论成功' }
+    }
+  } catch (e) { /* 检查失败不阻断主流程 */ }
+
   const newComment = {
     _openid: openid,
     goodsId,
@@ -3541,19 +3709,24 @@ async function addMarketComment(openid, data) {
   if (replyTo && replyTo.commentId) {
     const parentCommentRes = await db.collection('market_comments').doc(replyTo.commentId).get().catch(() => ({ data: null }))
     const parentComment = parentCommentRes.data || {}
-    await addNotification({
-      toOpenid: parentComment._openid,
-      fromOpenid: openid,
-      type: 'goods_reply',
-      targetType: 'goods',
-      targetId: goodsId,
-      goodsId,
-      commentId: addRes._id,
-      content: trimSnippet(content),
-      itemTitle: trimSnippet(goods.title || '商品'),
-      itemImage: Array.isArray(goods.images) && goods.images.length ? goods.images[0] : '',
-      itemPrice: goods.price
-    })
+    // 🔒 校验父评论属于同一商品且状态有效，防止跨商品伪造回复通知
+    const parentGoodsId = parentComment.goodsId || ''
+    const parentActive = parentComment.status === undefined || parentComment.status === 'active'
+    if (parentComment._openid && parentGoodsId === goodsId && parentActive) {
+      await addNotification({
+        toOpenid: parentComment._openid,
+        fromOpenid: openid,
+        type: 'goods_reply',
+        targetType: 'goods',
+        targetId: goodsId,
+        goodsId,
+        commentId: addRes._id,
+        content: trimSnippet(content),
+        itemTitle: trimSnippet(goods.title || '商品'),
+        itemImage: Array.isArray(goods.images) && goods.images.length ? goods.images[0] : '',
+        itemPrice: goods.price
+      })
+    }
   }
 
   newComment._id = addRes._id
