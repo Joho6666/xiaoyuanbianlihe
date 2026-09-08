@@ -6,6 +6,7 @@ console.log('🚀 校园便利盒 · 统一底座自动化测试套件')
 console.log('====================================================')
 
 const testFiles = [
+  path.join(__dirname, '..', 'test', 'regression', 'landing.test.js'),
   path.join(__dirname, '..', 'test', 'unit', 'domain.test.js'),
   path.join(__dirname, '..', 'test', 'unit', 'i18n.test.js'),
   path.join(__dirname, '..', 'test', 'regression', 'cloudfunctions.test.js')
@@ -21,6 +22,7 @@ for (const file of testFiles) {
     console.error(`\n[FATAL] 执行测试套件异常: ${file}`)
     console.error(err)
     failed++
+    process.exitCode = 1
   }
 }
 

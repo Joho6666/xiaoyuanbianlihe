@@ -22,7 +22,7 @@ function stableStringify(value) {
 const CLOUD_ENV_ID = 'xyblh-5gb26qrnf9d30feb'
 
 const campuses = require('./utils/campuses.js')
-const schools = require('./config/schools.js')
+const { parseLanding } = require('./utils/landing.js')
 const SELECTED_CAMPUS_ID_KEY = 'selectedCampusId_v1'
 const SELECTED_CAMPUS_NAME_KEY = 'selectedCampusName_v1'
 const SUBSCRIBE_TEMPLATE_IDS = {
@@ -50,6 +50,7 @@ App({
     this._tempUrlCache = new Map()
     this._tempUrlInflight = new Map()
     this._campusCache = { id: undefined, name: undefined }
+    this.savePromoFromOptions(options)
 
     if (wx.cloud) {
       const envId = String(CLOUD_ENV_ID || '').trim() || 'xyblh-5gb26qrnf9d30feb'
@@ -102,38 +103,12 @@ App({
       }
     }
 
-    // 二维码扫码落地参数解析：schoolId, campusId, source
-    let targetSchoolId = q.schoolId || ''
-    let targetCampusId = q.campusId || ''
-    const landingSource = q.source || ''
-
-    if (scene) {
-      // 支持场景值: school_<schoolId>_campus_<campusId> 或 s_<schoolId>_c_<campusId>
-      const matchFull = scene.match(/school_([a-zA-Z0-9_-]+)_campus_([a-zA-Z0-9_-]+)/)
-      if (matchFull) {
-        targetSchoolId = targetSchoolId || matchFull[1]
-        targetCampusId = targetCampusId || matchFull[2]
-      } else {
-        const matchShort = scene.match(/s_([a-zA-Z0-9_-]+)_c_([a-zA-Z0-9_-]+)/)
-        if (matchShort) {
-          targetSchoolId = targetSchoolId || matchShort[1]
-          targetCampusId = targetCampusId || matchShort[2]
-        }
-      }
+    const landing = parseLanding(options)
+    if (landing && !this.hasSelectedCampusInStorage()) {
+      this.setSelectedCampus(landing.campusId, { syncCloud: false })
     }
-
-    if (landingSource) {
-      try { wx.setStorageSync('landing_source', landingSource) } catch (e) {}
-    }
-
-    // 首次进入自动选定学校与校区
-    if (targetCampusId || targetSchoolId) {
-      const schoolObj = targetSchoolId ? schools.getSchoolById(targetSchoolId) : null
-      const resolved = schools.getCampusByCampusId(targetCampusId) || (schoolObj && schoolObj.campuses && schoolObj.campuses[0])
-      if (resolved && !this.hasChosenCampus()) {
-        console.log('[二维码落地] 自动绑定学校与校区:', resolved)
-        this.setSelectedCampus(resolved.id, { syncCloud: false })
-      }
+    if (landing && landing.source) {
+      try { wx.setStorageSync('landing_source', landing.source) } catch (_) {}
     }
   },
 
@@ -262,10 +237,12 @@ App({
     if (!this._campusCache) this._campusCache = { id: undefined, name: undefined }
     if (this._campusCache.id !== undefined) return this._campusCache.id
     try {
-      const id = wx.getStorageSync(SELECTED_CAMPUS_ID_KEY)
+      const id = wx.getStorageSync(SELECTED_CAMPUS_ID_KEY) || wx.getStorageSync('selected_campus_id')
       if (id && campuses.getCampusById(id)) {
-        this._campusCache.id = id
-        return id
+        const canonical = campuses.getCampusById(id)
+        wx.setStorageSync(SELECTED_CAMPUS_ID_KEY, canonical.id)
+        this._campusCache.id = canonical.id
+        return canonical.id
       }
     } catch (e) {}
     this._campusCache.id = null
@@ -326,6 +303,9 @@ App({
       this.globalData.userInfo.college = c.name
     }
     this.invalidateCacheByPrefix('getPosts:')
+    if (this._requestCache) this._requestCache.clear()
+    this.globalData.campusVersion = (this.globalData.campusVersion || 0) + 1
+    this.globalData.indexFeedNeedsRefresh = true
     this.globalData.marketNeedsRefresh = true
     const syncCloud = options.syncCloud !== false
     if (syncCloud && this.globalData.isLoggedIn && this.globalData.cloudReady) {

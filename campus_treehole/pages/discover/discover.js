@@ -32,11 +32,10 @@ Page({
   },
 
   refreshCampusInfo() {
-    const selectedCampusId = wx.getStorageSync('selected_campus_id') || (app.globalData && app.globalData.campusId) || 'guit-hangtian'
-    const found = (CAMPUSES || []).find((c) => c.id === selectedCampusId)
+    const selectedCampusId = app.getSelectedCampusId()
     this.setData({
       campusId: selectedCampusId,
-      campusName: found ? found.name : '桂林航天工业学院'
+      campusName: app.getSelectedCampusName()
     })
   },
 
