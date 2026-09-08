@@ -1,0 +1,10 @@
+const assert=require('assert')
+const {sanitizePublicPost,sanitizePublicUser,publicId}=require('../../campus_treehole/cloudfunctions/dbOperations/shared/public-data')
+const secret='o_private_user'
+const safe=sanitizePublicPost({_openid:secret,authorId:secret,author:{authorOpenid:secret,authorId:secret},pendingApplications:[{applicantId:secret,applicantOpenid:secret}],title:'test'})
+assert.ok(!JSON.stringify(safe).includes(secret))
+assert.ok(!JSON.stringify(safe).toLowerCase().includes('openid'))
+assert.strictEqual(publicId(safe.userId),safe.userId)
+assert.strictEqual(sanitizePublicUser({_openid:secret,phone:'private',nickName:'student'}).phone,undefined)
+assert.strictEqual(sanitizePublicPost({isAnonymous:true,_openid:secret}).userId,undefined)
+console.log('PASS public response identity filtering including nested applicants')

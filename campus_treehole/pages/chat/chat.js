@@ -246,16 +246,7 @@ Page({
       app.waitForLogin(() => resolve())
     })
 
-    // 兼容适配层：若传入的是数据库 _id (userId)，解析目标用户的内部微信标识用于消息路由
-    if (targetOpenid && !targetOpenid.startsWith('o_') && targetOpenid.length >= 16) {
-      try {
-        const uRes = await app.callDB('getUserInfo', { targetOpenid })
-        if (uRes && uRes.code === 0 && uRes.data && uRes.data._openid) {
-          targetOpenid = uRes.data._openid
-        }
-      } catch (e) {}
-    }
-
+    // 客户端保留公开 userId，身份映射由云函数完成。
     this.setData({ targetOpenid })
 
     const rel = await app.getBlockRelation(targetOpenid)

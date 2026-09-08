@@ -6,6 +6,7 @@ console.log('🚀 校园便利盒 · 统一底座自动化测试套件')
 console.log('====================================================')
 
 const testFiles = [
+  path.join(__dirname, '..', 'test', 'regression', 'public-data.test.js'),
   path.join(__dirname, '..', 'test', 'regression', 'schools.test.js'),
   path.join(__dirname, '..', 'test', 'regression', 'content-safety.test.js'),
   path.join(__dirname, '..', 'test', 'regression', 'landing.test.js'),

@@ -493,11 +493,20 @@ App({
 
   // 调用 dbOperations 云函数（统一入口）
   callDB(action, data = {}) {
+    const campusReads = ['getPosts','getMarketGoods','getBuddyPosts','getLanguagePartners','getMutualPosts','getActivityZone','getCampusNowSummary']
+    const campusRead = campusReads.includes(action)
+    const requestedCampus = this.getSelectedCampusId()
+    if (campusRead) data = { ...data, campusId: requestedCampus }
+    const campusVersion = this.globalData.campusVersion || 0
     return new Promise((resolve, reject) => {
       wx.cloud.callFunction({
         name: 'dbOperations',
         data: { action, data },
         success: (res) => {
+          if (campusRead && campusVersion !== (this.globalData.campusVersion || 0)) {
+            reject({ code: -409, msg: '校区已切换，请刷新', staleCampus: true })
+            return
+          }
           const result = res && res.result != null ? res.result : {}
           if (result.code === 0) {
             resolve(result)

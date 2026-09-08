@@ -23,7 +23,17 @@ Page({
         activeTab: options.type === 'lost' ? 'lost' : 'help'
       })
     }
+    this._shownCampus = app.getSelectedCampusId()
     this.loadPosts(true)
+  },
+
+  onShow() {
+    const campusId = app.getSelectedCampusId()
+    if (this._shownCampus !== campusId) {
+      this._shownCampus = campusId
+      this.setData({ posts: [], loading: false, page: 1, hasMore: true })
+      this.loadPosts(true)
+    }
   },
 
   onPullDownRefresh() {

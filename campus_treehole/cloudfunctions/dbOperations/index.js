@@ -1,3 +1,5 @@
+const { resolveUserOpenid } = require('./shared/user-identity')
+const { sanitizePublicPost, sanitizePublicUser } = require('./shared/public-data')
 const schoolDirectory = require('./shared/schools')
 // 数据库操作云函数 - 统一处理所有 CRUD 操作
 // 已实现高聚合低耦合的模块化架构 (modules/)，保持 100% API 契约向后兼容
@@ -652,6 +654,14 @@ exports.main = async (event, context) => {
       ? getOpenidFromContext()
       : getOpenid(context)
 
+    const identityActions = new Set(['sendMessage','getMessages','getUserInfo','getBlockRelation','toggleUserBlock','toggleFollow','getUserPosts','getUserMarketGoods'])
+    if (identityActions.has(action)) {
+      const identifier = data.targetUserId || data.userId || data.targetOpenid
+      if (identifier) {
+        data.targetOpenid = await resolveUserOpenid(db, identifier)
+        if (!data.targetOpenid) return { code: -1, msg: '目标用户不存在' }
+      }
+    }
     switch (action) {
       // ===== 帖子动态相关 (modules/posts.js) =====
       case 'getPosts':
@@ -833,4 +843,12 @@ exports.main = async (event, context) => {
       msg: (err && (err.errMsg || err.message)) || '操作失败'
     }
   }
+}
+
+const dispatch = exports.main
+const sanitizedActions = new Set(['getUserInfo','getBuddyPosts','getBuddyPostById','getUserBuddyPosts','getLanguagePartners','getLanguagePartnerProfile','getMutualPosts','getMutualPostById','getPosts','getPostById','getMarketGoods','getMarketGoodsById','getComments','getMarketComments','getUserPosts','getUserMarketGoods','getFollowingList','getFollowerList','getCampusNowSummary'])
+exports.main = async (event, context) => {
+ const result=await dispatch(event,context)
+ if (!sanitizedActions.has(event.action) || !result || result.code!==0) return result
+ return {...result,data:event.action==='getUserInfo'?sanitizePublicUser(result.data):sanitizePublicPost(result.data)}
 }

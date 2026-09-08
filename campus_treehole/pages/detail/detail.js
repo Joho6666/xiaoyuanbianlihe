@@ -58,7 +58,7 @@ Page({
 
   async onToggleFollowAuthor() {
     if (!app.requestComplianceForAction()) return
-    const targetOpenid = this.data.post && this.data.post._openid
+    const targetOpenid = this.data.post && this.data.post.userId
     if (!targetOpenid) return
     const isFollowing = await app.toggleFollow(targetOpenid)
     if (isFollowing !== null) {
@@ -209,13 +209,13 @@ Page({
       ])
 
       const isAdmin = app.globalData.userInfo && app.globalData.userInfo.role === 'admin'
-      const isOwner = resolvedPost._openid === app.globalData.openid
+      const isOwner = resolvedPost.userId === (app.globalData.userInfo && app.globalData.userInfo.internalUserId)
 
       let postForView = { ...resolvedPost, time: app.formatTime(resolvedPost.createTime) }
       if (postForView.isAnonymous === true && !isOwner) {
         postForView = { ...postForView, _openid: '', userId: '' }
       }
-      const showFollowAuthorBtn = !!(postForView._openid && !isOwner)
+      const showFollowAuthorBtn = !!(postForView.userId && !isOwner)
 
       this.setData({
         post: postForView,
@@ -235,7 +235,7 @@ Page({
 
       if (showFollowAuthorBtn) {
         try {
-          const authorInfo = await app.getUserInfo(postForView._openid)
+          const authorInfo = await app.getUserInfo(postForView.userId)
           const isFollowingAuthor = !!(authorInfo && authorInfo.isFollowing)
           this.setData({ isFollowingAuthor })
         } catch (e) {}
@@ -291,7 +291,7 @@ Page({
 
   onSendToChat() {
     if (!app.requestComplianceForAction()) return
-    const authorOpenid = encodeURIComponent((this.data.post && this.data.post._openid) || '')
+    const authorOpenid = encodeURIComponent((this.data.post && this.data.post.userId) || '')
     const authorNickname = encodeURIComponent((this.data.post && this.data.post.nickname) || '')
     wx.navigateTo({
       url: `/pages/share-post/share-post?shareType=post&shareId=${encodeURIComponent(this.data.postId)}&autoShare=1&authorOpenid=${authorOpenid}&authorNickname=${authorNickname}`

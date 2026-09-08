@@ -3,7 +3,7 @@ const { createContentValidator } = require('../shared/content-safety')
 // modules/buddies.js - 同频找搭子业务模块
 // 负责搭子组局发布、5 态成局流转、申请与审批看板、轻量推荐排序
 const { computeBuddyRecommendScore, BUDDY_CATEGORIES } = require('../domain/buddy')
-const { deriveDeterministicUserId } = require('../domain/user')
+const { deriveDeterministicUserId, isValidInternalUserId } = require('../domain/user')
 
 const BUDDY_GRACE_PERIOD_MS = 2 * 60 * 60 * 1000
 
@@ -19,7 +19,7 @@ function publicBuddyPost(post) {
   if (!post) return null
   const { _openid, authorOpenid, ...safePost } = post
   const providerKey = post.userId || post.authorId || _openid
-  const userId = providerKey ? deriveDeterministicUserId(providerKey) : ''
+  const userId = providerKey ? (isValidInternalUserId(providerKey) ? providerKey : deriveDeterministicUserId(providerKey)) : ''
   return { ...safePost, userId, authorId: userId }
 }
 

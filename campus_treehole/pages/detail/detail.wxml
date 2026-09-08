@@ -61,7 +61,7 @@
 
     <!-- 用户信息头部 -->
     <view class="detail-header">
-      <view class="detail-user" bindtap="onAvatarTap" data-openid="{{post._openid}}">
+      <view class="detail-user" bindtap="onAvatarTap" data-openid="{{post.userId}}">
         <view class="avatar avatar-lg">
           <image src="{{post.avatar || '/images/avatar_default.png'}}" mode="aspectFill"></image>
         </view>

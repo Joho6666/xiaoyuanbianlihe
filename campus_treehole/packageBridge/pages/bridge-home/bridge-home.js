@@ -20,10 +20,18 @@ Page({
 
   onLoad() {
     this.setData({ currentLang: i18n.getLocale() })
+    this._shownCampus = app.getSelectedCampusId()
     this.loadPartners(true)
   },
 
   onShow() {
+    const campusId = app.getSelectedCampusId()
+    if (this._shownCampus !== campusId) {
+      this._shownCampus = campusId
+      this.setData({ partners: [], loading: false, page: 1, hasMore: true })
+      this.loadPartners(true)
+    }
+
     this.setData({ currentLang: i18n.getLocale() })
   },
 

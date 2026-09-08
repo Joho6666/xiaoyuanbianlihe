@@ -143,8 +143,8 @@ Page({
 
     if (!authorOpenid && this.data.shareId) {
       const post = await app.getPostById(this.data.shareId).catch(() => null)
-      if (post && post._openid) {
-        authorOpenid = post._openid
+      if (post && post.userId) {
+        authorOpenid = post.userId
         authorNickname = authorNickname || post.nickname || ''
       }
     }

@@ -116,7 +116,7 @@ Page({
       this.setData({
         goods,
         isFavored: !!(result && result.isFavored),
-        isOwner: goods._openid === app.globalData.openid,
+        isOwner: goods.userId === (app.globalData.userInfo && app.globalData.userInfo.internalUserId),
         shareImageUrl
       })
     } catch (err) {
@@ -183,8 +183,8 @@ Page({
   },
 
   onSellerTap() {
-    if (this.data.goods && this.data.goods._openid) {
-      wx.navigateTo({ url: `/pages/profile/profile?openid=${encodeURIComponent(this.data.goods._openid)}` })
+    if (this.data.goods && this.data.goods.userId) {
+      wx.navigateTo({ url: `/pages/profile/profile?openid=${encodeURIComponent(this.data.goods.userId)}` })
     }
   },
 
@@ -229,7 +229,7 @@ Page({
     if (this.data.goods) {
       const g = this.data.goods
       wx.navigateTo({
-        url: `/pages/chat/chat?openid=${encodeURIComponent(g._openid)}&nickname=${encodeURIComponent(g.nickname || '卖家')}&shareType=${encodeURIComponent('goods')}&shareId=${encodeURIComponent(this.data.goodsId)}&autoShare=${encodeURIComponent('1')}`
+        url: `/pages/chat/chat?openid=${encodeURIComponent(g.userId)}&nickname=${encodeURIComponent(g.nickname || '卖家')}&shareType=${encodeURIComponent('goods')}&shareId=${encodeURIComponent(this.data.goodsId)}&autoShare=${encodeURIComponent('1')}`
       })
     }
   },
