@@ -7,9 +7,13 @@ const createBuddiesModule = require('../../campus_treehole/cloudfunctions/dbOper
 const createBridgeModule = require('../../campus_treehole/cloudfunctions/dbOperations/modules/bridge')
 const createMutualModule = require('../../campus_treehole/cloudfunctions/dbOperations/modules/mutual')
 const { makeDeterministicId } = require('../../campus_treehole/cloudfunctions/dbOperations/shared/id')
-const { resolveCampusIdForRead, campusWhereClause, DEFAULT_CAMPUS_ID } = require('../../campus_treehole/cloudfunctions/dbOperations/shared/campus')
+const {
+  resolveCampusIdForRead,
+  campusWhereClause,
+  DEFAULT_CAMPUS_ID
+} = require('../../campus_treehole/cloudfunctions/dbOperations/shared/campus')
 
-// Lightweight CloudBase In-Memory Mock
+// Lightweight CloudBase In-Memory Mock with Transaction support
 function createMockDb() {
   const store = {
     market_goods: [],
@@ -18,56 +22,105 @@ function createMockDb() {
     market_comments: [],
     activity_zone: [{ _id: 'config', enabled: true, roundId: 'r1', slides: [{ title: '迎新音乐节' }] }],
     posts: [],
-    users: [{ _openid: 'user_mock_001', nickName: '测试同学', campusId: 'guit-hangtian', status: 'active' }]
+    users: [{ _openid: 'user_mock_001', nickName: '测试同学', campusId: 'guit-hangtian', status: 'active' }],
+    buddy_posts: [],
+    buddy_applications: [],
+    mutual_posts: []
+  }
+
+  const createCollection = (name) => {
+    if (!store[name]) store[name] = []
+    const items = store[name]
+    return {
+      doc: (id) => ({
+        get: async () => {
+          const found = items.find((i) => i._id === id)
+          return found ? { data: JSON.parse(JSON.stringify(found)) } : { data: null }
+        },
+        set: async ({ data }) => {
+          const idx = items.findIndex((i) => i._id === id)
+          const row = { _id: id, ...JSON.parse(JSON.stringify(data)) }
+          if (idx >= 0) items[idx] = row
+          else items.push(row)
+          return { _id: id }
+        },
+        update: async ({ data }) => {
+          const found = items.find((i) => i._id === id)
+          if (found) Object.assign(found, JSON.parse(JSON.stringify(data)))
+          return { stats: { updated: found ? 1 : 0 } }
+        }
+      }),
+      where: (queryObj = {}) => ({
+        orderBy: () => ({
+          skip: () => ({
+            limit: () => ({
+              get: async () => ({ data: items.map((x) => JSON.parse(JSON.stringify(x))) })
+            })
+          }),
+          limit: () => ({
+            get: async () => ({ data: items.map((x) => JSON.parse(JSON.stringify(x))) })
+          }),
+          get: async () => ({ data: items.map((x) => JSON.parse(JSON.stringify(x))) })
+        }),
+        get: async () => {
+          let filtered = [...items]
+          if (queryObj && typeof queryObj === 'object') {
+            filtered = items.filter((item) => {
+              for (const k of Object.keys(queryObj)) {
+                if (k.startsWith('$') || typeof queryObj[k] === 'function' || (queryObj[k] && queryObj[k].operator)) continue
+                if (item[k] !== queryObj[k]) return false
+              }
+              return true
+            })
+          }
+          return { data: filtered.map((x) => JSON.parse(JSON.stringify(x))) }
+        },
+        count: async () => ({ total: items.length }),
+        limit: () => ({
+          get: async () => {
+            let filtered = [...items]
+            if (queryObj && typeof queryObj === 'object') {
+              filtered = items.filter((item) => {
+                for (const k of Object.keys(queryObj)) {
+                  if (k.startsWith('$') || typeof queryObj[k] === 'function' || (queryObj[k] && queryObj[k].operator)) continue
+                  if (item[k] !== queryObj[k]) return false
+                }
+                return true
+              })
+            }
+            return { data: filtered.map((x) => JSON.parse(JSON.stringify(x))) }
+          }
+        })
+      }),
+      add: async ({ data }) => {
+        const _id = data._id || `id_${Date.now()}_${Math.floor(Math.random() * 10000)}`
+        const row = { _id, ...JSON.parse(JSON.stringify(data)) }
+        items.push(row)
+        return { _id }
+      }
+    }
   }
 
   const db = {
     serverDate: () => new Date(),
     RegExp: ({ regexp }) => new RegExp(regexp, 'i'),
-    collection: (name) => {
-      if (!store[name]) store[name] = []
-      const items = store[name]
+    collection: createCollection,
+    startTransaction: async () => {
+      const snapshot = JSON.stringify(store)
+      let isRolledBack = false
+      let isCommitted = false
       return {
-        doc: (id) => ({
-          get: async () => {
-            const found = items.find((i) => i._id === id)
-            return found ? { data: found } : { data: null }
-          },
-          set: async ({ data }) => {
-            const idx = items.findIndex((i) => i._id === id)
-            const row = { _id: id, ...data }
-            if (idx >= 0) items[idx] = row
-            else items.push(row)
-            return { _id: id }
-          },
-          update: async ({ data }) => {
-            const found = items.find((i) => i._id === id)
-            if (found) Object.assign(found, data)
-            return { stats: { updated: found ? 1 : 0 } }
-          }
-        }),
-        where: () => ({
-          orderBy: () => ({
-            skip: () => ({
-              limit: () => ({
-                get: async () => ({ data: [...items] })
-              })
-            }),
-            limit: () => ({
-              get: async () => ({ data: [...items] })
-            })
-          }),
-          get: async () => ({ data: [...items] }),
-          count: async () => ({ total: items.length }),
-          limit: () => ({
-            get: async () => ({ data: [...items] })
-          })
-        }),
-        add: async ({ data }) => {
-          const _id = data._id || `id_${Date.now()}_${Math.random()}`
-          const row = { _id, ...data }
-          items.push(row)
-          return { _id }
+        collection: createCollection,
+        commit: async () => {
+          if (isRolledBack) throw new Error('Cannot commit rolled back transaction')
+          isCommitted = true
+        },
+        rollback: async () => {
+          if (isCommitted) throw new Error('Cannot rollback committed transaction')
+          isRolledBack = true
+          const restored = JSON.parse(snapshot)
+          for (const k of Object.keys(store)) delete store[k]
+          Object.assign(store, restored)
         }
       }
     }
@@ -90,20 +143,56 @@ function createMockDb() {
   return { db, _, cloud, store }
 }
 
+describe('Campus Helper Regression Tests', () => {
+  test('resolveCampusIdForRead handles string campusId', () => {
+    assert.strictEqual(resolveCampusIdForRead('guit-hangtian'), 'guit-hangtian')
+    assert.strictEqual(resolveCampusIdForRead('  guet-huajiang  '), 'guet-huajiang')
+  })
+
+  test('resolveCampusIdForRead handles object campusId', () => {
+    assert.strictEqual(resolveCampusIdForRead({ campusId: 'gxnu-yanshan' }), 'gxnu-yanshan')
+    assert.strictEqual(resolveCampusIdForRead({ campusId: '  glut-pingfeng  ' }), 'glut-pingfeng')
+    assert.strictEqual(resolveCampusIdForRead({ campusId: '' }), null)
+    assert.strictEqual(resolveCampusIdForRead({}), null)
+  })
+
+  test('resolveCampusIdForRead handles empty/null campusId', () => {
+    assert.strictEqual(resolveCampusIdForRead(''), null)
+    assert.strictEqual(resolveCampusIdForRead('   '), null)
+    assert.strictEqual(resolveCampusIdForRead(null), null)
+    assert.strictEqual(resolveCampusIdForRead(undefined), null)
+    assert.strictEqual(resolveCampusIdForRead(123), null)
+  })
+
+  test('campusWhereClause handles default campus', () => {
+    const _ = { or: (arr) => ({ op: 'or', arr }), exists: () => ({ op: 'exists' }) }
+    const res = campusWhereClause(_, DEFAULT_CAMPUS_ID)
+    assert.strictEqual(res.op, 'or')
+    assert.strictEqual(res.arr[0].campusId, DEFAULT_CAMPUS_ID)
+
+    // Also supports (campusId) single argument
+    const resSingle = campusWhereClause(DEFAULT_CAMPUS_ID)
+    assert.deepStrictEqual(resSingle, { campusId: DEFAULT_CAMPUS_ID })
+  })
+
+  test('campusWhereClause handles other campus and null', () => {
+    const res = campusWhereClause('guet-huajiang')
+    assert.deepStrictEqual(res, { campusId: 'guet-huajiang' })
+
+    const resNull = campusWhereClause(null)
+    assert.strictEqual(resNull, null)
+
+    const resEmpty = campusWhereClause('   ')
+    assert.strictEqual(resEmpty, null)
+  })
+})
+
 describe('Cloud Function Modules Regression Tests', () => {
   test('Shared: makeDeterministicId produces stable scoped ids', () => {
     const id1 = makeDeterministicId('want', 'openidA', 'goodsB')
     const id2 = makeDeterministicId('want', 'openidA', 'goodsB')
     assert.strictEqual(id1, id2)
     assert.ok(id1.startsWith('want_'))
-  })
-
-  test('Shared: campusWhereClause handles default campus and specific campus', () => {
-    const defaultClause = campusWhereClause({ or: (a) => a, exists: () => ({}) }, DEFAULT_CAMPUS_ID)
-    assert.ok(defaultClause)
-
-    const specificClause = campusWhereClause({}, 'other-campus')
-    assert.deepStrictEqual(specificClause, { campusId: 'other-campus' })
   })
 
   test('Market Module: validation rejects invalid goods price', async () => {
@@ -128,7 +217,7 @@ describe('Cloud Function Modules Regression Tests', () => {
         makeDeterministicId,
         DEFAULT_CAMPUS_ID,
         resolveCampusIdForRead,
-        campusWhereClause,
+        campusWhereClause: (cid) => campusWhereClause(_, cid),
         escapeRegExp: (s) => s,
         buildMarketCategoryWhere: () => null,
         normalizePublishCategory: (c) => c
@@ -183,7 +272,7 @@ describe('Cloud Function Modules Regression Tests', () => {
     assert.strictEqual(doc.roundId, 'r1')
   })
 
-  test('Buddies Module: addBuddyPost and application workflow', async () => {
+  test('Buddies Module: addBuddyPost and application workflow with real helpers', async () => {
     const { db, _, cloud } = createMockDb()
     const buddies = createBuddiesModule({
       db,
@@ -196,8 +285,8 @@ describe('Cloud Function Modules Regression Tests', () => {
         wxTextCheck: async () => ({ pass: true }),
         isCollectionNotExistError: () => false,
         ensureCollection: async () => {},
-        campusWhereClause: () => ({}),
-        resolveCampusIdForRead: (id) => id || DEFAULT_CAMPUS_ID,
+        campusWhereClause: (cid) => campusWhereClause(_, cid),
+        resolveCampusIdForRead,
         DEFAULT_CAMPUS_ID,
         escapeRegExp: (s) => s,
         triggerSubscribeNotify: async () => {}
@@ -209,17 +298,90 @@ describe('Cloud Function Modules Regression Tests', () => {
       category: 'sports',
       startAt: '2026-09-12 15:00',
       minPeople: 2,
-      maxPeople: 4
+      maxPeople: 3,
+      campusId: 'guet-huajiang'
     })
     assert.strictEqual(createRes.code, 0)
     assert.ok(createRes.data.id)
 
-    const listRes = await buddies.getBuddyPosts({})
+    const listRes = await buddies.getBuddyPosts({ campusId: 'guet-huajiang' })
     assert.strictEqual(listRes.code, 0)
     assert.ok(listRes.data.length > 0)
   })
 
-  test('Bridge Module: getLanguagePartners computes match', async () => {
+  test('Buddies Module: transactional approval and capacity limit prevents over-acceptance', async () => {
+    const { db, _, cloud, store } = createMockDb()
+    const buddies = createBuddiesModule({
+      db,
+      _,
+      cloud,
+      helpers: {
+        getUserForAction: async (oid) => ({ nickName: `用户_${oid}`, status: 'active' }),
+        checkRateLimit: async () => true,
+        checkBannedWords: () => ({ pass: true }),
+        wxTextCheck: async () => ({ pass: true }),
+        isCollectionNotExistError: () => false,
+        ensureCollection: async () => {},
+        campusWhereClause: (cid) => campusWhereClause(_, cid),
+        resolveCampusIdForRead,
+        DEFAULT_CAMPUS_ID,
+        escapeRegExp: (s) => s,
+        triggerSubscribeNotify: async () => {}
+      }
+    })
+
+    // 创建一个上限为 2 人（含发起人）的组局，当前 acceptedCount 为 1
+    const createRes = await buddies.addBuddyPost('host_user', {
+      title: '自习组局',
+      category: 'study',
+      startAt: '2026-09-12 19:00',
+      minPeople: 2,
+      maxPeople: 2,
+      campusId: DEFAULT_CAMPUS_ID
+    })
+    const postId = createRes.data.id
+
+    // 用户 1 提交申请
+    const apply1 = await buddies.applyBuddyPost('applicant_1', {
+      postId,
+      message: '我想一起自习'
+    })
+    assert.strictEqual(apply1.code, 0)
+    const app1Id = apply1.data.id
+
+    // 用户 2 提交申请
+    const apply2 = await buddies.applyBuddyPost('applicant_2', {
+      postId,
+      message: '我也来'
+    })
+    assert.strictEqual(apply2.code, 0)
+    const app2Id = apply2.data.id
+
+    // 审批通过用户 1
+    const accept1 = await buddies.handleBuddyApplication('host_user', {
+      applicationId: app1Id,
+      action: 'ACCEPT'
+    })
+    assert.strictEqual(accept1.code, 0)
+
+    // 组局状态应自动转为 FULL，acceptedCount = 2
+    const postInStore = store.buddy_posts.find((p) => p._id === postId)
+    assert.strictEqual(postInStore.status, 'FULL')
+    assert.strictEqual(postInStore.acceptedCount, 2)
+
+    // 再次尝试通过用户 2，必须被拦截，不能超过 maxPeople
+    const accept2 = await buddies.handleBuddyApplication('host_user', {
+      applicationId: app2Id,
+      action: 'ACCEPT'
+    })
+    assert.strictEqual(accept2.code, -1)
+    assert.ok(accept2.msg.includes('人数已满') || accept2.msg.includes('不在招募状态'))
+
+    // 验证最终并未超员
+    assert.strictEqual(postInStore.acceptedCount, 2)
+  })
+
+  test('Bridge Module: getLanguagePartners uses real campus helper', async () => {
     const { db, _, cloud } = createMockDb()
     const bridge = createBridgeModule({
       db,
@@ -228,18 +390,18 @@ describe('Cloud Function Modules Regression Tests', () => {
       helpers: {
         getUserForAction: async () => ({ nickName: '留学生David', status: 'active' }),
         isCollectionNotExistError: () => false,
-        campusWhereClause: () => ({}),
-        resolveCampusIdForRead: (id) => id || DEFAULT_CAMPUS_ID,
+        campusWhereClause: (cid) => campusWhereClause(_, cid),
+        resolveCampusIdForRead,
         DEFAULT_CAMPUS_ID
       }
     })
 
-    const res = await bridge.getLanguagePartners({ currentOpenid: 'user_mock_001' })
+    const res = await bridge.getLanguagePartners({ currentOpenid: 'user_mock_001', campusId: DEFAULT_CAMPUS_ID })
     assert.strictEqual(res.code, 0)
     assert.ok(Array.isArray(res.data))
   })
 
-  test('Mutual Module: addMutualPost and status update', async () => {
+  test('Mutual Module: addMutualPost and status update with real helpers', async () => {
     const { db, _, cloud } = createMockDb()
     const mutual = createMutualModule({
       db,
@@ -252,8 +414,8 @@ describe('Cloud Function Modules Regression Tests', () => {
         wxImageBatchCheck: async () => ({ pass: true }),
         isCollectionNotExistError: () => false,
         ensureCollection: async () => {},
-        campusWhereClause: () => ({}),
-        resolveCampusIdForRead: (id) => id || DEFAULT_CAMPUS_ID,
+        campusWhereClause: (cid) => campusWhereClause(_, cid),
+        resolveCampusIdForRead,
         DEFAULT_CAMPUS_ID,
         escapeRegExp: (s) => s,
         checkAdmin: async () => false
@@ -265,7 +427,8 @@ describe('Cloud Function Modules Regression Tests', () => {
       category: 'errand',
       title: '带份外卖到南苑4栋',
       content: '食堂二楼烤肉拌饭，麻烦顺路同学带一下',
-      reward: '5元'
+      reward: '5元',
+      campusId: 'guit-hangtian'
     })
     assert.strictEqual(addRes.code, 0)
     assert.ok(addRes.data.id)
