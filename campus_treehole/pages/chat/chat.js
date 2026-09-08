@@ -224,15 +224,13 @@ Page({
   },
 
   async onLoad(options) {
-    const targetOpenid = options.openid || options.userId || ''
-    const initialTitle = decodeNickname(options.nickname)
+    let targetOpenid = options.targetUserId || options.userId || options.targetOpenid || options.openid || ''
+    const initialTitle = decodeNickname(options.nickname || options.title)
     this.shareOptions = {
       shareType: options.shareType || '',
       shareId: options.shareId || '',
       autoShare: options.autoShare === '1'
     }
-    this.setData({ targetOpenid })
-    wx.setNavigationBarTitle({ title: initialTitle || '聊天' })
 
     if (!targetOpenid) {
       this.setData({
@@ -242,9 +240,23 @@ Page({
       return
     }
 
+    wx.setNavigationBarTitle({ title: initialTitle || '聊天' })
+
     await new Promise((resolve) => {
       app.waitForLogin(() => resolve())
     })
+
+    // 兼容适配层：若传入的是数据库 _id (userId)，解析目标用户的内部微信标识用于消息路由
+    if (targetOpenid && !targetOpenid.startsWith('o_') && targetOpenid.length >= 16) {
+      try {
+        const uRes = await app.callDB('getUserInfo', { targetOpenid })
+        if (uRes && uRes.code === 0 && uRes.data && uRes.data._openid) {
+          targetOpenid = uRes.data._openid
+        }
+      } catch (e) {}
+    }
+
+    this.setData({ targetOpenid })
 
     const rel = await app.getBlockRelation(targetOpenid)
     let chatBlocked = false

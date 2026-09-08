@@ -1889,11 +1889,21 @@ async function getFollowerList(openid, { page = 1, pageSize = 50 }) {
 
 // ========== 用户操作 ==========
 
-async function getUserInfo(openid, targetOpenid) {
-  const res = await db.collection('users').where({ _openid: targetOpenid }).get()
-  if (res.data.length === 0) return { code: -1, msg: '用户不存在' }
+async function getUserInfo(openid, targetIdentifier) {
+  if (!targetIdentifier) return { code: -1, msg: '缺少目标用户标识' }
+  let user = null
+  const res = await db.collection('users').where({ _openid: targetIdentifier }).limit(1).get()
+  if (res.data.length > 0) {
+    user = res.data[0]
+  } else {
+    try {
+      const docRes = await db.collection('users').doc(targetIdentifier).get()
+      if (docRes && docRes.data) user = docRes.data
+    } catch (e) {}
+  }
+  if (!user) return { code: -1, msg: '用户不存在' }
 
-  const user = res.data[0]
+  const targetOpenid = user._openid
   if (openid && targetOpenid && openid !== targetOpenid) {
     if (await viewerBlockedByAuthor(openid, targetOpenid)) {
       return { code: -1, msg: '对方已将你拉黑，无法查看其主页' }
