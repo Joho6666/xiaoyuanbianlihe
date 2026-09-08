@@ -39,9 +39,11 @@ Page({
   },
 
   contactPartner() {
-    if (!this.data.partner || !this.data.partner.openid) return
+    if (!this.data.partner) return
+    const targetId = this.data.partner.userId || this.data.partner.id || this.data.partner.openid
+    if (!targetId) return
     wx.navigateTo({
-      url: `/pages/chat/chat?targetOpenid=${this.data.partner.openid}&title=${encodeURIComponent(this.data.partner.nickName || '语伴')}`
+      url: `/pages/chat/chat?targetOpenid=${targetId}&targetUserId=${targetId}&title=${encodeURIComponent(this.data.partner.nickName || '语伴')}`
     })
   }
 })

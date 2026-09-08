@@ -389,14 +389,42 @@ describe('Cloud Function Modules Regression Tests', () => {
     assert.strictEqual(app2InStore.status, 'CANCELLED')
   })
 
-  test('Bridge Module: getLanguagePartners uses real campus helper', async () => {
-    const { db, _, cloud } = createMockDb()
+  test('Bridge Module: getLanguagePartners strictly excludes users without languageProfile (no fake fallback)', async () => {
+    const { db, _, cloud, store } = createMockDb()
+    // User without profile (should NOT be returned as fake international student)
+    store.users.push({
+      _id: 'user_no_lp',
+      _openid: 'openid_no_lp',
+      nickName: '未填资料同学',
+      gender: 2,
+      status: 'active',
+      campusId: DEFAULT_CAMPUS_ID
+    })
+
+    // User with genuine languageProfile
+    store.users.push({
+      _id: 'user_real_partner',
+      _openid: 'openid_real_partner',
+      nickName: '真实语伴',
+      gender: 1,
+      status: 'active',
+      campusId: DEFAULT_CAMPUS_ID,
+      languageProfile: {
+        studentType: 'chineseStudent',
+        country: '中国',
+        nativeLanguages: ['zh'],
+        targetLanguages: ['en'],
+        exchangeMode: 'offline',
+        bio: '喜欢交流英语口语'
+      }
+    })
+
     const bridge = createBridgeModule({
       db,
       _,
       cloud,
       helpers: {
-        getUserForAction: async () => ({ nickName: '留学生David', status: 'active' }),
+        getUserForAction: async (oid) => store.users.find((u) => u._openid === oid) || { _id: oid, nickName: '测试' },
         isCollectionNotExistError: () => false,
         campusWhereClause: (cid) => campusWhereClause(_, cid),
         resolveCampusIdForRead,
@@ -407,6 +435,33 @@ describe('Cloud Function Modules Regression Tests', () => {
     const res = await bridge.getLanguagePartners({ currentOpenid: 'user_mock_001', campusId: DEFAULT_CAMPUS_ID })
     assert.strictEqual(res.code, 0)
     assert.ok(Array.isArray(res.data))
+
+    // 验证：绝对不返回没有语言资料的用户
+    const fakePartner = res.data.find((p) => p.id === 'user_no_lp')
+    assert.strictEqual(fakePartner, undefined, 'Users without languageProfile must not be included')
+
+    // 验证：真实语伴被正常返回，且内部 openid 不对公网暴露
+    const realPartner = res.data.find((p) => p.id === 'user_real_partner')
+    assert.ok(realPartner, 'User with valid languageProfile must be returned')
+    assert.strictEqual(realPartner.openid, undefined, 'openid must be masked in public partner response')
+    assert.strictEqual(realPartner.userId, 'user_real_partner')
+    assert.deepStrictEqual(realPartner.languageProfile.nativeLanguages, ['zh'])
+    assert.deepStrictEqual(realPartner.languageProfile.targetLanguages, ['en'])
+
+    // 验证极简 Onboarding：只填 2 项核心语言即可成功
+    const updateRes = await bridge.updateLanguageProfile('openid_no_lp', {
+      nativeLanguages: ['zh'],
+      targetLanguages: ['en']
+    })
+    assert.strictEqual(updateRes.code, 0)
+    assert.deepStrictEqual(updateRes.data.nativeLanguages, ['zh'])
+    assert.deepStrictEqual(updateRes.data.targetLanguages, ['en'])
+
+    // 缺少必填项时被拦截
+    const failRes = await bridge.updateLanguageProfile('openid_no_lp', {
+      nativeLanguages: []
+    })
+    assert.strictEqual(failRes.code, -1)
   })
 
   test('Mutual Module: addMutualPost and status update with real helpers', async () => {
