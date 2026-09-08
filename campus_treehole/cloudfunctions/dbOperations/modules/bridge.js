@@ -66,7 +66,16 @@ function createBridgeModule({ db, _, cloud, helpers }) {
         )
       })
 
-      const partners = realPartners.map((u) => {
+      const nativeFilter = typeof nativeLang === 'string' ? nativeLang.trim() : ''
+      const learningFilter = typeof learningLang === 'string' ? learningLang.trim() : ''
+      const filteredPartners = realPartners.filter((u) => {
+        const lp = u.languageProfile
+        if (nativeFilter && !lp.nativeLanguages.includes(nativeFilter)) return false
+        if (learningFilter && !lp.targetLanguages.includes(learningFilter)) return false
+        return true
+      })
+
+      const partners = filteredPartners.map((u) => {
         const lp = u.languageProfile
 
         let matchResult = { isMatch: false, score: 0 }

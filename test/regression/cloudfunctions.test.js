@@ -346,6 +346,39 @@ describe('Cloud Function Modules Regression Tests', () => {
     const listRes = await buddies.getBuddyPosts({ campusId: 'guet-huajiang' })
     assert.strictEqual(listRes.code, 0)
     assert.ok(listRes.data.length > 0)
+    assert.strictEqual(listRes.data[0]._openid, undefined, 'public buddy list must not expose openid')
+    assert.match(listRes.data[0].authorId, /^[0-9a-f-]{36}$/i, 'public buddy authorId must be an internal user id')
+  })
+
+  test('Buddies Module: recruitment closes two hours after start', async () => {
+    const { db, _, cloud } = createMockDb()
+    const buddies = createBuddiesModule({
+      db,
+      _,
+      cloud,
+      helpers: {
+        getUserForAction: async () => ({ nickName: '过期测试', status: 'active' }),
+        checkRateLimit: async () => true,
+        checkBannedWords: () => ({ pass: true }),
+        wxTextCheck: async () => ({ pass: true }),
+        isCollectionNotExistError: () => false,
+        ensureCollection: async () => {},
+        campusWhereClause: (cid) => campusWhereClause(_, cid),
+        resolveCampusIdForRead,
+        DEFAULT_CAMPUS_ID,
+        escapeRegExp: (s) => s,
+        triggerSubscribeNotify: async () => {}
+      }
+    })
+    const createRes = await buddies.addBuddyPost('expired_host', {
+      title: '已经结束的活动',
+      startAt: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),
+      maxPeople: 3,
+      campusId: DEFAULT_CAMPUS_ID
+    })
+    const applyRes = await buddies.applyBuddyPost('expired_applicant', { postId: createRes.data.id })
+    assert.strictEqual(applyRes.code, -1)
+    assert.ok(applyRes.msg.includes('截止'))
   })
 
   test('Buddies Module: transactional approval and capacity limit prevents over-acceptance', async () => {
@@ -486,6 +519,13 @@ describe('Cloud Function Modules Regression Tests', () => {
     assert.strictEqual(realPartner.userId, 'user_real_partner')
     assert.deepStrictEqual(realPartner.languageProfile.nativeLanguages, ['zh'])
     assert.deepStrictEqual(realPartner.languageProfile.targetLanguages, ['en'])
+
+    const filtered = await bridge.getLanguagePartners({
+      currentOpenid: 'user_mock_001',
+      campusId: DEFAULT_CAMPUS_ID,
+      nativeLang: 'fr'
+    })
+    assert.strictEqual(filtered.data.length, 0, 'native language filter must be applied')
 
     // 验证极简 Onboarding：只填 2 项核心语言即可成功
     const updateRes = await bridge.updateLanguageProfile('openid_no_lp', {

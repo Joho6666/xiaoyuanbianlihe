@@ -1,6 +1,25 @@
 // modules/buddies.js - 同频找搭子业务模块
 // 负责搭子组局发布、5 态成局流转、申请与审批看板、轻量推荐排序
 const { computeBuddyRecommendScore, BUDDY_CATEGORIES } = require('../domain/buddy')
+const { deriveDeterministicUserId } = require('../domain/user')
+
+const BUDDY_GRACE_PERIOD_MS = 2 * 60 * 60 * 1000
+
+function getBuddyDeadline(post) {
+  const startMs = post && post.startAt ? new Date(post.startAt).getTime() : NaN
+  if (!Number.isFinite(startMs)) return null
+  const graceDeadline = startMs + BUDDY_GRACE_PERIOD_MS
+  const endMs = post && post.endAt ? new Date(post.endAt).getTime() : NaN
+  return Number.isFinite(endMs) ? Math.min(graceDeadline, endMs) : graceDeadline
+}
+
+function publicBuddyPost(post) {
+  if (!post) return null
+  const { _openid, authorOpenid, ...safePost } = post
+  const providerKey = post.userId || post.authorId || _openid
+  const userId = providerKey ? deriveDeterministicUserId(providerKey) : ''
+  return { ...safePost, userId, authorId: userId }
+}
 
 function createBuddiesModule({ db, _, cloud, helpers }) {
   const {
@@ -96,8 +115,8 @@ function createBuddiesModule({ db, _, cloud, helpers }) {
         }
 
         return {
-          ...post,
-          authorId,
+          ...publicBuddyPost(post),
+          authorId: post.userId || deriveDeterministicUserId(authorId),
           author: authorSafe,
           remainPeople,
           isFull: acceptedCount >= maxPeople,
@@ -172,13 +191,23 @@ function createBuddiesModule({ db, _, cloud, helpers }) {
         }
       }
 
+      const safePost = publicBuddyPost(post)
       return {
         code: 0,
         data: {
-          ...post,
-          acceptedMembers,
-          pendingApplications,
-          userApplication,
+          ...safePost,
+          acceptedMembers: acceptedMembers.map(({ applicantId, authorOpenid, ...item }) => ({
+            ...item,
+            applicantId: applicantId ? deriveDeterministicUserId(applicantId) : ''
+          })),
+          pendingApplications: pendingApplications.map(({ applicantId, authorOpenid, ...item }) => ({
+            ...item,
+            applicantId: applicantId ? deriveDeterministicUserId(applicantId) : ''
+          })),
+          userApplication: userApplication ? (({ applicantId, authorOpenid, ...item }) => ({
+            ...item,
+            applicantId: applicantId ? deriveDeterministicUserId(applicantId) : ''
+          }))(userApplication) : null,
           isAuthor: openid === post._openid
         }
       }
@@ -263,6 +292,13 @@ function createBuddiesModule({ db, _, cloud, helpers }) {
     if (!post) return { code: -1, msg: '搭子组局不存在' }
     if (post._openid === openid) return { code: -1, msg: '您是发起人，无需申请' }
     if (post.status !== 'OPEN') return { code: -1, msg: '该组局当前不在招募状态' }
+    const deadline = getBuddyDeadline(post)
+    if (deadline && Date.now() >= deadline) {
+      try {
+        await db.collection('buddy_posts').doc(postId).update({ data: { status: 'EXPIRED', updateTime: db.serverDate() } })
+      } catch (e) {}
+      return { code: -1, msg: '该组局已超过招募截止时间' }
+    }
     if (post.acceptedCount >= post.maxPeople) return { code: -1, msg: '该组局人数已满' }
 
     // 检查重复申请
@@ -350,8 +386,11 @@ function createBuddiesModule({ db, _, cloud, helpers }) {
       return { code: 0, msg: '已婉拒申请' }
     }
 
-    // ACCEPT 操作：开启事务，防并发超员
-    if (typeof db.startTransaction === 'function') {
+    // ACCEPT 操作：必须使用事务，防并发超员与截止时间竞态
+    if (typeof db.startTransaction !== 'function') {
+      return { code: -1, msg: '当前环境不支持安全审批，请稍后重试' }
+    }
+    {
       const transaction = await db.startTransaction()
       try {
         const appRes = await transaction.collection('buddy_applications').doc(applicationId).get()
@@ -378,6 +417,15 @@ function createBuddiesModule({ db, _, cloud, helpers }) {
         if (post.status !== 'OPEN') {
           await transaction.rollback()
           return { code: -1, msg: '该组局当前不在招募状态' }
+        }
+
+        const deadline = getBuddyDeadline(post)
+        if (deadline && Date.now() >= deadline) {
+          await transaction.collection('buddy_posts').doc(appData.postId).update({
+            data: { status: 'EXPIRED', updateTime: db.serverDate() }
+          })
+          await transaction.commit()
+          return { code: -1, msg: '该组局已超过招募截止时间' }
         }
 
         const currentCount = Number(post.acceptedCount) || 1
@@ -413,33 +461,6 @@ function createBuddiesModule({ db, _, cloud, helpers }) {
         console.error('handleBuddyApplication transaction error:', err)
         return { code: -1, msg: '处理审批失败: ' + err.message }
       }
-    } else {
-      // 降级兜底（环境无 startTransaction 时）
-      const appRes = await db.collection('buddy_applications').doc(applicationId).get()
-      const appData = (appRes && appRes.data) || null
-      if (!appData) return { code: -1, msg: '申请记录不存在' }
-      if (appData.authorOpenid !== openid) return { code: -1, msg: '无权处理该申请' }
-      if (appData.status !== 'PENDING') return { code: -1, msg: '该申请已处理' }
-
-      const postRes = await db.collection('buddy_posts').doc(appData.postId).get()
-      const post = (postRes && postRes.data) || null
-      if (!post) return { code: -1, msg: '组局不存在' }
-      if (post.status !== 'OPEN') return { code: -1, msg: '该组局当前不在招募状态' }
-
-      const currentCount = Number(post.acceptedCount) || 1
-      const maxLimit = Number(post.maxPeople) || 2
-      if (currentCount >= maxLimit) return { code: -1, msg: '人数已满，无法再通过新成员' }
-
-      await db.collection('buddy_applications').doc(applicationId).update({
-        data: { status: 'ACCEPTED', decidedAt: db.serverDate() }
-      })
-      const nextCount = currentCount + 1
-      const updatePayload = { acceptedCount: nextCount, updateTime: db.serverDate() }
-      if (nextCount >= maxLimit) {
-        updatePayload.status = 'FULL'
-      }
-      await db.collection('buddy_posts').doc(appData.postId).update({ data: updatePayload })
-      return { code: 0, msg: '已通过申请' }
     }
   }
 
