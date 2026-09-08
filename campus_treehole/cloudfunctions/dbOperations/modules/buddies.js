@@ -1,5 +1,6 @@
 // modules/buddies.js - 同频找搭子业务模块
-// 负责搭子组局发布、5 态成局流转、申请与审批看板
+// 负责搭子组局发布、5 态成局流转、申请与审批看板、轻量推荐排序
+const { computeBuddyRecommendScore, BUDDY_CATEGORIES } = require('../../../../shared/domain/buddy')
 
 function createBuddiesModule({ db, _, cloud, helpers }) {
   const {
@@ -17,9 +18,9 @@ function createBuddiesModule({ db, _, cloud, helpers }) {
   } = helpers
 
   /**
-   * 查询搭子广场列表
+   * 查询搭子广场列表（包含可解释性推荐打分、紧迫度标签与名额提示）
    */
-  async function getBuddyPosts({ page = 1, pageSize = 20, category, status, keyword, campusId }) {
+  async function getBuddyPosts({ page = 1, pageSize = 20, category, status, keyword, campusId, currentOpenid }) {
     try {
       let query = db.collection('buddy_posts')
       const parts = []
@@ -53,7 +54,62 @@ function createBuddiesModule({ db, _, cloud, helpers }) {
         .limit(pageSize)
         .get()
 
-      return { code: 0, data: res.data || [] }
+      // 获取当前用户上下文（用于推荐加权）
+      let currentUser = null
+      if (currentOpenid) {
+        try {
+          const uRes = await db.collection('users').where({ _openid: currentOpenid }).limit(1).get()
+          if (uRes.data && uRes.data.length > 0) currentUser = uRes.data[0]
+        } catch (e) {}
+      }
+
+      const now = Date.now()
+      const userContext = {
+        campusId: targetCampus || (currentUser && currentUser.campusId) || DEFAULT_CAMPUS_ID,
+        interests: (currentUser && currentUser.interests) || []
+      }
+
+      const list = (res.data || []).map((post) => {
+        const startMs = post.startAt ? new Date(post.startAt).getTime() : now
+        const diffHours = (startMs - now) / (1000 * 3600)
+        let urgencyBadge = ''
+        if (diffHours >= 0 && diffHours <= 6) {
+          urgencyBadge = '马上开始'
+        } else if (diffHours > 6 && diffHours <= 24) {
+          urgencyBadge = '今天'
+        } else if (diffHours > 24 && diffHours <= 48) {
+          urgencyBadge = '明天'
+        }
+
+        const acceptedCount = Number(post.acceptedCount) || 1
+        const maxPeople = Number(post.maxPeople) || 2
+        const remainPeople = Math.max(0, maxPeople - acceptedCount)
+        const recommendScore = computeBuddyRecommendScore(post, userContext)
+
+        // 屏蔽作者内部 openid，向客户端输出安全 authorId
+        const authorId = post.authorId || post._openid || ''
+        const authorSafe = {
+          authorId,
+          nickName: (post.author && post.author.nickName) || '同学',
+          avatarUrl: (post.author && post.author.avatarUrl) || '/images/avatar_default.png',
+          gender: (post.author && post.author.gender) || 0
+        }
+
+        return {
+          ...post,
+          authorId,
+          author: authorSafe,
+          remainPeople,
+          isFull: acceptedCount >= maxPeople,
+          urgencyBadge,
+          recommendScore
+        }
+      })
+
+      // 综合推荐排序（推荐高分优先）
+      list.sort((a, b) => (b.recommendScore || 0) - (a.recommendScore || 0))
+
+      return { code: 0, data: list }
     } catch (err) {
       if (isCollectionNotExistError(err)) {
         return { code: 0, data: [] }
@@ -254,6 +310,25 @@ function createBuddiesModule({ db, _, cloud, helpers }) {
   }
 
   /**
+   * 申请人撤销申请
+   */
+  async function cancelBuddyApplication(openid, { applicationId }) {
+    if (!openid) return { code: -1, msg: '未授权访问' }
+    if (!applicationId) return { code: -1, msg: '缺少申请 ID' }
+
+    const appRes = await db.collection('buddy_applications').doc(applicationId).get()
+    const appData = (appRes && appRes.data) || null
+    if (!appData) return { code: -1, msg: '申请记录不存在' }
+    if (appData.applicantId !== openid) return { code: -1, msg: '只能撤销自己的申请' }
+    if (appData.status !== 'PENDING') return { code: -1, msg: '当前申请状态不支持撤销' }
+
+    await db.collection('buddy_applications').doc(applicationId).update({
+      data: { status: 'CANCELLED', updateTime: db.serverDate() }
+    })
+    return { code: 0, msg: '申请已撤销' }
+  }
+
+  /**
    * 发起人审批申请 (通过 / 拒绝) - 使用事务防止并发超员
    */
   async function handleBuddyApplication(openid, { applicationId, action }) {
@@ -413,6 +488,7 @@ function createBuddiesModule({ db, _, cloud, helpers }) {
     getBuddyPostById,
     addBuddyPost,
     applyBuddyPost,
+    cancelBuddyApplication,
     handleBuddyApplication,
     updateBuddyPostStatus,
     getUserBuddyPosts

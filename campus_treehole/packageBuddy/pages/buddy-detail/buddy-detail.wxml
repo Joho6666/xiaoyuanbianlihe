@@ -101,10 +101,16 @@
 
   <!-- 访客操作栏 -->
   <view class="bottom-action-bar" wx:else>
-    <!-- 已经加入 -->
-    <button class="bar-btn btn-disabled" wx:if="{{post.userApplication && post.userApplication.status === 'ACCEPTED'}}">您已成功入局</button>
-    <!-- 待确认 -->
-    <button class="bar-btn btn-pending" wx:elif="{{post.userApplication && post.userApplication.status === 'PENDING'}}">申请待发起人确认</button>
+    <!-- 已经加入：可一键联系发起人 -->
+    <view class="accepted-btn-group" wx:if="{{post.userApplication && post.userApplication.status === 'ACCEPTED'}}">
+      <button class="bar-btn btn-disabled">您已成功入局</button>
+      <button class="bar-btn btn-chat-contact" bindtap="contactAuthor">💬 私信发起人</button>
+    </view>
+    <!-- 待确认：支持撤销申请 -->
+    <view class="pending-btn-group" wx:elif="{{post.userApplication && post.userApplication.status === 'PENDING'}}">
+      <button class="bar-btn btn-pending">申请待确认</button>
+      <button class="bar-btn btn-cancel-apply" bindtap="onCancelApply">撤销申请</button>
+    </view>
     <!-- 满员 -->
     <button class="bar-btn btn-disabled" wx:elif="{{post.status === 'FULL'}}">当前活动已满员</button>
     <!-- 正常招募中可申请 -->

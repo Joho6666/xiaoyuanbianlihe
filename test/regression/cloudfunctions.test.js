@@ -379,6 +379,14 @@ describe('Cloud Function Modules Regression Tests', () => {
 
     // 验证最终并未超员
     assert.strictEqual(postInStore.acceptedCount, 2)
+
+    // 用户 2 撤销申请
+    const cancelRes = await buddies.cancelBuddyApplication('applicant_2', {
+      applicationId: app2Id
+    })
+    assert.strictEqual(cancelRes.code, 0)
+    const app2InStore = store.buddy_applications.find((a) => a._id === app2Id)
+    assert.strictEqual(app2InStore.status, 'CANCELLED')
   })
 
   test('Bridge Module: getLanguagePartners uses real campus helper', async () => {

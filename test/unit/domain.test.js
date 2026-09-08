@@ -25,8 +25,10 @@ const {
 
 const {
   BUDDY_STATUS,
+  BUDDY_CATEGORIES,
   createBuddyPostEntity,
-  canTransitionBuddyStatus
+  canTransitionBuddyStatus,
+  computeBuddyRecommendScore
 } = require('../../shared/domain/buddy')
 
 const {
@@ -133,6 +135,31 @@ describe('Unified Domain Model Tests', () => {
     assert.strictEqual(canTransitionBuddyStatus(BUDDY_STATUS.FULL, BUDDY_STATUS.FINISHED), true)
     assert.strictEqual(canTransitionBuddyStatus(BUDDY_STATUS.OPEN, BUDDY_STATUS.CANCELLED), true)
     assert.strictEqual(canTransitionBuddyStatus(BUDDY_STATUS.FINISHED, BUDDY_STATUS.OPEN), false)
+  })
+
+  test('Buddy: computeBuddyRecommendScore computes explainable score and handles missing interests', () => {
+    assert.ok(BUDDY_CATEGORIES.length >= 8)
+    const upcomingPost = {
+      startAt: new Date(Date.now() + 2 * 3600 * 1000).toISOString(),
+      campusId: 'guit-hangtian',
+      category: 'sport',
+      title: '羽毛球双打',
+      status: BUDDY_STATUS.OPEN
+    }
+
+    // User in same campus with matching interest
+    const scoreWithInterest = computeBuddyRecommendScore(upcomingPost, {
+      campusId: 'guit-hangtian',
+      interests: ['羽毛球', '运动']
+    })
+    assert.ok(scoreWithInterest >= 80, `Expected score >= 80, got ${scoreWithInterest}`)
+
+    // User in different campus without interests (must not crash, handles fallback weights)
+    const scoreNoInterest = computeBuddyRecommendScore(upcomingPost, {
+      campusId: 'other-campus'
+    })
+    assert.ok(typeof scoreNoInterest === 'number')
+    assert.ok(scoreWithInterest > scoreNoInterest)
   })
 
   test('Language: evaluateLanguageExchangeMatch detects mutual complementarity', () => {

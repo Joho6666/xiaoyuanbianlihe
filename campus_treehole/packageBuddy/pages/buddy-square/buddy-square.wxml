@@ -6,7 +6,7 @@
       <icon type="search" size="16" color="#747c81" />
       <input
         class="search-input"
-        placeholder="搜索搭子（羽毛球、自习、拼车...）"
+        placeholder="搜羽毛球、自习、食堂拼饭、开黑..."
         placeholder-class="search-placeholder"
         value="{{keyword}}"
         bindinput="onSearchInput"
@@ -29,11 +29,12 @@
       data-id="{{item.id}}"
       bindtap="onSelectCategory"
     >
-      <text class="cat-name">{{item.name}}</text>
+      <text class="cat-chip-emoji">{{item.emoji}}</text>
+      <text class="cat-chip-name">{{item.name}}</text>
     </view>
   </scroll-view>
 
-  <!-- 搭子卡片列表 -->
+  <!-- 搭子卡片列表 (事件优先，拒绝 Tinder 颜值卡) -->
   <view class="card-list">
     <view
       wx:for="{{posts}}"
@@ -44,48 +45,64 @@
     >
       <view class="card-top">
         <view class="tag-row">
-          <text class="cat-badge">{{item.category}}</text>
+          <view class="cat-badge">
+            <text class="cat-badge-emoji">{{item.categoryEmoji}}</text>
+            <text class="cat-badge-text">{{item.categoryName}}</text>
+          </view>
+          <text class="urgency-badge" wx:if="{{item.urgencyBadge}}">{{item.urgencyBadge}}</text>
           <text class="gender-badge" wx:if="{{item.genderRequirement === 'female_only'}}">仅限女生</text>
           <text class="gender-badge" wx:elif="{{item.genderRequirement === 'male_only'}}">仅限男生</text>
         </view>
         <view class="status-indicator status-{{item.status}}">
           <text wx:if="{{item.status === 'OPEN'}}">招募中</text>
           <text wx:elif="{{item.status === 'FULL'}}">已满员</text>
-          <text wx:elif="{{item.status === 'FINISHED'}}">已结束</text>
-          <text wx:else>已关闭</text>
+          <text wx:elif="{{item.status === 'FINISHED'}}">已完成</text>
+          <text wx:else>已结束</text>
         </view>
       </view>
 
+      <!-- 核心大标题：突出“事情与约定” -->
       <view class="card-title">{{item.title}}</view>
 
-      <view class="card-meta">
-        <view class="meta-row">
-          <text class="meta-label">时间：</text>
-          <text class="meta-val">{{item.timeDisplay}}</text>
+      <!-- 时间与地点：醒目呈现 -->
+      <view class="card-meta-box">
+        <view class="meta-item">
+          <text class="meta-icon">⏰</text>
+          <text class="meta-text">{{item.timeDisplay}}</text>
         </view>
-        <view class="meta-row" wx:if="{{item.location}}">
-          <text class="meta-label">地点：</text>
-          <text class="meta-val">{{item.location}}</text>
+        <view class="meta-item" wx:if="{{item.location}}">
+          <text class="meta-icon">📍</text>
+          <text class="meta-text">{{item.location}}</text>
         </view>
       </view>
 
+      <!-- 底部行动行：发起人 + 席位状态 + 动作 -->
       <view class="card-bottom">
-        <view class="author-info">
+        <view class="author-box">
           <image class="author-avatar" src="{{item.author.avatarUrl || '/images/avatar_default.png'}}" mode="aspectFill" />
           <text class="author-name">{{item.author.nickName || '发起人'}}</text>
         </view>
-        <view class="headcount-box">
-          <text class="headcount-now">{{item.acceptedCount || 1}}</text>
-          <text class="headcount-slash">/</text>
-          <text class="headcount-max">{{item.maxPeople}}人</text>
+
+        <view class="seat-and-action">
+          <view class="headcount-box">
+            <text class="headcount-current">{{item.acceptedCount}}</text>
+            <text class="headcount-divider">/</text>
+            <text class="headcount-total">{{item.maxPeople}}人</text>
+            <text class="headcount-remain" wx:if="{{item.status === 'OPEN' && item.remainPeople > 0}}">差{{item.remainPeople}}人</text>
+          </view>
+          <view class="card-action-btn {{item.status === 'OPEN' ? 'action-btn-join' : 'action-btn-view'}}">
+            {{item.status === 'OPEN' ? '申请加入' : '查看'}}
+          </view>
         </view>
       </view>
     </view>
 
     <!-- 空状态 -->
     <view class="empty-state" wx:if="{{!loading && posts.length === 0}}">
-      <text class="empty-text">当前分类下暂无搭子活动</text>
-      <button class="empty-btn" bindtap="goToCreate">发起第一个组局</button>
+      <view class="empty-icon">🏸</view>
+      <text class="empty-title">当前校区暂无搭子活动</text>
+      <text class="empty-sub">做第一个发起组局的人，30秒就能发布！</text>
+      <button class="empty-btn" bindtap="goToCreate">🚀 发起组局</button>
     </view>
 
     <!-- 加载指示 -->
@@ -94,7 +111,7 @@
 
   <!-- 悬浮发起按钮 -->
   <view class="fab-btn" bindtap="goToCreate">
-    <text class="fab-plus">+</text>
-    <text class="fab-text">组局</text>
+    <text class="fab-icon">+</text>
+    <text class="fab-text">发起组局</text>
   </view>
 </view>

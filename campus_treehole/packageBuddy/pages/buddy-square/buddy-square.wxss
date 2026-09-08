@@ -1,4 +1,4 @@
-/* packageBuddy/pages/buddy-square/buddy-square.wxss */
+/* packageBuddy/pages/buddy-square/buddy-square.wxss - Tongpin 搭子广场 */
 .square-container {
   min-height: 100vh;
   background-color: #f7f9fc;
@@ -60,17 +60,19 @@
   display: flex;
   white-space: nowrap;
   background: #ffffff;
-  padding: 12rpx 24rpx 18rpx;
+  padding: 14rpx 24rpx 20rpx;
   box-sizing: border-box;
+  border-bottom: 1rpx solid rgba(116, 124, 129, 0.04);
 }
 
 .cat-chip {
   display: inline-flex;
   align-items: center;
-  padding: 10rpx 24rpx;
+  gap: 8rpx;
+  padding: 10rpx 22rpx;
   background: #f1f4f8;
   border-radius: 999rpx;
-  margin-right: 16rpx;
+  margin-right: 14rpx;
 }
 
 .cat-chip-active {
@@ -78,14 +80,18 @@
   border: 1rpx solid #426089;
 }
 
-.cat-chip-active .cat-name {
-  color: #426089;
-  font-weight: 700;
+.cat-chip-emoji {
+  font-size: 24rpx;
 }
 
-.cat-name {
+.cat-chip-name {
   font-size: 24rpx;
   color: #596065;
+}
+
+.cat-chip-active .cat-chip-name {
+  color: #426089;
+  font-weight: 700;
 }
 
 .card-list {
@@ -94,37 +100,60 @@
 
 .buddy-card {
   background: #ffffff;
-  border-radius: 24rpx;
-  padding: 24rpx 28rpx;
-  margin-bottom: 20rpx;
-  box-shadow: 0 4rpx 16rpx rgba(44, 51, 56, 0.03);
-  border: 1rpx solid rgba(116, 124, 129, 0.06);
+  border-radius: 26rpx;
+  padding: 28rpx;
+  margin-bottom: 22rpx;
+  box-shadow: 0 4rpx 18rpx rgba(44, 51, 56, 0.04);
+  border: 1rpx solid rgba(116, 124, 129, 0.07);
+  transition: transform 0.15s ease;
+}
+
+.buddy-card:active {
+  transform: scale(0.995);
 }
 
 .card-top {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 12rpx;
+  margin-bottom: 14rpx;
 }
 
 .tag-row {
   display: flex;
+  align-items: center;
   gap: 12rpx;
 }
 
 .cat-badge {
+  display: flex;
+  align-items: center;
+  gap: 6rpx;
+  font-size: 22rpx;
+  background: #eef2ff;
+  color: #4338ca;
+  padding: 6rpx 14rpx;
+  border-radius: 10rpx;
+  font-weight: 700;
+}
+
+.cat-badge-emoji {
+  font-size: 24rpx;
+}
+
+.urgency-badge {
   font-size: 20rpx;
-  background: #ffedd5;
-  color: #c2410c;
+  background: #fef2f2;
+  color: #dc2626;
   padding: 4rpx 12rpx;
   border-radius: 8rpx;
-  font-weight: 600;
+  font-weight: 700;
+  border: 1rpx solid #fecaca;
 }
 
 .gender-badge {
   font-size: 20rpx;
-  background: #fce7f3;
+  background: #fdf2f8;
   color: #be185d;
   padding: 4rpx 12rpx;
   border-radius: 8rpx;
@@ -133,7 +162,7 @@
 .status-indicator {
   font-size: 20rpx;
   font-weight: 700;
-  padding: 4rpx 14rpx;
+  padding: 4rpx 16rpx;
   border-radius: 999rpx;
 }
 
@@ -153,32 +182,33 @@
 }
 
 .card-title {
-  font-size: 30rpx;
+  font-size: 32rpx;
   font-weight: 700;
-  color: #2c3338;
+  color: #1e293b;
   line-height: 1.4;
-  margin-bottom: 12rpx;
+  margin-bottom: 14rpx;
 }
 
-.card-meta {
+.card-meta-box {
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
   background: #f8fafc;
-  border-radius: 14rpx;
-  padding: 12rpx 16rpx;
-  margin-bottom: 16rpx;
+  border-radius: 16rpx;
+  padding: 14rpx 18rpx;
+  margin-bottom: 18rpx;
 }
 
-.meta-row {
-  font-size: 22rpx;
-  line-height: 1.6;
+.meta-item {
+  display: flex;
+  align-items: center;
+  gap: 10rpx;
+  font-size: 24rpx;
+  color: #475569;
 }
 
-.meta-label {
-  color: #747c81;
-}
-
-.meta-val {
-  color: #2c3338;
-  font-weight: 500;
+.meta-icon {
+  font-size: 24rpx;
 }
 
 .card-bottom {
@@ -187,65 +217,120 @@
   justify-content: space-between;
 }
 
-.author-info {
+.author-box {
   display: flex;
   align-items: center;
   gap: 12rpx;
 }
 
 .author-avatar {
-  width: 44rpx;
-  height: 44rpx;
+  width: 48rpx;
+  height: 48rpx;
   border-radius: 50%;
+  background: #e2e8f0;
 }
 
 .author-name {
   font-size: 24rpx;
-  color: #596065;
+  color: #64748b;
+  max-width: 200rpx;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.seat-and-action {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
 }
 
 .headcount-box {
   display: flex;
   align-items: baseline;
+  gap: 4rpx;
   font-size: 24rpx;
-  color: #747c81;
 }
 
-.headcount-now {
-  font-size: 32rpx;
+.headcount-current {
+  font-size: 30rpx;
   font-weight: 800;
   color: #426089;
 }
 
-.headcount-slash {
-  margin: 0 2rpx;
-}
-
-.headcount-max {
+.headcount-divider {
+  color: #94a3b8;
   font-size: 22rpx;
 }
 
+.headcount-total {
+  color: #64748b;
+  font-size: 22rpx;
+}
+
+.headcount-remain {
+  font-size: 22rpx;
+  font-weight: 700;
+  color: #ef4444;
+  margin-left: 8rpx;
+  background: #fee2e2;
+  padding: 2rpx 10rpx;
+  border-radius: 6rpx;
+}
+
+.card-action-btn {
+  font-size: 24rpx;
+  font-weight: 700;
+  padding: 10rpx 24rpx;
+  border-radius: 999rpx;
+}
+
+.action-btn-join {
+  background: #426089;
+  color: #ffffff;
+}
+
+.action-btn-view {
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+/* 空状态 */
 .empty-state {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 120rpx 0;
+  padding: 100rpx 40rpx;
+  text-align: center;
 }
 
-.empty-text {
-  font-size: 26rpx;
-  color: #abb3b9;
-  margin-bottom: 24rpx;
+.empty-icon {
+  font-size: 72rpx;
+  margin-bottom: 20rpx;
+}
+
+.empty-title {
+  font-size: 30rpx;
+  font-weight: 700;
+  color: #334155;
+  margin-bottom: 12rpx;
+}
+
+.empty-sub {
+  font-size: 24rpx;
+  color: #94a3b8;
+  margin-bottom: 36rpx;
 }
 
 .empty-btn {
   background: #426089;
   color: #ffffff;
-  font-size: 26rpx;
+  font-size: 28rpx;
+  font-weight: 700;
   border-radius: 999rpx;
-  padding: 0 40rpx;
-  height: 64rpx;
-  line-height: 64rpx;
+  padding: 0 50rpx;
+  height: 76rpx;
+  line-height: 76rpx;
 }
 
 .loading-bar {
@@ -255,31 +340,28 @@
   color: #abb3b9;
 }
 
+/* 浮动组局按钮 */
 .fab-btn {
   position: fixed;
   right: 36rpx;
-  bottom: 160rpx;
-  width: 110rpx;
-  height: 110rpx;
-  border-radius: 50%;
-  background: #426089;
+  bottom: 140rpx;
+  background: linear-gradient(135deg, #426089 0%, #294263 100%);
   color: #ffffff;
+  padding: 16rpx 32rpx;
+  border-radius: 999rpx;
   display: flex;
-  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  box-shadow: 0 8rpx 28rpx rgba(66, 96, 137, 0.4);
+  gap: 10rpx;
+  box-shadow: 0 8rpx 28rpx rgba(41, 66, 99, 0.35);
   z-index: 100;
 }
 
-.fab-plus {
-  font-size: 36rpx;
-  line-height: 1;
-  font-weight: 300;
+.fab-icon {
+  font-size: 32rpx;
+  font-weight: 700;
 }
 
 .fab-text {
-  font-size: 20rpx;
+  font-size: 26rpx;
   font-weight: 700;
-  margin-top: 2rpx;
 }

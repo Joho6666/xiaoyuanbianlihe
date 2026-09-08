@@ -1,10 +1,10 @@
-// packageBuddy/pages/buddy-square/buddy-square.js - 同频搭子广场
+// packageBuddy/pages/buddy-square/buddy-square.js - Tongpin 同频搭子广场
 const app = getApp()
 const { BUDDY_CATEGORIES } = require('../../../utils/domain/buddy')
 
 Page({
   data: {
-    categories: [{ id: 'all', name: '全部' }, ...BUDDY_CATEGORIES],
+    categories: [{ id: 'all', name: '全部', emoji: '✨' }, ...BUDDY_CATEGORIES],
     currentCategory: 'all',
     statusFilter: 'OPEN', // 'OPEN' or 'all'
     posts: [],
@@ -59,19 +59,38 @@ Page({
     this.setData({ loading: true })
 
     try {
+      const campusId = app.getSelectedCampusId ? app.getSelectedCampusId() : ''
       const res = await app.callDB('getBuddyPosts', {
         page,
         pageSize: this.data.pageSize,
         category: this.data.currentCategory,
         status: this.data.statusFilter,
-        keyword: this.data.keyword
+        keyword: this.data.keyword,
+        campusId
       })
 
       const list = (res && res.data) || []
-      const formatted = list.map((item) => ({
-        ...item,
-        timeDisplay: this.formatTime(item.startAt)
-      }))
+      const categoryMap = {}
+      BUDDY_CATEGORIES.forEach((c) => {
+        categoryMap[c.id] = c
+      })
+
+      const formatted = list.map((item) => {
+        const catInfo = categoryMap[item.category] || { name: item.category || '搭子', emoji: '🤝' }
+        const accepted = Number(item.acceptedCount) || 1
+        const max = Number(item.maxPeople) || 2
+        const remain = Math.max(0, max - accepted)
+
+        return {
+          ...item,
+          categoryName: catInfo.name,
+          categoryEmoji: catInfo.emoji,
+          acceptedCount: accepted,
+          maxPeople: max,
+          remainPeople: remain,
+          timeDisplay: this.formatSmartTime(item.startAt)
+        }
+      })
 
       this.setData({
         posts: reset ? formatted : [...this.data.posts, ...formatted],
@@ -88,15 +107,30 @@ Page({
     }
   },
 
-  formatTime(isoStr) {
+  formatSmartTime(isoStr) {
     if (!isoStr) return '待定'
-    const d = new Date(isoStr)
-    if (Number.isNaN(d.getTime())) return isoStr
-    const month = String(d.getMonth() + 1).padStart(2, '0')
-    const day = String(d.getDate()).padStart(2, '0')
-    const hours = String(d.getHours()).padStart(2, '0')
-    const mins = String(d.getMinutes()).padStart(2, '0')
-    return `${month}-${day} ${hours}:${mins}`
+    const target = new Date(isoStr)
+    if (Number.isNaN(target.getTime())) return isoStr
+
+    const now = new Date()
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime()
+    const tomorrow = today + 24 * 3600 * 1000
+    const targetDay = new Date(target.getFullYear(), target.getMonth(), target.getDate()).getTime()
+
+    const hours = String(target.getHours()).padStart(2, '0')
+    const mins = String(target.getMinutes()).padStart(2, '0')
+    const timeClock = `${hours}:${mins}`
+
+    if (targetDay === today) {
+      return `今天 ${timeClock}`
+    }
+    if (targetDay === tomorrow) {
+      return `明天 ${timeClock}`
+    }
+
+    const m = target.getMonth() + 1
+    const d = target.getDate()
+    return `${m}月${d}日 ${timeClock}`
   },
 
   goToDetail(e) {

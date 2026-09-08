@@ -136,9 +136,48 @@ Page({
   },
 
   contactAuthor() {
-    if (!this.data.post || !this.data.post._openid) return
+    if (!this.data.post) return
+    const targetId = this.data.post.authorId || this.data.post._openid
+    if (!targetId) return
+    const name = (this.data.post.author && this.data.post.author.nickName) || '发起人'
     wx.navigateTo({
-      url: `/pages/chat/chat?targetOpenid=${this.data.post._openid}&title=${encodeURIComponent(this.data.post.author.nickName || '发起人')}`
+      url: `/pages/chat/chat?targetOpenid=${targetId}&targetUserId=${targetId}&title=${encodeURIComponent(name)}`
+    })
+  },
+
+  contactMember(e) {
+    const { id, name } = e.currentTarget.dataset
+    if (!id) return
+    wx.navigateTo({
+      url: `/pages/chat/chat?targetOpenid=${id}&targetUserId=${id}&title=${encodeURIComponent(name || '搭子成员')}`
+    })
+  },
+
+  async onCancelApply() {
+    const userApp = this.data.post && this.data.post.userApplication
+    if (!userApp || !userApp._id) return
+    wx.showModal({
+      title: '撤销申请',
+      content: '确定要撤销加入该搭子组局的申请吗？',
+      confirmColor: '#426089',
+      success: async (m) => {
+        if (m.confirm) {
+          wx.showLoading({ title: '撤销中...' })
+          try {
+            const res = await app.callDB('cancelBuddyApplication', { applicationId: userApp._id })
+            wx.hideLoading()
+            if (res && res.code === 0) {
+              wx.showToast({ title: '已撤销申请', icon: 'success' })
+              this.loadDetail()
+            } else {
+              wx.showToast({ title: (res && res.msg) || '撤销失败', icon: 'none' })
+            }
+          } catch (e) {
+            wx.hideLoading()
+            wx.showToast({ title: '网络异常', icon: 'none' })
+          }
+        }
+      }
     })
   }
 })

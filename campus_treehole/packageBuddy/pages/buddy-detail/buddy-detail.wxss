@@ -374,3 +374,24 @@
   background: #426089;
   color: #ffffff;
 }
+
+.accepted-btn-group, .pending-btn-group {
+  display: flex;
+  gap: 16rpx;
+  width: 100%;
+}
+
+.accepted-btn-group .bar-btn, .pending-btn-group .bar-btn {
+  flex: 1;
+}
+
+.btn-chat-contact {
+  background: #16a34a !important;
+  color: #ffffff !important;
+}
+
+.btn-cancel-apply {
+  background: #f1f5f9 !important;
+  color: #ef4444 !important;
+  border: 1rpx solid #fecaca;
+}

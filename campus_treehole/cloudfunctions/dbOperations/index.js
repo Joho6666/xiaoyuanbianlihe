@@ -842,6 +842,8 @@ exports.main = async (event, context) => {
         return await getBuddiesModule().addBuddyPost(openid, data)
       case 'applyBuddyPost':
         return await getBuddiesModule().applyBuddyPost(openid, data)
+      case 'cancelBuddyApplication':
+        return await getBuddiesModule().cancelBuddyApplication(openid, data)
       case 'handleBuddyApplication':
         return await getBuddiesModule().handleBuddyApplication(openid, data)
       case 'updateBuddyPostStatus':
