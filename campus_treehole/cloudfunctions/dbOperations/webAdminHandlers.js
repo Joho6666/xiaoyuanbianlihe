@@ -490,12 +490,16 @@ module.exports = function createWebAdminDispatch(db, _, cloud, hooks = {}) {
     if (wasActive && collection === 'comments' && targetDoc && targetDoc.postId) {
       try {
         await db.collection('posts').doc(targetDoc.postId).update({ data: { comments: _.inc(-1) } })
-      } catch (e) {}
+      } catch (e) {
+        console.error('举报删除评论后计数回滚失败:', targetDoc.postId, e)
+      }
     }
     if (wasActive && collection === 'market_comments' && targetDoc && targetDoc.goodsId) {
       try {
         await db.collection('market_goods').doc(targetDoc.goodsId).update({ data: { commentCount: _.inc(-1) } })
-      } catch (e) {}
+      } catch (e) {
+        console.error('举报删除商品评论后计数回滚失败:', targetDoc.goodsId, e)
+      }
     }
 
     return { code: 0, msg: '举报已处理，内容已删除' }
