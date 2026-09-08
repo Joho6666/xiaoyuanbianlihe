@@ -1,7 +1,9 @@
+const { createContentValidator } = require('../shared/content-safety')
 // modules/mutual.js - 校园互助生活与失物招领业务模块
 // 负责跑腿求助、课业答疑、借物寻物及失物归还全生命周期
 
 function createMutualModule({ db, _, cloud, helpers }) {
+  const validateUserContent = createContentValidator(helpers)
   const {
     getUserForAction,
     checkBannedWords,
@@ -97,13 +99,8 @@ function createMutualModule({ db, _, cloud, helpers }) {
     if (!title || title.length < 2) return { code: -1, msg: '标题不能少于 2 个字' }
     if (!content || content.length < 5) return { code: -1, msg: '详细说明不能少于 5 个字' }
 
-    checkBannedWords(title)
-    checkBannedWords(content)
-    await wxTextCheck(`${title} ${content}`, openid)
-
-    if (Array.isArray(postData.images) && postData.images.length > 0) {
-      await wxImageBatchCheck(postData.images)
-    }
+    const safety = await validateUserContent({ openid, text: [title, content, postData.location, postData.reward].filter(Boolean).join(' '), images: postData.images || [] })
+    if (!safety.pass) return { code: safety.code, msg: safety.reason }
 
     const user = await getUserForAction(openid)
     const campusId = resolveCampusIdForRead(postData.campusId || user.campusId || DEFAULT_CAMPUS_ID)

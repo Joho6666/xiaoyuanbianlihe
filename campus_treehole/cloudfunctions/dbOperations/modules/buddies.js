@@ -1,3 +1,4 @@
+const { createContentValidator } = require('../shared/content-safety')
 // modules/buddies.js - 同频找搭子业务模块
 // 负责搭子组局发布、5 态成局流转、申请与审批看板、轻量推荐排序
 const { computeBuddyRecommendScore, BUDDY_CATEGORIES } = require('../domain/buddy')
@@ -22,6 +23,7 @@ function publicBuddyPost(post) {
 }
 
 function createBuddiesModule({ db, _, cloud, helpers }) {
+  const validateUserContent = createContentValidator(helpers)
   const {
     getUserForAction,
     checkRateLimit,
@@ -228,12 +230,8 @@ function createBuddiesModule({ db, _, cloud, helpers }) {
     if (!title || title.length < 3) return { code: -1, msg: '活动标题至少 3 个字' }
     if (!postData.startAt) return { code: -1, msg: '请选择活动开始时间' }
 
-    // 检查违禁词
-    checkBannedWords(title)
-    if (postData.description) checkBannedWords(postData.description)
-
-    // 微信内容安全审查
-    await wxTextCheck(`${title} ${postData.description || ''}`, openid)
+    const safety = await validateUserContent({ openid, text: [title, postData.description, postData.location].filter(Boolean).join(' ') })
+    if (!safety.pass) return { code: safety.code, msg: safety.reason }
 
     // 获取发布者信息
     const user = await getUserForAction(openid)
@@ -316,6 +314,8 @@ function createBuddiesModule({ db, _, cloud, helpers }) {
       if (!isCollectionNotExistError(e)) throw e
     }
 
+    const safety = await validateUserContent({ openid, text: String(message || '').trim() })
+    if (!safety.pass) return { code: safety.code, msg: safety.reason }
     const applicant = await getUserForAction(openid)
     const newApp = {
       postId,

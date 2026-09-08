@@ -1,7 +1,9 @@
+const { createContentValidator } = require('../shared/content-safety')
 // modules/market.js - 校园集市业务模块
 // 拆分自 dbOperations/index.js，保持 100% 协议与行为兼容
 
 function createMarketModule({ db, _, cloud, helpers }) {
+  const validateUserContent = createContentValidator(helpers)
   const {
     getUserForAction,
     checkRateLimit,
@@ -177,17 +179,9 @@ function createMarketModule({ db, _, cloud, helpers }) {
 
     // 内容审核
     const textToCheck = (data.title || '') + ' ' + (data.description || '')
-    const localCheck = checkBannedWords(textToCheck)
-    if (!localCheck.pass) return { code: -2, msg: `内容包含违规词"${localCheck.word}"` }
-
-    const imagePromise = wxImageBatchCheck(openid, data.images || [])
-    const wxCheck = await wxTextCheck(openid, textToCheck)
-    if (!wxCheck.pass) {
-      imagePromise.catch((e) => console.warn('addMarketGoods: image check after text fail', e))
-      return { code: -2, msg: '内容未通过安全审核' }
-    }
-    const wxImageRes = await imagePromise
-    if (!wxImageRes.pass) return { code: -2, msg: '商品图片未通过安全审核' }
+    const images = Array.isArray(data.images) ? data.images : []
+    const safety = await validateUserContent({ openid, text: textToCheck, images })
+    if (!safety.pass) return { code: safety.code, msg: safety.reason }
 
     const campusIdGoods =
       typeof data.campusId === 'string' && data.campusId.trim()
@@ -380,11 +374,8 @@ function createMarketModule({ db, _, cloud, helpers }) {
       }
     }
 
-    const localCheck = checkBannedWords(content)
-    if (!localCheck.pass) return { code: -2, msg: `内容包含违规词"${localCheck.word}"` }
-
-    const wxCheck = await wxTextCheck(openid, content)
-    if (!wxCheck.pass) return { code: -2, msg: '内容未通过安全审核' }
+    const safety = await validateUserContent({ openid, text: content })
+    if (!safety.pass) return { code: safety.code, msg: safety.reason }
 
     const replyTo = data.replyTo || null
     const newComment = {

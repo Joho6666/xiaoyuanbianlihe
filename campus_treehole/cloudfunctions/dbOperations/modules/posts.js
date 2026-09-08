@@ -1,7 +1,9 @@
+const { createContentValidator } = require('../shared/content-safety')
 // modules/posts.js - 校园圈动态、评论、点赞与收藏业务模块
 // 负责帖子 CRUD、评论流转、防并发幂等点赞与收藏聚合
 
 function createPostsModule({ db, _, cloud, helpers }) {
+  const validateUserContent = createContentValidator(helpers)
   const {
     getUserForAction,
     checkRateLimit,
@@ -319,18 +321,9 @@ function createPostsModule({ db, _, cloud, helpers }) {
     if (!canPost) return { code: -1, msg: '发布太频繁，请稍后再试' }
 
     const textToCheck = (data.title || '') + ' ' + (data.content || '')
-    const localCheck = checkBannedWords(textToCheck)
-    if (!localCheck.pass) return { code: -2, msg: `内容包含违规词"${localCheck.word}"`, word: localCheck.word }
-
     const images = Array.isArray(data.images) ? data.images : []
-    const imagePromise = wxImageBatchCheck(openid, images)
-    const wxCheck = await wxTextCheck(openid, textToCheck)
-    if (!wxCheck.pass) {
-      imagePromise.catch((e) => console.warn('addPost: image check after text fail', e))
-      return { code: -2, msg: '内容未通过安全审核' }
-    }
-    const wxImageRes = await imagePromise
-    if (!wxImageRes.pass) return { code: -2, msg: '图片未通过安全审核' }
+    const safety = await validateUserContent({ openid, text: textToCheck, images })
+    if (!safety.pass) return { code: safety.code, msg: safety.reason }
 
     const videos = Array.isArray(data.videos) ? data.videos : []
     const thumbImages = Array.isArray(data.thumbImages) ? data.thumbImages : []
@@ -402,18 +395,9 @@ function createPostsModule({ db, _, cloud, helpers }) {
     if (!content) return { code: -1, msg: '正文不能为空' }
 
     const textToCheck = `${title} ${content}`.trim()
-    const localCheck = checkBannedWords(textToCheck)
-    if (!localCheck.pass) return { code: -2, msg: `内容包含违规词"${localCheck.word}"`, word: localCheck.word }
-
     const images = Array.isArray(data.images) ? data.images : []
-    const imagePromise = wxImageBatchCheck(openid, images)
-    const wxCheck = await wxTextCheck(openid, textToCheck)
-    if (!wxCheck.pass) {
-      imagePromise.catch((e) => console.warn('updatePost: image check after text fail', e))
-      return { code: -2, msg: '内容未通过安全审核' }
-    }
-    const wxImageRes = await imagePromise
-    if (!wxImageRes.pass) return { code: -2, msg: '图片未通过安全审核' }
+    const safety = await validateUserContent({ openid, text: textToCheck, images })
+    if (!safety.pass) return { code: safety.code, msg: safety.reason }
 
     const videos = Array.isArray(data.videos) ? data.videos : []
     const thumbImages = Array.isArray(data.thumbImages) ? data.thumbImages : []
@@ -528,11 +512,8 @@ function createPostsModule({ db, _, cloud, helpers }) {
     const canComment = await checkRateLimit(openid, 'comments', 1, 5)
     if (!canComment) return { code: -1, msg: '评论太频繁，请稍后再试' }
 
-    const localCheck = checkBannedWords(data.content)
-    if (!localCheck.pass) return { code: -2, msg: `评论包含违规词"${localCheck.word}"`, word: localCheck.word }
-
-    const wxCheck = await wxTextCheck(openid, data.content)
-    if (!wxCheck.pass) return { code: -2, msg: '评论未通过安全审核' }
+    const safety = await validateUserContent({ openid, text: data.content })
+    if (!safety.pass) return { code: safety.code, msg: safety.reason }
 
     const userRes = await db.collection('users').where({ _openid: openid }).get()
     const user = userRes.data[0] || {}

@@ -428,7 +428,7 @@ async function wxTextCheck(openid, text) {
       version: 2,
       content: text
     })
-    if (result.result && result.result.suggest === 'risky') {
+    if (!result.result || result.result.suggest !== 'pass') {
       return { pass: false, word: '(微信安全检测不通过)' }
     }
     return { pass: true, word: null }
