@@ -6,6 +6,10 @@ const createEventsModule = require('../../campus_treehole/cloudfunctions/dbOpera
 const createBuddiesModule = require('../../campus_treehole/cloudfunctions/dbOperations/modules/buddies')
 const createBridgeModule = require('../../campus_treehole/cloudfunctions/dbOperations/modules/bridge')
 const createMutualModule = require('../../campus_treehole/cloudfunctions/dbOperations/modules/mutual')
+const createSafetyModule = require('../../campus_treehole/cloudfunctions/dbOperations/modules/safety')
+const createUsersModule = require('../../campus_treehole/cloudfunctions/dbOperations/modules/users')
+const createMessagesModule = require('../../campus_treehole/cloudfunctions/dbOperations/modules/messages')
+const createPostsModule = require('../../campus_treehole/cloudfunctions/dbOperations/modules/posts')
 const { makeDeterministicId } = require('../../campus_treehole/cloudfunctions/dbOperations/shared/id')
 const {
   resolveCampusIdForRead,
@@ -74,6 +78,41 @@ function createMockDb() {
             })
           }
           return { data: filtered.map((x) => JSON.parse(JSON.stringify(x))) }
+        },
+        update: async ({ data }) => {
+          let updatedCount = 0
+          for (const item of items) {
+            let matches = true
+            if (queryObj && typeof queryObj === 'object') {
+              for (const k of Object.keys(queryObj)) {
+                if (k.startsWith('$') || typeof queryObj[k] === 'function' || (queryObj[k] && queryObj[k].operator)) continue
+                if (item[k] !== queryObj[k]) { matches = false; break }
+              }
+            }
+            if (matches) {
+              Object.assign(item, JSON.parse(JSON.stringify(data)))
+              updatedCount++
+            }
+          }
+          return { stats: { updated: updatedCount } }
+        },
+        remove: async () => {
+          let removedCount = 0
+          for (let idx = items.length - 1; idx >= 0; idx--) {
+            const item = items[idx]
+            let matches = true
+            if (queryObj && typeof queryObj === 'object') {
+              for (const k of Object.keys(queryObj)) {
+                if (k.startsWith('$') || typeof queryObj[k] === 'function' || (queryObj[k] && queryObj[k].operator)) continue
+                if (item[k] !== queryObj[k]) { matches = false; break }
+              }
+            }
+            if (matches) {
+              items.splice(idx, 1)
+              removedCount++
+            }
+          }
+          return { stats: { removed: removedCount } }
         },
         count: async () => ({ total: items.length }),
         limit: () => ({
@@ -501,6 +540,157 @@ describe('Cloud Function Modules Regression Tests', () => {
       status: 'resolved'
     })
     assert.strictEqual(updRes.code, 0)
+  })
+
+  test('Safety Module: toggleUserBlock and reportContent', async () => {
+    const { db, _, cloud, store } = createMockDb()
+    store.users.push({ _openid: 'user_target_block', status: 'active', nickName: '目标用户' })
+
+    const safety = createSafetyModule({
+      db,
+      _,
+      cloud,
+      helpers: {
+        getUserForAction: async () => ({ nickName: '自己', status: 'active' }),
+        isCollectionNotExistError: () => false,
+        isUserBlocksUnavailableError: () => false,
+        getUsersByOpenids: async () => [],
+        checkAdmin: async () => true
+      }
+    })
+
+    const blockRes = await safety.toggleUserBlock('user_mock_001', 'user_target_block')
+    assert.strictEqual(blockRes.code, 0)
+    assert.strictEqual(blockRes.data.blocked, true)
+
+    const relRes = await safety.getBlockRelation('user_mock_001', 'user_target_block')
+    assert.strictEqual(relRes.code, 0)
+    assert.strictEqual(relRes.data.iBlockedThem, true)
+
+    const reportRes = await safety.reportContent('user_mock_001', {
+      targetId: 'bad_post_1',
+      targetType: 'post',
+      reason: '垃圾营销广告'
+    })
+    assert.strictEqual(reportRes.code, 0)
+  })
+
+  test('Users Module: getUserInfo by openid or userId and profile update', async () => {
+    const { db, _, cloud, store } = createMockDb()
+    const users = createUsersModule({
+      db,
+      _,
+      cloud,
+      helpers: {
+        getUserForAction: async () => ({ nickName: '测试同学', status: 'active' }),
+        getUsersByOpenids: async () => [],
+        checkAdmin: async () => false,
+        checkBannedWords: () => ({ pass: true }),
+        wxTextCheck: async () => ({ pass: true }),
+        wxImageCheck: async () => ({ pass: true }),
+        escapeRegExp: (s) => s,
+        DEFAULT_CAMPUS_ID,
+        conversationBlocked: async () => false,
+        viewerBlockedByAuthor: async () => false,
+        addNotification: async () => {},
+        USER_BLOCKS: 'user_blocks',
+        safeUserBlocksQuery: async (run) => run(),
+        isCollectionNotExistError: () => false,
+        getMarketModule: () => ({ getUserMarketGoods: async () => ({ code: 0, data: [] }) })
+      }
+    })
+
+    // 查询本人资料
+    const infoRes = await users.getUserInfo('user_mock_001', 'user_mock_001')
+    assert.strictEqual(infoRes.code, 0)
+    assert.strictEqual(infoRes.data.nickName, '测试同学')
+
+    // 更新资料
+    const updateRes = await users.updateProfile('user_mock_001', {
+      nickName: '新昵称',
+      bio: '新签名'
+    })
+    assert.strictEqual(updateRes.code, 0)
+  })
+
+  test('Messages Module: sendMessage and getConversations', async () => {
+    const { db, _, cloud, store } = createMockDb()
+    store.users.push({ _openid: 'user_peer', status: 'active', nickName: '好友', avatarUrl: '/avatar.png' })
+
+    const messages = createMessagesModule({
+      db,
+      _,
+      cloud,
+      helpers: {
+        getUserForAction: async () => ({ nickName: '发信人', status: 'active', isMuted: false }),
+        getUsersByOpenids: async (ids) => store.users.filter((u) => ids.includes(u._openid)),
+        checkRateLimit: async () => true,
+        checkBannedWords: () => ({ pass: true }),
+        wxTextCheck: async () => ({ pass: true }),
+        wxImageCheck: async () => ({ pass: true }),
+        triggerSubscribeNotify: async () => {},
+        trimSnippet: (s) => s,
+        conversationBlocked: async () => false,
+        USER_BLOCKS: 'user_blocks',
+        safeUserBlocksQuery: async (run) => run(),
+        checkAdmin: async () => false
+      }
+    })
+
+    const sendRes = await messages.sendMessage('user_mock_001', {
+      targetOpenid: 'user_peer',
+      content: '你好！一起去自习吗？',
+      type: 'text'
+    })
+    assert.strictEqual(sendRes.code, 0)
+    assert.strictEqual(sendRes.data.content, '你好！一起去自习吗？')
+
+    const convsRes = await messages.getConversations('user_mock_001')
+    assert.strictEqual(convsRes.code, 0)
+    assert.strictEqual(convsRes.data.length, 1)
+    assert.strictEqual(convsRes.data[0].targetOpenid, 'user_peer')
+  })
+
+  test('Posts Module: addPost and toggleLikePost', async () => {
+    const { db, _, cloud, store } = createMockDb()
+    const posts = createPostsModule({
+      db,
+      _,
+      cloud,
+      helpers: {
+        getUserForAction: async () => ({ nickName: '发帖人', status: 'active', isLikeBanned: false }),
+        checkRateLimit: async () => true,
+        checkAdmin: async () => false,
+        checkBannedWords: () => ({ pass: true }),
+        wxTextCheck: async () => ({ pass: true }),
+        wxImageBatchCheck: async () => ({ pass: true }),
+        findAuthorsHiddenByBlockRelation: async () => new Set(),
+        contentDetailBlocked: async () => false,
+        viewerBlockedByAuthor: async () => false,
+        addNotification: async () => {},
+        triggerSubscribeNotify: async () => {},
+        trimSnippet: (s) => s,
+        makeDeterministicId,
+        DEFAULT_CAMPUS_ID,
+        resolveCampusIdForRead,
+        campusWhereClause: (cid) => campusWhereClause(_, cid),
+        escapeRegExp: (s) => s,
+        getEventsModule: () => ({ resolveActivityTagsForPost: async () => ({}) })
+      }
+    })
+
+    const addRes = await posts.addPost('user_mock_001', {
+      title: '校园春日见闻',
+      content: '今天操场的花开得很好看！',
+      category: '校园生活',
+      campusId: DEFAULT_CAMPUS_ID
+    })
+    assert.strictEqual(addRes.code, 0)
+    assert.ok(addRes.data._id)
+
+    const likeRes = await posts.toggleLikePost('user_mock_001', addRes.data._id)
+    assert.strictEqual(likeRes.code, 0)
+    assert.strictEqual(likeRes.data.isLiked, true)
   })
 })
 

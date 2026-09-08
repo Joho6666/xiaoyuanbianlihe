@@ -247,6 +247,251 @@ function createEventsModule({ db, _, cloud, helpers }) {
     return finalizeActivityZoneRound(openid, 'manual')
   }
 
+  // ================= 公告相关操作 =================
+
+  function announcementIsVisibleNow(item, now = new Date()) {
+    if (!item || item.status !== 'published') return false
+    const publishAt = item.publishAt ? new Date(item.publishAt) : null
+    const expireAt = item.expireAt ? new Date(item.expireAt) : null
+    if (publishAt && !Number.isNaN(publishAt.getTime()) && publishAt.getTime() > now.getTime()) return false
+    if (expireAt && !Number.isNaN(expireAt.getTime()) && expireAt.getTime() <= now.getTime()) return false
+    return true
+  }
+
+  function getPublishTs(item) {
+    const t = item && item.publishAt ? new Date(item.publishAt).getTime() : 0
+    return Number.isFinite(t) ? t : 0
+  }
+
+  function sortAnnouncements(list) {
+    return (list || []).slice().sort((a, b) => {
+      const pinDiff = (b && b.pinTop ? 1 : 0) - (a && a.pinTop ? 1 : 0)
+      if (pinDiff !== 0) return pinDiff
+      return getPublishTs(b) - getPublishTs(a)
+    })
+  }
+
+  async function getAnnouncementList(openid, { page = 1, pageSize = 20 } = {}) {
+    const uRes = await db.collection('users').where({ _openid: openid }).limit(1).get()
+    const user = (uRes.data && uRes.data[0]) || {}
+    const campusId = user.campusId || DEFAULT_CAMPUS_ID
+    const safePage = Math.max(1, Number(page) || 1)
+    const safePageSize = Math.max(1, Math.min(50, Number(pageSize) || 20))
+    const now = new Date()
+    let res
+    try {
+      res = await db.collection('announcements').limit(200).get()
+    } catch (err) {
+      if (!isCollectionNotExistError(err)) throw err
+      return { code: 0, data: [] }
+    }
+    const filtered = sortAnnouncements((res.data || []).filter((item) =>
+      announcementIsVisibleNow(item, now) && announcementTargetsCampus(item, campusId)
+    ))
+    const start = (safePage - 1) * safePageSize
+    return { code: 0, data: filtered.slice(start, start + safePageSize) }
+  }
+
+  async function getAdminAnnouncementList(openid, { page = 1, pageSize = 30 } = {}) {
+    if (!(await checkAdmin(openid))) return { code: -1, msg: '无管理员权限' }
+    let res
+    try {
+      res = await db.collection('announcements')
+        .orderBy('createTime', 'desc')
+        .skip((Math.max(1, page) - 1) * pageSize)
+        .limit(pageSize)
+        .get()
+    } catch (err) {
+      if (!isCollectionNotExistError(err)) throw err
+      return { code: 0, data: [] }
+    }
+    return { code: 0, data: res.data || [] }
+  }
+
+  async function getAnnouncementDetail(openid, data = {}) {
+    if (!(await checkAdmin(openid))) return { code: -1, msg: '无管理员权限' }
+    const announcementId = String(data.announcementId || '').trim()
+    if (!announcementId) return { code: -1, msg: '缺少公告ID' }
+    const res = await db.collection('announcements').doc(announcementId).get().catch(() => ({ data: null }))
+    if (!res || !res.data) return { code: -1, msg: '公告不存在' }
+    return { code: 0, data: res.data }
+  }
+
+  async function createAnnouncement(openid, data = {}) {
+    if (!(await checkAdmin(openid))) return { code: -1, msg: '无管理员权限' }
+    const title = String(data.title || '').trim()
+    const content = String(data.content || '').trim()
+    if (!title) return { code: -1, msg: '公告标题不能为空' }
+    if (!content) return { code: -1, msg: '公告内容不能为空' }
+    if (helpers.wxTextCheck) {
+      const textCheck1 = await helpers.wxTextCheck(openid, title)
+      const textCheck2 = await helpers.wxTextCheck(openid, content)
+      if (!textCheck1.pass || !textCheck2.pass) return { code: -2, msg: '公告内容未通过安全审核' }
+    }
+    const images = Array.isArray(data.images)
+      ? data.images.filter((x) => typeof x === 'string' && x.trim())
+      : []
+    if (images.length > 10) return { code: -1, msg: '公告最多上传10张图片' }
+    if (images.length && helpers.wxImageBatchCheck) {
+      const imgCheck = await helpers.wxImageBatchCheck(openid, images)
+      if (!imgCheck.pass) return { code: -2, msg: '公告图片未通过安全审核' }
+    }
+    const userSnap = helpers.getUserSnapshot ? await helpers.getUserSnapshot(openid) : {}
+    const doc = {
+      _openid: openid,
+      title,
+      content,
+      images,
+      campusIds: normalizeCampusIds(data.campusIds),
+      status: data.status === 'published' ? 'published' : 'draft',
+      priority: ['normal', 'important', 'urgent'].includes(data.priority) ? data.priority : 'normal',
+      pinTop: !!data.pinTop,
+      publishAt: data.status === 'published' ? db.serverDate() : null,
+      expireAt: data.expireAt ? new Date(data.expireAt) : null,
+      createdByOpenid: openid,
+      createdByName: userSnap.nickName || '管理员',
+      readCount: 0,
+      targetCount: 0,
+      notifySent: false,
+      notifySentAt: null,
+      createTime: db.serverDate(),
+      updateTime: db.serverDate()
+    }
+    let res
+    try {
+      res = await db.collection('announcements').add({ data: doc })
+    } catch (err) {
+      if (!isCollectionNotExistError(err)) throw err
+      await ensureCollection('announcements')
+      res = await db.collection('announcements').add({ data: doc })
+    }
+    return { code: 0, msg: '公告已创建', data: { _id: res._id } }
+  }
+
+  async function updateAnnouncement(openid, data = {}) {
+    if (!(await checkAdmin(openid))) return { code: -1, msg: '无管理员权限' }
+    const id = String(data.announcementId || '').trim()
+    if (!id) return { code: -1, msg: '缺少公告ID' }
+    const patch = {}
+    if (data.title !== undefined) patch.title = String(data.title || '').trim()
+    if (data.content !== undefined) patch.content = String(data.content || '').trim()
+    if (data.campusIds !== undefined) patch.campusIds = normalizeCampusIds(data.campusIds)
+    if (data.priority !== undefined) patch.priority = ['normal', 'important', 'urgent'].includes(data.priority) ? data.priority : 'normal'
+    if (data.pinTop !== undefined) patch.pinTop = !!data.pinTop
+    if (data.expireAt !== undefined) patch.expireAt = data.expireAt ? new Date(data.expireAt) : null
+    if (data.images !== undefined) {
+      patch.images = Array.isArray(data.images)
+        ? data.images.filter((x) => typeof x === 'string' && x.trim())
+        : []
+      if (patch.images.length > 10) return { code: -1, msg: '公告最多上传10张图片' }
+    }
+    if (patch.title && helpers.wxTextCheck) {
+      const c = await helpers.wxTextCheck(openid, patch.title)
+      if (!c.pass) return { code: -2, msg: '标题未通过安全审核' }
+    }
+    if (patch.content && helpers.wxTextCheck) {
+      const c = await helpers.wxTextCheck(openid, patch.content)
+      if (!c.pass) return { code: -2, msg: '内容未通过安全审核' }
+    }
+    if (patch.images && patch.images.length && helpers.wxImageBatchCheck) {
+      const imgCheck = await helpers.wxImageBatchCheck(openid, patch.images)
+      if (!imgCheck.pass) return { code: -2, msg: '公告图片未通过安全审核' }
+    }
+    patch.updateTime = db.serverDate()
+    await db.collection('announcements').doc(id).update({ data: patch })
+    return { code: 0, msg: '公告已更新' }
+  }
+
+  async function publishAnnouncement(openid, data = {}) {
+    if (!(await checkAdmin(openid))) return { code: -1, msg: '无管理员权限' }
+    const id = String(data.announcementId || '').trim()
+    if (!id) return { code: -1, msg: '缺少公告ID' }
+    const aRes = await db.collection('announcements').doc(id).get().catch(() => ({ data: null }))
+    const item = aRes.data
+    if (!item) return { code: -1, msg: '公告不存在' }
+    await db.collection('announcements').doc(id).update({
+      data: { status: 'published', publishAt: db.serverDate(), updateTime: db.serverDate() }
+    })
+    return { code: 0, msg: '公告已发布' }
+  }
+
+  async function revokeAnnouncement(openid, data = {}) {
+    if (!(await checkAdmin(openid))) return { code: -1, msg: '无管理员权限' }
+    const id = String(data.announcementId || '').trim()
+    if (!id) return { code: -1, msg: '缺少公告ID' }
+    await db.collection('announcements').doc(id).update({
+      data: { status: 'revoked', updateTime: db.serverDate() }
+    })
+    return { code: 0, msg: '公告已撤回' }
+  }
+
+  async function markAnnouncementRead(openid, data = {}) {
+    const announcementId = String(data.announcementId || '').trim()
+    if (!announcementId) return { code: -1, msg: '缺少公告ID' }
+    const makeDeterministicId = helpers.makeDeterministicId || ((scope, ...parts) => `${scope}_${parts.join('_')}`)
+    const readId = makeDeterministicId('annread', openid, announcementId)
+    const existingDoc = await db.collection('announcement_reads').doc(readId).get().catch(() => ({ data: null }))
+    if (existingDoc && existingDoc.data) return { code: 0, msg: '已读' }
+
+    let added = false
+    try {
+      await db.collection('announcement_reads').add({
+        data: {
+          _id: readId,
+          _openid: openid,
+          announcementId,
+          readTime: db.serverDate()
+        }
+      })
+      added = true
+    } catch (err) {
+      if (isCollectionNotExistError(err)) {
+        await ensureCollection('announcement_reads')
+        try {
+          await db.collection('announcement_reads').add({
+            data: { _id: readId, _openid: openid, announcementId, readTime: db.serverDate() }
+          })
+          added = true
+        } catch (e) {}
+      }
+    }
+    if (added) {
+      await db.collection('announcements').doc(announcementId).update({ data: { readCount: _.inc(1) } }).catch(() => {})
+    }
+    return { code: 0, msg: '已标记已读' }
+  }
+
+  async function getUnreadAnnouncementCount(openid) {
+    const uRes = await db.collection('users').where({ _openid: openid }).limit(1).get()
+    const user = (uRes.data && uRes.data[0]) || {}
+    const campusId = user.campusId || DEFAULT_CAMPUS_ID
+    const now = new Date()
+    let annRes
+    try {
+      annRes = await db.collection('announcements').limit(200).get()
+    } catch (err) {
+      if (!isCollectionNotExistError(err)) throw err
+      return { code: 0, data: { unreadCount: 0 } }
+    }
+    const list = (annRes.data || []).filter((item) =>
+      announcementIsVisibleNow(item, now) && announcementTargetsCampus(item, campusId)
+    )
+    if (!list.length) return { code: 0, data: { unreadCount: 0 } }
+    const ids = list.map((x) => x._id)
+    let readRes
+    try {
+      readRes = await db.collection('announcement_reads').where({
+        _openid: openid,
+        announcementId: _.in(ids)
+      }).get()
+    } catch (err) {
+      readRes = { data: [] }
+    }
+    const readIds = new Set((readRes.data || []).map((r) => r.announcementId))
+    const unread = list.filter((item) => !readIds.has(item._id)).length
+    return { code: 0, data: { unreadCount: unread } }
+  }
+
   return {
     fetchActivityZoneConfigDoc,
     sanitizeActivityZoneConfigForSet,
@@ -258,7 +503,16 @@ function createEventsModule({ db, _, cloud, helpers }) {
     getActivityZone,
     getActivityZoneAdmin,
     saveActivityZone,
-    endActivityZone
+    endActivityZone,
+    createAnnouncement,
+    updateAnnouncement,
+    publishAnnouncement,
+    revokeAnnouncement,
+    getAnnouncementList,
+    getAdminAnnouncementList,
+    getAnnouncementDetail,
+    markAnnouncementRead,
+    getUnreadAnnouncementCount
   }
 }
 
