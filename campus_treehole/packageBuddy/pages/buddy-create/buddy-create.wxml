@@ -1,62 +1,187 @@
-<!-- packageBuddy/pages/buddy-create/buddy-create.wxml - 发起搭子组局 -->
-<view class="create-container">
-  <view class="form-card">
-    <view class="section-title">选择搭子类型</view>
-    <view class="cat-grid">
-      <view
-        wx:for="{{categories}}"
-        wx:key="id"
-        class="cat-item {{category === item.id ? 'cat-item-active' : ''}}"
-        data-id="{{item.id}}"
-        bindtap="onSelectCategory"
-      >
-        <text class="cat-name">{{item.name}}</text>
-      </view>
+<!-- packageBuddy/pages/buddy-create/buddy-create.wxml - Tongpin 三步极速组局 -->
+<view class="create-page">
+  <!-- 顶部 3 步导航指示器 -->
+  <view class="step-indicator">
+    <view class="step-item {{currentStep >= 1 ? 'step-active' : ''}}">
+      <view class="step-num">1</view>
+      <text class="step-text">想做什么</text>
+    </view>
+    <view class="step-line {{currentStep >= 2 ? 'step-line-active' : ''}}"></view>
+    <view class="step-item {{currentStep >= 2 ? 'step-active' : ''}}">
+      <view class="step-num">2</view>
+      <text class="step-text">何时何地</text>
+    </view>
+    <view class="step-line {{currentStep >= 3 ? 'step-line-active' : ''}}"></view>
+    <view class="step-item {{currentStep >= 3 ? 'step-active' : ''}}">
+      <view class="step-num">3</view>
+      <text class="step-text">差几个人</text>
     </view>
   </view>
 
-  <view class="form-card">
-    <view class="form-group">
-      <view class="group-label">组局标题 *</view>
+  <!-- STEP 1: 想做什么 -->
+  <view class="step-content" wx:if="{{currentStep === 1}}">
+    <view class="card-panel">
+      <view class="panel-header">
+        <text class="panel-title">选择组局分类</text>
+        <text class="panel-sub">30 秒速发，随时成局</text>
+      </view>
+
+      <view class="category-grid">
+        <view
+          wx:for="{{categories}}"
+          wx:key="id"
+          class="cat-box {{category === item.id ? 'cat-box-active' : ''}}"
+          data-id="{{item.id}}"
+          bindtap="onSelectCategory"
+        >
+          <text class="cat-emoji">{{item.emoji}}</text>
+          <text class="cat-name">{{item.name}}</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="card-panel">
+      <view class="panel-header">
+        <text class="panel-title">活动标题</text>
+        <text class="panel-sub">点选快捷灵感，或直接修改</text>
+      </view>
+
+      <view class="suggestions-row">
+        <view
+          wx:for="{{titleSuggestions}}"
+          wx:key="*this"
+          class="suggestion-chip"
+          data-text="{{item}}"
+          bindtap="onSelectSuggestion"
+        >
+          {{item}}
+        </view>
+      </view>
+
       <input
-        class="input-control"
-        placeholder="例如：周六下午体育馆羽毛球单打缺1人"
-        placeholder-class="placeholder-text"
+        class="custom-input title-input"
+        placeholder="例如：今晚体育馆羽毛球双打缺1人"
         value="{{title}}"
         bindinput="onTitleInput"
         maxlength="40"
       />
     </view>
 
-    <view class="form-group">
-      <view class="group-label">活动开始时间 *</view>
-      <view class="time-picker-row">
-        <picker mode="date" value="{{startDate}}" start="{{minDate}}" bindchange="onDateChange">
-          <view class="picker-box">{{startDate || '选择日期'}}</view>
+    <view class="card-panel">
+      <view class="panel-header">
+        <text class="panel-title">补充说明 (选填)</text>
+      </view>
+      <textarea
+        class="custom-textarea"
+        placeholder="例如：自带球拍、水平初中级皆可、准时集合..."
+        value="{{description}}"
+        bindinput="onDescInput"
+        maxlength="200"
+      />
+    </view>
+  </view>
+
+  <!-- STEP 2: 什么时候 / 在哪里 -->
+  <view class="step-content" wx:if="{{currentStep === 2}}">
+    <view class="card-panel">
+      <view class="panel-header">
+        <text class="panel-title">什么时候开始？</text>
+        <text class="panel-sub">快捷时间</text>
+      </view>
+
+      <view class="chips-flex">
+        <view
+          wx:for="{{whenPresets}}"
+          wx:key="id"
+          class="preset-chip {{selectedWhen === item.id ? 'preset-chip-active' : ''}}"
+          data-id="{{item.id}}"
+          bindtap="onSelectWhenPreset"
+        >
+          {{item.label}}
+        </view>
+      </view>
+
+      <!-- 自定义时间选择 -->
+      <view class="custom-time-box" wx:if="{{selectedWhen === 'custom'}}">
+        <picker mode="date" value="{{customDate}}" start="{{minDate}}" bindchange="onCustomDateChange">
+          <view class="picker-pill">{{customDate || '选择日期'}}</view>
         </picker>
-        <picker mode="time" value="{{startTime}}" bindchange="onTimeChange">
-          <view class="picker-box">{{startTime || '选择时间'}}</view>
+        <picker mode="time" value="{{customTime}}" bindchange="onCustomTimeChange">
+          <view class="picker-pill">{{customTime || '选择时间'}}</view>
         </picker>
       </view>
     </view>
 
-    <view class="form-group">
-      <view class="group-label">集合地点</view>
+    <view class="card-panel">
+      <view class="panel-header">
+        <text class="panel-title">在哪里集合？</text>
+        <text class="panel-sub">常用校园地点</text>
+      </view>
+
+      <view class="chips-flex">
+        <view
+          wx:for="{{placePresets}}"
+          wx:key="*this"
+          class="preset-chip {{location === item ? 'preset-chip-active' : ''}}"
+          data-place="{{item}}"
+          bindtap="onSelectPlacePreset"
+        >
+          {{item}}
+        </view>
+      </view>
+
       <input
-        class="input-control"
-        placeholder="例如：花江校区风雨操场2号场 / 桂航食堂二楼"
-        placeholder-class="placeholder-text"
+        class="custom-input"
+        placeholder="或输入具体地点 (如：花江校区4教门厅)"
         value="{{location}}"
         bindinput="onLocationInput"
         maxlength="40"
       />
     </view>
+  </view>
 
-    <view class="form-group">
-      <view class="group-label">人数上限 (含发起人)</view>
+  <!-- STEP 3: 还需要几个人 & 实时卡片预览 -->
+  <view class="step-content" wx:if="{{currentStep === 3}}">
+    <view class="card-panel">
+      <view class="panel-header">
+        <text class="panel-title">总人数 (含发起人)</text>
+        <text class="panel-sub">{{previewRemainText}}</text>
+      </view>
+
+      <view class="chips-flex">
+        <view
+          class="preset-chip {{maxPeople === 2 ? 'preset-chip-active' : ''}}"
+          data-num="2"
+          bindtap="onSelectPeopleQuick"
+        >
+          1对1 (2人)
+        </view>
+        <view
+          class="preset-chip {{maxPeople === 3 ? 'preset-chip-active' : ''}}"
+          data-num="3"
+          bindtap="onSelectPeopleQuick"
+        >
+          3人小队
+        </view>
+        <view
+          class="preset-chip {{maxPeople === 4 ? 'preset-chip-active' : ''}}"
+          data-num="4"
+          bindtap="onSelectPeopleQuick"
+        >
+          4人经典 (双打/拼车)
+        </view>
+        <view
+          class="preset-chip {{maxPeople === 6 ? 'preset-chip-active' : ''}}"
+          data-num="6"
+          bindtap="onSelectPeopleQuick"
+        >
+          6人大局
+        </view>
+      </view>
+
       <slider
         min="2"
-        max="16"
+        max="12"
         step="1"
         value="{{maxPeople}}"
         show-value
@@ -65,35 +190,46 @@
       />
     </view>
 
-    <view class="form-group">
-      <view class="group-label">性别要求</view>
-      <radio-group class="radio-row" bindchange="onGenderChange">
-        <label class="radio-label">
+    <view class="card-panel">
+      <view class="panel-header">
+        <text class="panel-title">性别偏好</text>
+      </view>
+      <radio-group class="radio-flex" bindchange="onGenderChange">
+        <label class="radio-pill">
           <radio value="any" checked="{{genderRequirement === 'any'}}" color="#426089" /> 不限
         </label>
-        <label class="radio-label">
-          <radio value="female_only" checked="{{genderRequirement === 'female_only'}}" color="#426089" /> 仅限女生
+        <label class="radio-pill">
+          <radio value="female_only" checked="{{genderRequirement === 'female_only'}}" color="#426089" /> 仅女生
         </label>
-        <label class="radio-label">
-          <radio value="male_only" checked="{{genderRequirement === 'male_only'}}" color="#426089" /> 仅限男生
+        <label class="radio-pill">
+          <radio value="male_only" checked="{{genderRequirement === 'male_only'}}" color="#426089" /> 仅男生
         </label>
       </radio-group>
     </view>
 
-    <view class="form-group">
-      <view class="group-label">详细说明 / 组局约定</view>
-      <textarea
-        class="textarea-control"
-        placeholder="补充活动费用说明（如AA分摊、自带装备）、迟到规则或注意事项..."
-        placeholder-class="placeholder-text"
-        value="{{description}}"
-        bindinput="onDescInput"
-        maxlength="300"
-      />
+    <!-- 卡片即时预览 -->
+    <view class="card-panel preview-panel">
+      <view class="preview-title">搭子卡片预览（广场展示效果）</view>
+      <view class="mock-card">
+        <view class="mock-top">
+          <text class="mock-cat">{{category}}</text>
+          <text class="mock-remain">{{previewRemainText}}</text>
+        </view>
+        <view class="mock-heading">{{title}}</view>
+        <view class="mock-line">
+          <text class="mock-tag">⏰ {{previewTimeLabel}}</text>
+          <text class="mock-tag">📍 {{location || '校内'}}</text>
+        </view>
+      </view>
     </view>
   </view>
 
-  <view class="submit-bar">
-    <button class="submit-btn" disabled="{{submitting}}" bindtap="onSubmit">立即发起组局</button>
+  <!-- 底部固定操作栏 -->
+  <view class="action-footer">
+    <button class="footer-btn back-btn" wx:if="{{currentStep > 1}}" bindtap="onPrevStep">上一步</button>
+    <button class="footer-btn next-btn" wx:if="{{currentStep < 3}}" bindtap="onNextStep">下一步</button>
+    <button class="footer-btn submit-btn" wx:if="{{currentStep === 3}}" disabled="{{submitting}}" bindtap="onSubmit">
+      🚀 30秒极速发起组局
+    </button>
   </view>
 </view>

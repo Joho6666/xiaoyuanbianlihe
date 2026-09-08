@@ -1,52 +1,125 @@
-/* packageBuddy/pages/buddy-create/buddy-create.wxss */
-.create-container {
+/* packageBuddy/pages/buddy-create/buddy-create.wxss - Tongpin 3步极速发布 */
+.create-page {
   min-height: 100vh;
   background-color: #f7f9fc;
   padding: 24rpx;
-  padding-bottom: calc(140rpx + env(safe-area-inset-bottom));
+  padding-bottom: calc(160rpx + env(safe-area-inset-bottom));
   box-sizing: border-box;
 }
 
-.form-card {
+/* 顶部三步指示器 */
+.step-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   background: #ffffff;
+  padding: 24rpx 36rpx;
   border-radius: 28rpx;
-  padding: 32rpx;
   margin-bottom: 24rpx;
   box-shadow: 0 4rpx 16rpx rgba(44, 51, 56, 0.03);
-  border: 1rpx solid rgba(116, 124, 129, 0.06);
 }
 
-.section-title {
-  font-size: 28rpx;
+.step-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8rpx;
+}
+
+.step-num {
+  width: 44rpx;
+  height: 44rpx;
+  border-radius: 50%;
+  background: #e2e8f0;
+  color: #747c81;
+  font-size: 24rpx;
   font-weight: 700;
-  color: #2c3338;
-  margin-bottom: 20rpx;
-}
-
-.cat-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 16rpx;
-}
-
-.cat-item {
-  background: #f8fafc;
-  border: 2rpx solid transparent;
-  border-radius: 20rpx;
-  padding: 20rpx 12rpx;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-.cat-item-active {
+.step-text {
+  font-size: 22rpx;
+  color: #747c81;
+}
+
+.step-active .step-num {
+  background: #426089;
+  color: #ffffff;
+}
+
+.step-active .step-text {
+  color: #426089;
+  font-weight: 700;
+}
+
+.step-line {
+  flex: 1;
+  height: 4rpx;
+  background: #e2e8f0;
+  margin: 0 16rpx;
+  margin-bottom: 28rpx;
+}
+
+.step-line-active {
+  background: #426089;
+}
+
+/* 面板卡片 */
+.card-panel {
+  background: #ffffff;
+  border-radius: 28rpx;
+  padding: 30rpx;
+  margin-bottom: 24rpx;
+  box-shadow: 0 4rpx 16rpx rgba(44, 51, 56, 0.03);
+  border: 1rpx solid rgba(116, 124, 129, 0.06);
+}
+
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 20rpx;
+}
+
+.panel-title {
+  font-size: 28rpx;
+  font-weight: 700;
+  color: #2c3338;
+}
+
+.panel-sub {
+  font-size: 22rpx;
+  color: #94a3b8;
+}
+
+/* 分类网格 (3列) */
+.category-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16rpx;
+}
+
+.cat-box {
+  background: #f8fafc;
+  border: 2rpx solid transparent;
+  border-radius: 20rpx;
+  padding: 20rpx 12rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8rpx;
+  transition: all 0.2s ease;
+}
+
+.cat-box-active {
   background: #e9eff7;
   border-color: #426089;
 }
 
-.cat-item-active .cat-name {
-  color: #426089;
-  font-weight: 700;
+.cat-emoji {
+  font-size: 36rpx;
 }
 
 .cat-name {
@@ -54,22 +127,34 @@
   color: #596065;
 }
 
-.form-group {
-  margin-bottom: 28rpx;
-}
-
-.form-group:last-child {
-  margin-bottom: 0;
-}
-
-.group-label {
-  font-size: 26rpx;
+.cat-box-active .cat-name {
+  color: #426089;
   font-weight: 700;
-  color: #2c3338;
-  margin-bottom: 12rpx;
 }
 
-.input-control {
+/* 标题灵感建议 */
+.suggestions-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12rpx;
+  margin-bottom: 20rpx;
+}
+
+.suggestion-chip {
+  background: #f1f5f9;
+  border-radius: 24rpx;
+  padding: 10rpx 20rpx;
+  font-size: 22rpx;
+  color: #475569;
+  line-height: 1.4;
+}
+
+.suggestion-chip:active {
+  background: #e2e8f0;
+}
+
+/* 输入框 */
+.custom-input {
   width: 100%;
   height: 80rpx;
   background: #f8fafc;
@@ -80,71 +165,175 @@
   color: #2c3338;
 }
 
-.placeholder-text {
-  color: #abb3b9;
-  font-size: 24rpx;
+.title-input {
+  font-weight: 600;
 }
 
-.time-picker-row {
-  display: flex;
-  gap: 20rpx;
-}
-
-.picker-box {
+.custom-textarea {
+  width: 100%;
+  height: 150rpx;
   background: #f8fafc;
   border-radius: 16rpx;
-  padding: 20rpx 32rpx;
-  font-size: 26rpx;
+  padding: 20rpx 24rpx;
+  box-sizing: border-box;
+  font-size: 24rpx;
+  color: #2c3338;
+  line-height: 1.5;
+}
+
+/* 快捷芯片弹性列表 */
+.chips-flex {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16rpx;
+  margin-bottom: 20rpx;
+}
+
+.preset-chip {
+  background: #f8fafc;
+  border: 2rpx solid transparent;
+  border-radius: 20rpx;
+  padding: 16rpx 28rpx;
+  font-size: 24rpx;
+  color: #475569;
+}
+
+.preset-chip-active {
+  background: #e9eff7;
+  border-color: #426089;
+  color: #426089;
+  font-weight: 700;
+}
+
+.custom-time-box {
+  display: flex;
+  gap: 16rpx;
+  margin-top: 12rpx;
+}
+
+.picker-pill {
+  background: #f8fafc;
+  border-radius: 16rpx;
+  padding: 18rpx 32rpx;
+  font-size: 24rpx;
   color: #2c3338;
   font-weight: 600;
 }
 
-.radio-row {
+/* 单选组 */
+.radio-flex {
   display: flex;
-  gap: 32rpx;
-  padding-top: 8rpx;
+  gap: 24rpx;
+  padding-top: 6rpx;
 }
 
-.radio-label {
+.radio-pill {
   font-size: 26rpx;
   color: #596065;
   display: flex;
   align-items: center;
 }
 
-.textarea-control {
-  width: 100%;
-  height: 200rpx;
-  background: #f8fafc;
-  border-radius: 16rpx;
-  padding: 20rpx 24rpx;
-  box-sizing: border-box;
-  font-size: 26rpx;
-  color: #2c3338;
-  line-height: 1.5;
+/* 实时卡片预览 */
+.preview-panel {
+  background: #f0fdf4;
+  border: 1rpx solid #bbf7d0;
 }
 
-.submit-bar {
+.preview-title {
+  font-size: 24rpx;
+  font-weight: 700;
+  color: #166534;
+  margin-bottom: 16rpx;
+}
+
+.mock-card {
+  background: #ffffff;
+  border-radius: 20rpx;
+  padding: 24rpx;
+  box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.04);
+}
+
+.mock-top {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 12rpx;
+}
+
+.mock-cat {
+  background: #e9eff7;
+  color: #426089;
+  font-size: 20rpx;
+  font-weight: 700;
+  padding: 4rpx 14rpx;
+  border-radius: 8rpx;
+}
+
+.mock-remain {
+  color: #ef4444;
+  font-size: 22rpx;
+  font-weight: 700;
+}
+
+.mock-heading {
+  font-size: 28rpx;
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 12rpx;
+}
+
+.mock-line {
+  display: flex;
+  gap: 16rpx;
+}
+
+.mock-tag {
+  font-size: 22rpx;
+  color: #64748b;
+}
+
+/* 底部操作栏 */
+.action-footer {
   position: fixed;
   left: 0;
   right: 0;
   bottom: 0;
   background: #ffffff;
   padding: 20rpx 32rpx calc(24rpx + env(safe-area-inset-bottom));
-  box-shadow: 0 -4rpx 16rpx rgba(44, 51, 56, 0.04);
+  box-shadow: 0 -4rpx 16rpx rgba(44, 51, 56, 0.05);
+  display: flex;
+  gap: 20rpx;
   z-index: 100;
 }
 
-.submit-btn {
-  background: #426089;
-  color: #ffffff;
+.footer-btn {
   height: 88rpx;
   line-height: 88rpx;
   border-radius: 22rpx;
-  font-size: 30rpx;
+  font-size: 28rpx;
   font-weight: 700;
+  margin: 0;
 }
 
-.submit-btn:active {
-  opacity: 0.9;
+.back-btn {
+  flex: 1;
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.next-btn {
+  flex: 2;
+  background: #426089;
+  color: #ffffff;
+}
+
+.submit-btn {
+  flex: 1;
+  background: #16a34a;
+  color: #ffffff;
+  font-size: 30rpx;
+}
+
+.footer-btn:active {
+  opacity: 0.88;
 }
