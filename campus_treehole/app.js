@@ -19,7 +19,8 @@ function stableStringify(value) {
  * 查看：开发者工具 → 云开发 → 设置 → 环境设置 → 环境 ID（形如 cloud1-xxxx）。
  * 若你新建了环境，把下面改成新 ID；勿用 DYNAMIC_CURRENT_ENV（体验版/真机未绑默认环境时常报错）。
  */
-const CLOUD_ENV_ID = 'xyblh-5gb26qrnf9d30feb'
+const CLOUD_ENV_ID = ('' + (typeof wx !== 'undefined' && wx.getExtConfigSync ? (wx.getExtConfigSync().envId || '') : '')).trim()
+  || 'YOUR_CLOUD_ENV_ID' // TODO: 部署前改为自己的环境 ID（勿提交真实环境）
 
 const campuses = require('./utils/campuses.js')
 const SELECTED_CAMPUS_ID_KEY = 'selectedCampusId_v1'
@@ -51,7 +52,7 @@ App({
     this._campusCache = { id: undefined, name: undefined }
 
     if (wx.cloud) {
-      const envId = String(CLOUD_ENV_ID || '').trim() || 'xyblh-5gb26qrnf9d30feb'
+      const envId = String(CLOUD_ENV_ID || '').trim() || 'YOUR_CLOUD_ENV_ID'
       wx.cloud.init({
         env: envId,
         traceUser: true

@@ -473,20 +473,85 @@ exports.main = async (event, context) => {
   const { action, data = {}, webSecret } = event
 
   if (action === 'getTempFileUrls') {
-    const { OPENID } = cloud.getWXContext()
-    const envSecret = process.env.ADMIN_WEB_SECRET
-    const adminSecretOk = !!(envSecret && webSecret && String(webSecret) === String(envSecret))
-    if (!OPENID && !adminSecretOk) {
-      return { code: -403, msg: '未授权：请登录后再获取临时链接' }
+      const { OPENID } = cloud.getWXContext()
+      const envSecret = process.env.ADMIN_WEB_SECRET
+      const adminSecretOk = !!(envSecret && webSecret && String(webSecret) === String(envSecret))
+      if (!OPENID && !adminSecretOk) {
+        return { code: -403, msg: '未授权：请登录后再获取临时链接' }
+      }
+      const rawFileList = Array.isArray(data.fileList) ? data.fileList : []
+      const safeList = rawFileList
+        .filter((f) => typeof f === 'string' && f.startsWith('cloud://'))
+        .slice(0, 50)
+      if (!safeList.length) return { code: 0, data: [] }
+      // 管理员（webSecret）场景：信任全部（后台审核需要查看任意文件）
+      if (adminSecretOk) {
+        const res = await cloud.getTempFileURL({ fileList: safeList })
+        return { code: 0, data: res.fileList }
+      }
+      if (!OPENID) return { code: -403, msg: '未授权' }
+      // 🔒 归属校验：只放行「自己上传 / 会话收到 / 公开内容」里的 fileID
+      const accessible = new Set()
+      // 1a. 自己的上传（所有带 _openid 的集合）
+      const ownedCollections = ['posts', 'market_goods', 'messages', 'announcements', 'reports']
+      await Promise.all(ownedCollections.map(async (col) => {
+        try {
+          const res = await db.collection(col)
+            .where({ _openid: OPENID })
+            .field({ images: true, avatarUrl: true, coverImage: true, fileId: true })
+            .limit(100)
+            .get()
+          collectFileIds(res.data, accessible)
+        } catch (e) {
+          if (!(e && e.errMsg && String(e.errMsg).includes('not exist')) && !(e && e.message && String(e.message).includes('not exist'))) throw e
+        }
+      }))
+      // 1b. 会话中收到的文件（fromOpenid/toOpenid 含自己）
+      try {
+        const msgRes = await db.collection('messages')
+          .where(_.or([
+            { fromOpenid: OPENID },
+            { toOpenid: OPENID },
+          ]))
+          .field({ fileId: true, imageUrl: true })
+          .limit(200)
+          .get()
+        collectFileIds(msgRes.data, accessible)
+      } catch (e) {
+        if (!(e && e.errMsg && String(e.errMsg).includes('not exist')) && !(e && e.message && String(e.message).includes('not exist'))) throw e
+      }
+      // 1c. 公开内容里的文件（active 状态帖子/商品）
+      const publicCollections = [
+        { col: 'posts', cond: { status: 'active' } },
+        { col: 'market_goods', cond: { status: 'active' } },
+      ]
+      await Promise.all(publicCollections.map(async ({ col, cond }) => {
+        try {
+          const res = await db.collection(col)
+            .where(cond)
+            .field({ images: true, coverImage: true })
+            .limit(100)
+            .get()
+          collectFileIds(res.data, accessible)
+        } catch (e) {
+          if (!(e && e.errMsg && String(e.errMsg).includes('not exist')) && !(e && e.message && String(e.message).includes('not exist'))) throw e
+        }
+      }))
+      const allowed = safeList.filter((f) => accessible.has(f))
+      if (!allowed.length) return { code: 0, data: [] }
+      const res = await cloud.getTempFileURL({ fileList: allowed })
+      return { code: 0, data: res.fileList }
     }
-    const rawFileList = Array.isArray(data.fileList) ? data.fileList : []
-    const safeList = rawFileList
-      .filter((f) => typeof f === 'string' && f.startsWith('cloud://'))
-      .slice(0, 50)
-    if (!safeList.length) return { code: 0, data: [] }
-    const res = await cloud.getTempFileURL({ fileList: safeList })
-    return { code: 0, data: res.fileList }
-  }
+
+    /** 从记录中提取常见文件字段（images 数组 / 单文件字段） */
+    function collectFileIds(rows, into) {
+      for (const row of rows || []) {
+        if (Array.isArray(row.images)) row.images.forEach((f) => typeof f === 'string' && f.startsWith('cloud://') && into.add(f))
+        for (const key of ['imageUrl', 'coverImage', 'avatarUrl', 'fileId', 'audioUrl']) {
+          if (typeof row[key] === 'string' && row[key].startsWith('cloud://')) into.add(row[key])
+        }
+      }
+    }
 
   // H5 管理后台：Web 匿名用户常无法 invoke adminPanel（PERMISSION_DENIED）；云函数互调也可能失败。
   // 在校验 ADMIN_WEB_SECRET 后，于本进程内执行与 adminPanel 相同的数据库逻辑（webAdminHandlers）。
@@ -1727,6 +1792,42 @@ async function getFollowerList(openid, { page = 1, pageSize = 50 }) {
 
 // ========== 用户操作 ==========
 
+/**
+ * 对外可见的用户档案字段（白名单）——不在列表里的字段永不返回给客户端
+ */
+const USER_PUBLIC_FIELDS = [
+  'nickName',
+  'avatarUrl',
+  'college',
+  'campusId',
+  'campusName',
+  'bio',
+  'tags',
+  'coverImage',
+  'numericId',
+  'status',
+  'createTime',
+  'lastLoginTime',
+];
+
+/**
+ * 用户对象脱敏：只保留白名单字段 + 按需追加的非敏感计算字段。
+ * @param {object} user  数据库原始 user 文档
+ * @param {object} extra 允许追加的计算字段（如 followingCount），调用方显式传入
+ * @returns {object} 安全的对外对象（永远不含 _openid/phone/studentId）
+ */
+function sanitizeUserForClient(user, extra = {}) {
+  if (!user || typeof user !== 'object') return {};
+  const out = {};
+  for (const key of USER_PUBLIC_FIELDS) {
+    if (user[key] !== undefined) out[key] = user[key];
+  }
+  for (const [k, v] of Object.entries(extra)) {
+    if (v !== undefined) out[k] = v;
+  }
+  return out;
+}
+
 async function getUserInfo(openid, targetOpenid) {
   const res = await db.collection('users').where({ _openid: targetOpenid }).get()
   if (res.data.length === 0) return { code: -1, msg: '用户不存在' }
@@ -1758,13 +1859,14 @@ async function getUserInfo(openid, targetOpenid) {
 
   return {
     code: 0,
-    data: {
-      ...user,
+    data: sanitizeUserForClient(user, {
       followingCount: followingRes.total,
       followerCount: followerRes.total,
       isFollowing,
-      iBlockedThem
-    }
+      iBlockedThem,
+      // 本人查看自己时才附带内部标识
+      ...(openid && targetOpenid && openid === targetOpenid ? { _openid: user._openid } : {}),
+    })
   }
 }
 
@@ -1919,7 +2021,7 @@ async function searchUsers(openid, keyword) {
     const cond = baseFilters.length > 1 ? _.and(baseFilters) : baseFilters[0]
     const res = await db.collection('users').where(cond)
       .limit(20).get()
-    return { code: 0, data: res.data }
+    return { code: 0, data: (res.data || []).map((u) => sanitizeUserForClient(u)) }
   }
 
   // 搜索昵称、学院或用户 ID（云数据库模糊匹配用正则；纯数字同时做精确匹配兼容 number / string 存库）
@@ -1940,15 +2042,7 @@ async function searchUsers(openid, keyword) {
   ])
   const res = await db.collection('users').where(cond).limit(20).get()
 
-  return { code: 0, data: res.data }
-}
-
-async function getMyPosts(openid, { page = 1, pageSize = 20 }) {
-  const res = await db.collection('posts').where({ _openid: openid, status: 'active' })
-    .orderBy('createTime', 'desc')
-    .skip((page - 1) * pageSize).limit(pageSize).get()
-  const rows = await sanitizePostsForClient(res.data || [], openid)
-  return { code: 0, data: rows }
+  return { code: 0, data: (res.data || []).map((u) => sanitizeUserForClient(u)) }
 }
 
 async function getUserPosts(viewerOpenid, targetOpenid, { page = 1, pageSize = 20 }) {

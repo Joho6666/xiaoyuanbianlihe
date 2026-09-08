@@ -894,17 +894,17 @@ async function adminReadWithDbFallback(adminAction, adminData, dbLoader) {
 }
 
 async function adminWriteWithDbFallback(runAdmin, runDb) {
+  // 🔒 FAIL-CLOSED：密钥未配置 → 拒绝写操作，绝不降级直连数据库
   if (!hasAdminSecret()) {
-    await runDb();
-    return;
+    toast('管理密钥未配置：请在云函数环境变量设置 ADMIN_WEB_SECRET 后在此页填写（≥16 位随机串）。已拒绝写操作（安全模式）。', 'error');
+    return Promise.resolve({ code: -403, msg: '管理密钥未配置，已拒绝写操作（安全模式）' });
   }
   try {
     await runAdmin();
   } catch (e) {
-    if (isCloudPermissionDenied(e)) {
-      await runDb();
-      return;
-    }
+    // 不再降级直连 —— 云函数失败就报错，由管理员排查配置
+    console.error('adminWrite failed:', e);
+    toast('管理操作失败：' + ((e && e.message) || e || '未知错误') + '。请检查 ADMIN_WEB_SECRET 配置与云函数状态。', 'error');
     throw e;
   }
 }
