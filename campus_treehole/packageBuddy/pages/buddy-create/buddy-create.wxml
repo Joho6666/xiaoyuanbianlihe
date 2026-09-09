@@ -1,5 +1,6 @@
 <!-- packageBuddy/pages/buddy-create/buddy-create.wxml - Tongpin 三步极速组局 -->
 <view class="create-page">
+  <campus-page-header title="发起搭子组局" subtitle="把想做的事情和时间地点写清楚" />
   <!-- 顶部 3 步导航指示器 -->
   <view class="step-indicator">
     <view class="step-item {{currentStep >= 1 ? 'step-active' : ''}}">

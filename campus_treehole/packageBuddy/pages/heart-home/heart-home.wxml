@@ -1,5 +1,6 @@
 <!-- packageBuddy/pages/heart-home/heart-home.wxml - 同频 · 心动主页 -->
 <view class="heart-container">
+  <campus-page-header title="同频 · 心动" subtitle="基于兴趣与校园生活节奏推荐" accent="coral" />
   <!-- 顶栏切换：找搭子 / 心动 -->
   <view class="top-nav-bar">
     <view class="segmented-control">
@@ -71,7 +72,7 @@
       </view>
       <view class="tab-item {{tab === 'fate' ? 'tab-active' : ''}}" data-tab="fate" bindtap="switchTab">
         <view class="tab-title-wrap">
-          <text class="tab-title">今日缘分</text>
+          <section-header title="今日缘分" subtitle="共同兴趣与同频指数，仅用于推荐排序" />
           <text class="tab-badge" wx:if="{{quota.remaining > 0}}">{{quota.remaining}}</text>
         </view>
         <view class="tab-indicator" wx:if="{{tab === 'fate'}}"></view>
@@ -176,7 +177,7 @@
       <!-- 空状态 -->
       <view wx:else class="empty-state-card">
         <text class="empty-emoji">🍃</text>
-        <view class="empty-title">今天暂时没有新的同频同学</view>
+        <view class="empty-title">暂时没有新同频同学</view>
         <view class="empty-sub">随着更多同校同学加入，会有新的缘分出现。你可以完善兴趣爱好，或去搭子广场看看。</view>
         <view class="empty-actions">
           <button class="outline-btn" size="mini" bindtap="edit">完善兴趣</button>
@@ -199,7 +200,7 @@
           <view class="fate-gift-icon">🎁</view>
           <view class="fate-title">今天会遇见谁？</view>
           <view class="fate-desc">
-            {{emptyFate ? '今天暂时没有新的同频同学。' : quota.remaining > 0 ? '每日限定次数，系统将根据共同兴趣、校园范围和近期活跃为你推荐一位同频同学。' : '今天的缘分卡次数已用完，明天零点重置。'}}
+            {{emptyFate ? '暂时没有新同频同学。' : quota.remaining > 0 ? '每日限定次数，系统将根据共同兴趣、校园范围和近期活跃为你推荐一位同频同学。' : '今天的缘分卡次数已用完，明天零点重置。'}}
           </view>
           <button
             wx:if="{{quota.remaining > 0}}"

@@ -1,5 +1,6 @@
 <!-- packageBuddy/pages/buddy-detail/buddy-detail.wxml - 搭子组局详情 -->
 <view class="detail-container" wx:if="{{!loading && post}}">
+  <campus-page-header title="组局详情" subtitle="时间、地点和人数一目了然" />
   <!-- 头部状态横幅 -->
   <view class="status-banner banner-{{post.status}}">
     <view class="status-main">

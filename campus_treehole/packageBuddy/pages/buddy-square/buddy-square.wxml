@@ -1,5 +1,6 @@
 <!-- packageBuddy/pages/buddy-square/buddy-square.wxml - 同频搭子广场 -->
 <view class="square-container">
+  <campus-page-header title="找搭子" subtitle="先看要做什么，再决定一起去" />
   <view class="status-tabs"><text class="status-tab status-tab-active">找搭子</text><navigator wx:if="{{heartEnabled}}" class="status-tab" url="../heart-home/heart-home">心动 ❤️</navigator></view>
   <!-- 顶栏搜索 -->
   <view class="search-header">

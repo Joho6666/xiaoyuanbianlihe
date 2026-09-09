@@ -1,5 +1,6 @@
 <!-- packageBuddy/pages/heart-profile-edit/heart-profile-edit.wxml -->
 <view class="edit-container">
+  <campus-page-header title="心动名片" subtitle="分享兴趣与生活步调" accent="coral" />
   <!-- 顶部标题引导区 -->
   <view class="hero-section">
     <view class="hero-badge">❤️ 同频 · 心动名片</view>
