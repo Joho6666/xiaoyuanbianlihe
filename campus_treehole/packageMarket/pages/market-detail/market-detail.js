@@ -220,7 +220,7 @@ Page({
     }
   },
 
-  onChat() {
+  async onChat() {
     if (!app.requestComplianceForAction()) return
     if (this.data.isOwner) {
       wx.showToast({ title: '这是您发布的商品', icon: 'none' })
@@ -228,6 +228,12 @@ Page({
     }
     if (this.data.goods) {
       const g = this.data.goods
+      try {
+        await app.callDB('startMarketContact', { goodsId: this.data.goodsId })
+      } catch (err) {
+        wx.showToast({ title: (err && err.message) || '当前商品不可联系', icon: 'none' })
+        return
+      }
       wx.navigateTo({
         url: `/pages/chat/chat?targetUserId=${encodeURIComponent(g.userId)}&nickname=${encodeURIComponent(g.nickname || '卖家')}&shareType=${encodeURIComponent('goods')}&shareId=${encodeURIComponent(this.data.goodsId)}&autoShare=${encodeURIComponent('1')}`
       })

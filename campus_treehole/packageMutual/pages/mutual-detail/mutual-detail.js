@@ -108,8 +108,9 @@ Page({
     })
   },
 
-  contactAuthor() {
+  async contactAuthor() {
     if (!this.data.post || !this.data.post.userId) return
+    try { await app.callDB('startMutualContact', { postId: this.data.post._id || this.data.post.id }) } catch (err) { wx.showToast({ title: (err && err.message) || '当前条目不可联系', icon: 'none' }); return }
     wx.navigateTo({
       url: `/pages/chat/chat?targetUserId=${encodeURIComponent(this.data.post.userId)}&title=${encodeURIComponent(this.data.post.author.nickName || '发布者')}`
     })

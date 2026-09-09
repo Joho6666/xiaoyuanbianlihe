@@ -38,10 +38,11 @@ Page({
     }
   },
 
-  contactPartner() {
+  async contactPartner() {
     if (!this.data.partner) return
     const targetId = this.data.partner.userId || this.data.partner.id || this.data.partner.openid
     if (!targetId) return
+    try { await app.callDB('startBridgeContact', { targetUserId: targetId }) } catch (err) { wx.showToast({ title: (err && err.message) || '暂不可联系', icon: 'none' }); return }
     wx.navigateTo({
       url: `/pages/chat/chat?targetUserId=${encodeURIComponent(targetId)}&title=${encodeURIComponent(this.data.partner.nickName || '语伴')}`
     })

@@ -192,7 +192,7 @@ Page({
     })
   },
 
-  onUserTap(e) {
+  async onUserTap(e) {
     const openid = e.currentTarget.dataset.openid
     if (!openid) return
     if (this.data.mode === 'chat') {
@@ -200,6 +200,7 @@ Page({
       const extra = this.data.shareType && this.data.shareId
         ? `&shareType=${encodeURIComponent(this.data.shareType)}&shareId=${encodeURIComponent(this.data.shareId)}&autoShare=${encodeURIComponent(this.data.autoShare || '')}`
         : ''
+      try { await app.callDB('startExistingContact', { targetUserId: openid }) } catch (_) { wx.showToast({ title: '当前没有可用的联系权限', icon: 'none' }); return }
       wx.navigateTo({
         url: `/pages/chat/chat?targetUserId=${encodeURIComponent(openid)}&nickname=${encodeURIComponent(nickname)}${extra}`
       })
@@ -208,9 +209,10 @@ Page({
     }
   },
 
-  onChatTap(e) {
+  async onChatTap(e) {
     const openid = e.currentTarget.dataset.openid
     if (!openid) return
+    try { await app.callDB('startExistingContact', { targetUserId: openid }) } catch (_) { wx.showToast({ title: '当前没有可用的联系权限', icon: 'none' }); return }
     const nickname = e.currentTarget.dataset.nickname || ''
     const extra = this.data.shareType && this.data.shareId
       ? `&shareType=${encodeURIComponent(this.data.shareType)}&shareId=${encodeURIComponent(this.data.shareId)}&autoShare=${encodeURIComponent(this.data.autoShare || '')}`
@@ -268,10 +270,11 @@ Page({
     return resolved || merged
   },
 
-  onQuickChatTap(e) {
+  async onQuickChatTap(e) {
     const openid = e.currentTarget.dataset.openid
     const nickname = e.currentTarget.dataset.nickname || ''
     if (!openid) return
+    try { await app.callDB('startExistingContact', { targetUserId: openid }) } catch (_) { wx.showToast({ title: '当前没有可用的联系权限', icon: 'none' }); return }
     const extra = this.data.shareType && this.data.shareId
       ? `&shareType=${encodeURIComponent(this.data.shareType)}&shareId=${encodeURIComponent(this.data.shareId)}&autoShare=${encodeURIComponent(this.data.autoShare || '')}`
       : ''

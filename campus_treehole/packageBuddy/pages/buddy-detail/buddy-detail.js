@@ -135,19 +135,21 @@ Page({
     }
   },
 
-  contactAuthor() {
+  async contactAuthor() {
     if (!this.data.post) return
     const targetId = this.data.post.authorId || this.data.post._openid
     if (!targetId) return
     const name = (this.data.post.author && this.data.post.author.nickName) || '发起人'
+    try { await app.callDB('startBuddyContact', { postId: this.data.post._id || this.data.post.id, targetUserId: targetId }) } catch (err) { wx.showToast({ title: (err && err.message) || '仅已接受成员可联系', icon: 'none' }); return }
     wx.navigateTo({
       url: `/pages/chat/chat?targetUserId=${encodeURIComponent(targetId)}&title=${encodeURIComponent(name)}`
     })
   },
 
-  contactMember(e) {
+  async contactMember(e) {
     const { id, name } = e.currentTarget.dataset
     if (!id) return
+    try { await app.callDB('startBuddyContact', { postId: this.data.post._id || this.data.post.id, targetUserId: id }) } catch (err) { wx.showToast({ title: (err && err.message) || '仅已接受成员可联系', icon: 'none' }); return }
     wx.navigateTo({
       url: `/pages/chat/chat?targetUserId=${encodeURIComponent(id)}&title=${encodeURIComponent(name || '搭子成员')}`
     })

@@ -282,12 +282,18 @@ Page({
     }
   },
 
-  onSendMessage() {
+  async onSendMessage() {
     if (this.data.iBlockedThem) {
       wx.showToast({ title: '请先解除拉黑后再私信', icon: 'none' })
       return
     }
     const user = this.data.user
+    try {
+      await app.callDB('startExistingContact', { targetUserId: this.data.targetOpenid })
+    } catch (err) {
+      wx.showToast({ title: '当前没有可用的联系权限', icon: 'none' })
+      return
+    }
     wx.navigateTo({
       url: `/pages/chat/chat?targetUserId=${encodeURIComponent(this.data.targetOpenid)}&nickname=${encodeURIComponent(user.nickName || '')}`
     })

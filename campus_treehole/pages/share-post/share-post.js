@@ -161,10 +161,11 @@ Page({
     return resolved || merged
   },
 
-  onShareTargetTap(e) {
+  async onShareTargetTap(e) {
     const openid = e.currentTarget.dataset.openid
     const nickname = e.currentTarget.dataset.nickname || ''
     if (!openid) return
+    try { await app.callDB('startExistingContact', { targetUserId: openid }) } catch (_) { wx.showToast({ title: '当前没有可用的联系权限', icon: 'none' }); return }
     const extra = this.data.shareType && this.data.shareId
       ? `&shareType=${encodeURIComponent(this.data.shareType)}&shareId=${encodeURIComponent(this.data.shareId)}&autoShare=${encodeURIComponent(this.data.autoShare || '')}`
       : ''
