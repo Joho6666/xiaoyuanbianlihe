@@ -11,6 +11,7 @@
 </view>
 
 <view class="page">
+  <campus-page-header title="校园便利盒" subtitle="让校园生活更简单" />
   <view class="subscribe-guide-mask" wx:if="{{showSubscribeGuideModal}}" bindtap="onCloseSubscribeGuideModal">
     <view class="subscribe-guide-modal" catchtap="">
       <text class="subscribe-guide-step">第{{subscribeGuideStep}}步 / 2</text>

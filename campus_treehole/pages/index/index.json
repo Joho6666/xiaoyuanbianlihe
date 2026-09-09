@@ -1,5 +1,5 @@
 {
-  "usingComponents": {},
+  "usingComponents": {"campus-page-header":"/components/campus-page-header/campus-page-header","section-header":"/components/section-header/section-header"},
   "navigationStyle": "custom",
   "enablePullDownRefresh": true,
   "backgroundTextStyle": "dark",

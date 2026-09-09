@@ -1,6 +1,7 @@
 <!-- pages/detail/detail.wxml - 帖子详情页（小红书风格） -->
 
 <view class="page-container">
+  <campus-page-header title="动态详情" subtitle="校园生活记录" />
   <view class="detail-empty-state" wx:if="{{loadError}}">
     <text class="detail-empty-icon">📝</text>
     <text class="detail-empty-title">内容暂时不可用</text>

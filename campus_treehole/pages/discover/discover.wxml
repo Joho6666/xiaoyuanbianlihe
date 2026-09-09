@@ -1,24 +1,9 @@
 <view class="discover-container">
-  <!-- 顶部状态栏与校区标识 -->
-  <view class="discover-header">
-    <view class="header-main">
-      <view class="title-row">
-        <text class="page-title">发现</text>
-        <view class="campus-pill" bindtap="onChangeCampus">
-          <text class="campus-dot"></text>
-          <text class="campus-name">{{campusName || '当前校区'}}</text>
-        </view>
-      </view>
-      <text class="page-subtitle">探索校园多元生活与同频伙伴</text>
-    </view>
-  </view>
+  <campus-page-header title="发现" subtitle="探索校园多元生活与同频伙伴" campus="{{campusName || '当前校区'}}" bindcampus="onChangeCampus" />
 
   <!-- 核心频道矩阵 (2x2 Grid) -->
   <view class="channel-section">
-    <view class="section-title-row">
-      <text class="section-title">核心频道</text>
-      <text class="section-sub">全域校园矩阵</text>
-    </view>
+    <section-header title="核心频道" subtitle="全域校园矩阵" />
 
     <view class="channel-grid">
       <!-- 1. 同频搭子 (Tongpin) -->
