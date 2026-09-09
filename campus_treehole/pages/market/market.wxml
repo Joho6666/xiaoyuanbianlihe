@@ -1,10 +1,10 @@
 <view class="page">
+  <campus-page-header title="校园集市" subtitle="闲置好物，校园内轻松交易" />
   <view class="nav-bar" style="padding-top: {{statusBarHeight}}px;">
     <view class="nav-content">
       <view class="nav-back-btn" wx:if="{{canGoBack}}" bindtap="onNavBack">
         <text class="nav-back-arrow">←</text>
       </view>
-      <text class="nav-title">校园集市</text>
       <view class="nav-search" bindtap="onSearchFocus">
         <text class="search-icon">🔍</text>
         <input class="search-input" placeholder="搜索闲置好物" value="{{searchKeyword}}" bindinput="onSearchInput" bindconfirm="onSearchConfirm" confirm-type="search" />
