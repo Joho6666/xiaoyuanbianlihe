@@ -1,4 +1,5 @@
 <view class="act-page">
+  <campus-page-header title="校园活动" subtitle="近期校园活动与报名信息" />
   <view class="act-banner-wrap" wx:if="{{zoneSlides.length > 0}}">
     <swiper
       class="act-banner-swiper"
@@ -31,10 +32,7 @@
     <text class="act-empty-sub">管理员可在「我 → 活动专区配置」发布横屏公告</text>
   </view>
 
-  <view class="act-section-head">
-    <text class="act-section-title">活动动态</text>
-    <text class="act-section-sub">仅展示本期活动帖；活动结束后将转为普通帖，专区清空以便下一期</text>
-  </view>
+  <section-header title="活动动态" subtitle="封面、日期、地点和报名状态一目了然" />
 
   <view class="act-search">
     <view class="act-search-ico"></view>
