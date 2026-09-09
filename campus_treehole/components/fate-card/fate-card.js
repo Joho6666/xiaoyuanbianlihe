@@ -1,1 +1,1 @@
-Component({properties:{item:{type:Object,value:{}},revealed:Boolean},methods:{onReveal(){this.triggerEvent('reveal')},onLike(){this.triggerEvent('like')},onPass(){this.triggerEvent('pass')}}})
+Component({properties:{item:{type:Object,value:{}},revealed:Boolean},methods:{onReveal(){this.triggerEvent('reveal')},onLike(){this.triggerEvent('like',{item:this.data.item})},onPass(){this.triggerEvent('pass',{item:this.data.item})}}})
