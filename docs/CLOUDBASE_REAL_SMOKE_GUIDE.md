@@ -34,7 +34,7 @@ npm run smoke:cloudbase:required
 
 ## Smoke 覆盖与结果口径
 
-数据库 Smoke 真实执行：资料 A/B、Discover、Like → Match、`startHeartChat`、通用消息、Free 1 次、Premium Test 3 次、并发 Free 额度、Block 后 Discover/Fate/Match/Heart chat 阻断、Disable 停止曝光；同时上传 `heart/<publicUserId>/<uuid>.jpg`，验证跨用户照片拒绝和已移除照片删除。
+数据库 Smoke 分 `[1/10]` 至 `[10/10]` 输出：资料 A/B、Discover、Like → Match、`startHeartChat`、通用消息、Free 1 次、Premium Test 3 次、并发 Free 额度、Block 后 Discover/Fate/Match/Heart chat 阻断、Disable 停止曝光与 finally 清理；同时上传 `heart/<publicUserId>/<uuid>.jpg`，验证跨用户照片拒绝和已移除照片删除。微信图片内容安全 API 在该独立 Smoke 中使用 Mock，结论必须单列为 `Real Image Content Security API: NOT RUN`。
 
 - 未设置凭证：普通命令输出 `NOT RUN` 且退出 0；`--required` 退出 1。
 - 生产环境 ID：拒绝执行，`--required` 退出 1。

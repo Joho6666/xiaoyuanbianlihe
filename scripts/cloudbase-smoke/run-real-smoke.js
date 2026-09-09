@@ -22,9 +22,12 @@ if (isProductionEnv(envId)) {
   process.exit()
 }
 
-const cloud = require('../../campus_treehole/cloudfunctions/dbOperations/node_modules/wx-server-sdk')
+// The smoke runner deliberately consumes the root development dependency.
+// Production dbOperations keeps using its independently packaged runtime SDK.
+const cloud = require('wx-server-sdk')
 const createHeart = require('../../campus_treehole/cloudfunctions/dbOperations/modules/heart')
 const createMessages = require('../../campus_treehole/cloudfunctions/dbOperations/modules/messages')
+const createContacts = require('../../campus_treehole/cloudfunctions/dbOperations/modules/contacts')
 const createSafety = require('../../campus_treehole/cloudfunctions/dbOperations/modules/safety')
 const { publicId } = require('../../campus_treehole/cloudfunctions/dbOperations/shared/public-data')
 const { makeDeterministicId } = require('../../campus_treehole/cloudfunctions/dbOperations/shared/id')
@@ -40,6 +43,9 @@ const runId = `heart_smoke_${Date.now()}_${crypto.randomBytes(4).toString('hex')
 const created = new Map()
 const smokeUserIds = []
 const uploadedFiles = new Set()
+function step(number, label) {
+  console.log(`[${number}/10] ${label}`)
+}
 const track = (collection, id) => {
   if (!created.has(collection)) created.set(collection, new Set())
   created.get(collection).add(id)
@@ -90,6 +96,8 @@ async function cleanup() {
 }
 
 async function main() {
+  console.log('Real Image Content Security API: NOT RUN (this independent Smoke uses the existing mocked moderator)')
+  step(1, 'Creating run-scoped independent-environment identities')
   let clock = Date.UTC(2026, 8, 9, 4)
   const users = {}
   const makeUser = async (name, gender) => {
@@ -119,7 +127,12 @@ async function main() {
     wxTextCheck: async () => ({ pass: true }),
     wxImageBatchCheck: async () => ({ pass: true })
   }
-  const heart = createHeart({ db, _, cloud, helpers, now: () => clock, random: () => 0 })
+  const contacts = createContacts({
+    db,
+    _,
+    helpers: { getUserForAction: helpers.getUserForAction, conversationBlocked: helpers.conversationBlocked }
+  })
+  const heart = createHeart({ db, _, cloud, helpers: { ...helpers, createContactGrant: contacts.grantForOpenids }, now: () => clock, random: () => 0 })
   const messages = createMessages({
     db, _, cloud,
     helpers: {
@@ -132,6 +145,7 @@ async function main() {
       safeUserBlocksQuery: async run => run(),
       USER_BLOCKS: 'user_blocks',
       checkAdmin: async () => false,
+      contactAllowed: contacts.ensureContact,
       publicId
     }
   })
@@ -164,6 +178,7 @@ async function main() {
   }
   const [a, b, c, d, e, f, g] = usersToCreate
   const photos = new Map()
+  step(2, 'Uploading owned Heart photos and saving profiles')
   for (const user of usersToCreate) {
     const fileId = await uploadSmokePhoto(user.internalUserId)
     photos.set(user.internalUserId, fileId)
@@ -173,6 +188,7 @@ async function main() {
   }
 
   const foreignPhoto = photos.get(a.internalUserId)
+  step(3, 'Checking photo ownership and removed-photo storage cleanup')
   assert.notEqual((await heart.updateHeartProfile(b._openid, profile(b, [foreignPhoto]))).code, 0, 'another user cannot claim a Heart photo')
   const oldBPhoto = photos.get(b.internalUserId)
   const replacementBPhoto = await uploadSmokePhoto(b.internalUserId)
@@ -180,6 +196,7 @@ async function main() {
   await assertRemovedFromStorage(oldBPhoto)
   uploadedFiles.delete(oldBPhoto)
 
+  step(4, 'Checking Heart discovery eligibility')
   const discover = await heart.getHeartDiscover(a._openid)
   assert(discover.data.rows.some(row => row.userId === b.internalUserId), 'A discovers B')
   assert.equal((await heart.likeHeartProfile(a._openid, { targetUserId: b.internalUserId })).data.status, 'WAITING')
@@ -187,11 +204,15 @@ async function main() {
   track('heart_likes', makeDeterministicId('heartlike', a.internalUserId, b.internalUserId))
   track('heart_likes', makeDeterministicId('heartlike', b.internalUserId, a.internalUserId))
   track('heart_matches', pairId(a.internalUserId, b.internalUserId))
+  step(5, 'Checking mutual-like match and Heart chat authorization')
   assert.equal((await heart.startHeartChat(a._openid, { targetUserId: b.internalUserId })).code, 0)
+  track('contact_grants', makeDeterministicId('contact', 'HEART', pairId(a.internalUserId, b.internalUserId), ...[a.internalUserId, b.internalUserId].sort()))
+  step(6, 'Checking generic message delivery after authorized Heart chat')
   const sent = await messages.sendMessage(a._openid, { targetOpenid: b._openid, type: 'text', content: 'CloudBase smoke hello' })
   assert.equal(sent.code, 0)
   track('messages', sent.data._id)
 
+  step(7, 'Checking Free, Premium Test, and concurrent Fate quotas')
   assert.equal((await heart.drawFateCard(a._openid)).data.remaining, 0, 'Free fate card consumes its only daily draw')
   assert.notEqual((await heart.drawFateCard(a._openid)).code, 0, 'second Free fate draw is rejected')
   const concurrentFree = await Promise.all([heart.drawFateCard(d._openid), heart.drawFateCard(d._openid)])
@@ -211,6 +232,7 @@ async function main() {
     if (originalIds === undefined) delete process.env.HEART_PREMIUM_TEST_USER_IDS; else process.env.HEART_PREMIUM_TEST_USER_IDS = originalIds
   }
 
+  step(8, 'Checking block fences across Discover, Fate, Match, and Heart chat')
   const gDiscover = await heart.getHeartDiscover(g._openid)
   const blockedTarget = gDiscover.data.rows[0]
   assert(blockedTarget, 'G has a candidate to block')
@@ -232,6 +254,7 @@ async function main() {
   assert.equal((await heart.getHeartMatches(a._openid)).data.length, 0)
   assert.notEqual((await heart.startHeartChat(a._openid, { targetUserId: b.internalUserId })).code, 0)
 
+  step(9, 'Checking disabled profiles stop Heart exposure')
   assert.equal((await heart.disableHeartProfile(c._openid)).data.enabled, false)
   assert(!(await heart.getHeartDiscover(a._openid)).data.rows.some(row => row.userId === c.internalUserId), 'disabled profile is no longer exposed')
 }
@@ -244,6 +267,7 @@ async function main() {
     failure = error
   }
   try {
+    step(10, 'Removing only run-scoped database records and Storage objects')
     await cleanup()
   } catch (error) {
     failure = failure || error
