@@ -1,23 +1,349 @@
-<view class="heart-page">
-  <view class="mode-tabs"><text bindtap="buddies">找搭子</text><text class="selected">心动 ❤️</text></view>
-  <view class="heading">认真认识一个同校的人</view><view class="muted">从共同兴趣开始，慢慢了解彼此。</view>
-  <view wx:if="{{error}}" class="notice">{{error}}<button bindtap="refresh" size="mini">重试</button></view>
-  <view wx:if="{{loading}}" class="empty">正在加载…</view>
-  <view wx:elif="{{!profile.enabled}}" class="card"><view class="title">开启心动模式</view><view class="muted">你的心动资料仅用于向符合条件的同校用户推荐。仅面向18岁及以上用户，双方感兴趣后才能发起心动聊天。</view><button class="primary" bindtap="edit">填写资料并选择开启</button></view>
-  <block wx:else>
-    <view class="tabs"><button size="mini" data-tab="discover" bindtap="switchTab">发现</button><button size="mini" data-tab="fate" bindtap="switchTab">今日缘分</button><button size="mini" data-tab="matches" bindtap="switchTab">已匹配</button></view>
-    <view wx:if="{{tab === 'fate'}}" class="card">
-      <view class="title">🎁 今日缘分</view><view class="muted">今日剩余 {{quota.remaining}} / {{quota.limit}}</view>
-      <block wx:if="{{!fate}}"><view class="muted">{{emptyFate ? '今天暂时没有新的同频同学。随着更多同学加入，会有新的缘分出现。' : quota.remaining > 0 ? '看看今天有没有与你兴趣相近的同学。' : '今天的缘分已经遇见啦，明天再来看看。'}}</view><button wx:if="{{quota.remaining > 0}}" bindtap="draw" disabled="{{busy}}" class="primary">发现今日缘分</button></block>
-      <block wx:elif="{{!revealed}}"><view class="title">一位可能和你同频的同校同学</view><view>匹配度 {{fate.matchScore}}%</view><view class="tags"><text wx:for="{{fate.sharedInterests}}" wx:key="*this">{{item}}</text></view><button bindtap="reveal" class="primary">揭开缘分卡</button></block>
-      <block wx:else><image class="photo" src="{{fate.photos[0]}}" mode="aspectFill" lazy-load/><view class="title">{{fate.nickname}} · {{fate.grade}}</view><view>{{fate.campusName}}</view><view>{{fate.bio}}</view><view class="muted">最近想做：{{fate.lookingFor}}</view><view class="tags"><text wx:for="{{fate.interestIds}}" wx:key="*this">{{item}}</text></view><view class="actions"><button data-id="{{fate.userId}}" data-action="pass" bindtap="react" disabled="{{busy}}">暂时没感觉</button><button data-id="{{fate.userId}}" data-action="like" bindtap="react" disabled="{{busy}}" class="primary">❤️ 感兴趣</button><button size="mini" data-id="{{fate.userId}}" bindtap="safety">⋯</button></view></block>
+<!-- packageBuddy/pages/heart-home/heart-home.wxml - 同频 · 心动主页 -->
+<view class="heart-container">
+  <!-- 顶栏切换：找搭子 / 心动 -->
+  <view class="top-nav-bar">
+    <view class="segmented-control">
+      <view class="seg-tab" bindtap="buddies">
+        <text class="seg-text">找搭子</text>
+      </view>
+      <view class="seg-tab seg-active">
+        <text class="seg-text">心动 ❤️</text>
+      </view>
     </view>
-    <block wx:else>
-      <view wx:for="{{cards}}" wx:key="userId" class="card"><button class="more" size="mini" data-id="{{item.userId}}" bindtap="safety">⋯</button><image class="photo" src="{{item.photos[0]}}" mode="aspectFill" lazy-load/><view class="title">{{item.nickname}} · {{item.grade}}</view><view class="muted">{{item.campusName}}</view><view>{{item.bio}}</view><view class="tags"><text wx:for="{{item.interestIds}}" wx:for-item="interest" wx:key="*this">{{interest}}</text></view><view>共同兴趣 {{item.sharedInterests.length}} 个</view><view class="muted">最近想做：{{item.lookingFor}}</view><view wx:if="{{item.recentBuddy}}" class="muted">TA 最近的公开搭子：{{item.recentBuddy.title}}<button size="mini" data-id="{{item.recentBuddy.postId}}" bindtap="viewBuddy">查看搭子</button></view><view wx:if="{{tab==='discover'}}" class="actions"><button data-id="{{item.userId}}" data-action="pass" bindtap="react" disabled="{{busy}}">暂时没感觉</button><button data-id="{{item.userId}}" data-action="like" bindtap="react" disabled="{{busy}}" class="primary">❤️ 感兴趣</button></view><button wx:else class="primary" data-id="{{item.userId}}" bindtap="chat">去聊天</button></view>
-      <view wx:if="{{!cards.length}}" class="empty">{{tab==='matches' ? '双方感兴趣后，你们会出现在这里。' : '今天暂时没有新的同频同学。随着更多同学加入，会有新的缘分出现。'}}<button bindtap="edit">完善兴趣</button><button bindtap="buddies">去找搭子</button></view><button wx:if="{{hasMore}}" bindtap="more" disabled="{{busy}}">继续发现</button>
-    </block>
-    <view wx:if="{{match}}" class="card"><view class="title">❤️ 你们同频了</view><view>你们有 {{match.sharedInterests.length}} 个共同兴趣</view><view class="tags"><text wx:for="{{match.sharedInterests}}" wx:key="*this">{{item}}</text></view><button bindtap="chat" class="primary">去聊天</button><button bindtap="buddies">看看可以一起做什么</button></view>
-    <view class="card muted">同频 Plus · 权益预览<view>测试权益：每日3张缘分卡（当前账号 {{quota.limit}} 张）</view><view>高级筛选、谁喜欢我：即将开放</view><view>暂不提供购买</view></view>
-    <button bindtap="edit">编辑心动资料与缘分卡授权</button><button bindtap="disable">退出心动模式</button>
+  </view>
+
+  <!-- 错误提示 -->
+  <view wx:if="{{error}}" class="error-card">
+    <text class="error-msg">{{error}}</text>
+    <button class="retry-btn" size="mini" bindtap="refresh">重试</button>
+  </view>
+
+  <!-- 加载状态 -->
+  <view wx:if="{{loading}}" class="loading-state">
+    <view class="loading-spinner"></view>
+    <text class="loading-text">正在寻找同频伙伴...</text>
+  </view>
+
+  <!-- 未开启心动模式引导卡 -->
+  <view wx:elif="{{!profile || !profile.enabled}}" class="onboard-card">
+    <view class="onboard-icon-wrap">
+      <text class="onboard-icon">💌</text>
+    </view>
+    <view class="onboard-title">开启同频 · 心动名片</view>
+    <view class="onboard-desc">
+      专属于同校同学的认真相识空间。基于真实的共同爱好与校园生活节奏推荐，公开卡片不显示微信号或 OpenID，双方彼此心动才会开启私信。
+    </view>
+    <view class="feature-bullets">
+      <view class="bullet-item">
+        <text class="bullet-icon">🏫</text>
+        <view class="bullet-content">
+          <text class="bullet-title">同校真实交友</text>
+          <text class="bullet-sub">仅向同校符合条件的在校同学推荐</text>
+        </view>
+      </view>
+      <view class="bullet-item">
+        <text class="bullet-icon">🔒</text>
+        <view class="bullet-content">
+          <text class="bullet-title">双向心动保护</text>
+          <text class="bullet-sub">无单向骚扰，只有双方感兴趣才可开启私聊</text>
+        </view>
+      </view>
+      <view class="bullet-item">
+        <text class="bullet-icon">🎁</text>
+        <view class="bullet-content">
+          <text class="bullet-title">每日专属缘分</text>
+          <text class="bullet-sub">每日限定次数发现与你兴趣高度契合的同学</text>
+        </view>
+      </view>
+    </view>
+    <button class="primary-btn" bindtap="edit" hover-class="btn-hover-active">
+      <text class="btn-text">填写资料并开启心动</text>
+    </button>
+  </view>
+
+  <!-- 已开启心动模式内容区 -->
+  <block wx:else>
+    <!-- 二级导航 Tabs -->
+    <view class="sub-tabs">
+      <view class="tab-item {{tab === 'discover' ? 'tab-active' : ''}}" data-tab="discover" bindtap="switchTab">
+        <text class="tab-title">发现同学</text>
+        <view class="tab-indicator" wx:if="{{tab === 'discover'}}"></view>
+      </view>
+      <view class="tab-item {{tab === 'fate' ? 'tab-active' : ''}}" data-tab="fate" bindtap="switchTab">
+        <view class="tab-title-wrap">
+          <text class="tab-title">今日缘分</text>
+          <text class="tab-badge" wx:if="{{quota.remaining > 0}}">{{quota.remaining}}</text>
+        </view>
+        <view class="tab-indicator" wx:if="{{tab === 'fate'}}"></view>
+      </view>
+      <view class="tab-item {{tab === 'matches' ? 'tab-active' : ''}}" data-tab="matches" bindtap="switchTab">
+        <text class="tab-title">已同频 💕</text>
+        <view class="tab-indicator" wx:if="{{tab === 'matches'}}"></view>
+      </view>
+    </view>
+
+    <!-- TAB 1: 发现同学 (Discover) -->
+    <view wx:if="{{tab === 'discover'}}" class="tab-content">
+      <view wx:if="{{cards && cards.length > 0}}" class="cards-list">
+        <view wx:for="{{cards}}" wx:key="userId" class="profile-card">
+          <!-- 顶部右上更多菜单 -->
+          <view class="card-more-action" data-id="{{item.userId}}" bindtap="safety" hover-class="btn-hover">
+            <text class="more-dots">⋯</text>
+          </view>
+
+          <!-- 封面大图 -->
+          <view class="photo-wrapper">
+            <image class="main-photo" src="{{item.photos[0]}}" mode="aspectFill" lazy-load />
+            <view class="photo-overlay-badge" wx:if="{{item.photos.length > 1}}">
+              {{item.photos.length}} 张照片
+            </view>
+            <view class="campus-pill">{{item.campusName || '同校同学'}}</view>
+          </view>
+
+          <!-- 个人基本资料 -->
+          <view class="profile-info-body">
+            <view class="name-row">
+              <text class="profile-nickname">{{item.nickname}}</text>
+              <text class="profile-grade" wx:if="{{item.grade}}">{{item.grade}}</text>
+            </view>
+
+            <!-- 自我介绍 -->
+            <view class="bio-text" wx:if="{{item.bio}}">“{{item.bio}}”</view>
+
+            <!-- 共同兴趣突出展示 -->
+            <view class="shared-interests-row" wx:if="{{item.sharedInterests && item.sharedInterests.length}}">
+              <text class="shared-label">❤️ 共同兴趣 ({{item.sharedInterests.length}}个)：</text>
+              <view class="interests-chips">
+                <text class="shared-chip" wx:for="{{item.sharedInterests}}" wx:key="*this">{{item}}</text>
+              </view>
+            </view>
+
+            <!-- 个人兴趣标签 -->
+            <view class="interests-chips" wx:elif="{{item.interestIds && item.interestIds.length}}">
+              <text class="normal-chip" wx:for="{{item.interestIds}}" wx:for-item="interest" wx:key="*this">{{interest}}</text>
+            </view>
+
+            <!-- 最近想做的事情 -->
+            <view class="looking-for-row" wx:if="{{item.lookingFor}}">
+              <text class="looking-icon">💡</text>
+              <text class="looking-text">最近想做：{{item.lookingFor}}</text>
+            </view>
+
+            <!-- TA 最近发起的公开搭子 -->
+            <view class="recent-buddy-tile" wx:if="{{item.recentBuddy}}">
+              <view class="buddy-tile-left">
+                <text class="buddy-tile-tag">公开搭子</text>
+                <text class="buddy-tile-title">{{item.recentBuddy.title}}</text>
+              </view>
+              <button class="buddy-tile-btn" size="mini" data-id="{{item.recentBuddy.postId}}" bindtap="viewBuddy">
+                去看看
+              </button>
+            </view>
+          </view>
+
+          <!-- 操作按钮行 -->
+          <view class="card-action-bar">
+            <button
+              class="pass-btn"
+              data-id="{{item.userId}}"
+              data-action="pass"
+              bindtap="react"
+              disabled="{{busy}}"
+              hover-class="btn-hover"
+            >
+              <text class="action-btn-text">暂时跳过</text>
+            </button>
+            <button
+              class="like-btn"
+              data-id="{{item.userId}}"
+              data-action="like"
+              bindtap="react"
+              disabled="{{busy}}"
+              hover-class="btn-hover-active"
+            >
+              <text class="like-btn-icon">❤️</text>
+              <text class="action-btn-text text-white">感兴趣</text>
+            </button>
+          </view>
+        </view>
+
+        <!-- 加载更多 -->
+        <view class="load-more-wrap" wx:if="{{hasMore}}">
+          <button class="secondary-btn" bindtap="more" disabled="{{busy}}">查看更多同学</button>
+        </view>
+      </view>
+
+      <!-- 空状态 -->
+      <view wx:else class="empty-state-card">
+        <text class="empty-emoji">🍃</text>
+        <view class="empty-title">今天暂时没有新的同频同学</view>
+        <view class="empty-sub">随着更多同校同学加入，会有新的缘分出现。你可以完善兴趣爱好，或去搭子广场看看。</view>
+        <view class="empty-actions">
+          <button class="outline-btn" size="mini" bindtap="edit">完善兴趣</button>
+          <button class="primary-btn-mini" size="mini" bindtap="buddies">去找搭子</button>
+        </view>
+      </view>
+    </view>
+
+    <!-- TAB 2: 今日缘分卡 (Fate Card) -->
+    <view wx:if="{{tab === 'fate'}}" class="tab-content">
+      <view class="fate-card-container">
+        <!-- 额度信息提示条 -->
+        <view class="quota-badge-row">
+          <text class="quota-title">🎁 每日缘分卡</text>
+          <text class="quota-count">今日剩余 {{quota.remaining}} / {{quota.limit}} 次</text>
+        </view>
+
+        <!-- 状态 A: 尚未抽卡 -->
+        <view wx:if="{{!fate}}" class="fate-box-unopened">
+          <view class="fate-gift-icon">🎁</view>
+          <view class="fate-title">今天会遇见谁？</view>
+          <view class="fate-desc">
+            {{emptyFate ? '今天暂时没有符合条件的未遇见同学，请明天再来。' : quota.remaining > 0 ? '每日限定次数，系统将根据你们的共同兴趣与校区，为你寻觅一位契合度极高的同校伙伴。' : '今天的缘分卡次数已用完，明天零点重置。'}}
+          </view>
+          <button
+            wx:if="{{quota.remaining > 0}}"
+            class="fate-draw-btn"
+            bindtap="draw"
+            disabled="{{busy}}"
+            hover-class="btn-hover-active"
+          >
+            <text class="btn-text">遇见今日缘分</text>
+          </button>
+        </view>
+
+        <!-- 状态 B: 抽中但未揭开 (带仪式感的神秘卡片) -->
+        <view wx:elif="{{!revealed}}" class="fate-box-mystery">
+          <view class="mystery-sparkle">✨</view>
+          <view class="mystery-title">为你寻觅到一位同频同学</view>
+          <view class="mystery-score-badge">
+            <text class="score-num">{{fate.matchScore}}%</text>
+            <text class="score-label">匹配度</text>
+          </view>
+          <view class="mystery-tags">
+            <text class="shared-chip" wx:for="{{fate.sharedInterests}}" wx:key="*this">{{item}}</text>
+          </view>
+          <view class="mystery-tip">TA 也在这个校区，等待被认真认识</view>
+          <button class="primary-btn" bindtap="reveal" hover-class="btn-hover-active">
+            <text class="btn-text">✨ 揭开缘分卡</text>
+          </button>
+        </view>
+
+        <!-- 状态 C: 已揭开卡片 -->
+        <view wx:else class="profile-card fate-revealed-card">
+          <view class="card-more-action" data-id="{{fate.userId}}" bindtap="safety">
+            <text class="more-dots">⋯</text>
+          </view>
+
+          <view class="photo-wrapper">
+            <image class="main-photo" src="{{fate.photos[0]}}" mode="aspectFill" lazy-load />
+            <view class="campus-pill">{{fate.campusName || '同校同学'}}</view>
+            <view class="fate-match-tag">{{fate.matchScore}}% 契合</view>
+          </view>
+
+          <view class="profile-info-body">
+            <view class="name-row">
+              <text class="profile-nickname">{{fate.nickname}}</text>
+              <text class="profile-grade" wx:if="{{fate.grade}}">{{fate.grade}}</text>
+            </view>
+            <view class="bio-text" wx:if="{{fate.bio}}">“{{fate.bio}}”</view>
+
+            <view class="shared-interests-row" wx:if="{{fate.sharedInterests && fate.sharedInterests.length}}">
+              <text class="shared-label">❤️ 共同兴趣：</text>
+              <view class="interests-chips">
+                <text class="shared-chip" wx:for="{{fate.sharedInterests}}" wx:key="*this">{{item}}</text>
+              </view>
+            </view>
+
+            <view class="looking-for-row" wx:if="{{fate.lookingFor}}">
+              <text class="looking-icon">💡</text>
+              <text class="looking-text">最近想做：{{fate.lookingFor}}</text>
+            </view>
+          </view>
+
+          <view class="card-action-bar">
+            <button
+              class="pass-btn"
+              data-id="{{fate.userId}}"
+              data-action="pass"
+              bindtap="react"
+              disabled="{{busy}}"
+            >
+              <text class="action-btn-text">暂时没感觉</text>
+            </button>
+            <button
+              class="like-btn"
+              data-id="{{fate.userId}}"
+              data-action="like"
+              bindtap="react"
+              disabled="{{busy}}"
+            >
+              <text class="like-btn-icon">❤️</text>
+              <text class="action-btn-text text-white">感兴趣</text>
+            </button>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- TAB 3: 已同频 (Matches) -->
+    <view wx:if="{{tab === 'matches'}}" class="tab-content">
+      <view wx:if="{{cards && cards.length > 0}}" class="matches-list">
+        <view wx:for="{{cards}}" wx:key="userId" class="match-row-card">
+          <image class="match-avatar" src="{{item.photos[0]}}" mode="aspectFill" />
+          <view class="match-info">
+            <view class="match-name-row">
+              <text class="match-nickname">{{item.nickname}}</text>
+              <text class="match-grade" wx:if="{{item.grade}}">{{item.grade}}</text>
+            </view>
+            <view class="match-shared-summary">共同爱好：{{item.sharedInterests.length ? item.sharedInterests.join('、') : '同频伙伴'}}</view>
+          </view>
+          <button class="match-chat-btn" size="mini" data-id="{{item.userId}}" bindtap="chat">
+            发私信
+          </button>
+        </view>
+      </view>
+
+      <view wx:else class="empty-state-card">
+        <text class="empty-emoji">💌</text>
+        <view class="empty-title">暂无已互相心动的同学</view>
+        <view class="empty-sub">当你表达感兴趣的同学也对你感兴趣时，你们就会出现在这里，随时可以开启 1 对 1 私聊。</view>
+        <button class="primary-btn-mini" size="mini" data-tab="discover" bindtap="switchTab">去发现同学</button>
+      </view>
+    </view>
+
+    <!-- 匹配成功弹窗卡片 (Match Celebration) -->
+    <view wx:if="{{match}}" class="match-celebration-card">
+      <view class="celebration-badge">🎉 你们同频了 ❤️</view>
+      <view class="celebration-title">彼此感兴趣，开启聊天的默契</view>
+      <view class="celebration-shared" wx:if="{{match.sharedInterests && match.sharedInterests.length}}">
+        你们有 {{match.sharedInterests.length}} 个共同兴趣：{{match.sharedInterests.join('、')}}
+      </view>
+      <view class="celebration-actions">
+        <button class="primary-btn" bindtap="chat">
+          <text class="btn-text">去私信聊聊</text>
+        </button>
+        <button class="outline-btn" bindtap="buddies">
+          <text class="btn-text">看看可以一起做什么</text>
+        </button>
+      </view>
+    </view>
+
+    <!-- 会员权益说明条 -->
+    <view class="plus-preview-card">
+      <view class="plus-header">
+        <text class="plus-title">同频 Plus · 权益体验</text>
+        <text class="plus-tag">内测中</text>
+      </view>
+      <view class="plus-item">✓ 每日 3 次缘分卡额度 (当前账号限额: {{quota.limit}} 次/天)</view>
+      <view class="plus-item item-muted">· 更多高级筛选与谁喜欢我 (即将开放)</view>
+      <view class="plus-note">暂不提供任何付费购买，仅作为产品能力演示</view>
+    </view>
+
+    <!-- 底部设置选项 -->
+    <view class="footer-options">
+      <button class="footer-link-btn" bindtap="edit">✏️ 编辑心动名片与缘分卡授权</button>
+      <button class="footer-danger-btn" bindtap="disable">退出心动模式</button>
+    </view>
   </block>
 </view>

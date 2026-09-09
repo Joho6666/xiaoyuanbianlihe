@@ -1,5 +1,283 @@
-<view class="heart-page"><view class="heading">让同校同学认识你</view><view class="muted">只填写你愿意分享的内容，不要填写电话、微信号或其他联系方式。</view><view wx:if="{{error}}" class="notice">{{error}}</view><view class="card">
-<view>公开照片 · 1至3张（点击可移除）</view><image wx:for="{{photos}}" wx:key="*this" class="thumb" src="{{item}}" mode="aspectFill" data-index="{{index}}" bindtap="remove"/><button wx:if="{{photos.length<3}}" bindtap="photos" disabled="{{busy}}">上传照片</button>
-<view>我主动填写的性别</view><picker range="{{genders}}" value="{{genderIndex}}" bindchange="gender">{{genders[genderIndex]}}</picker><view>我希望认识</view><checkbox-group bindchange="preferences"><label><checkbox value="male" checked="{{maleSelected}}"/>男生</label><label><checkbox value="female" checked="{{femaleSelected}}"/>女生</label><label><checkbox value="other" checked="{{otherSelected}}"/>其他</label></checkbox-group>
-<input placeholder="年级（如大二）" value="{{grade}}" data-field="grade" bindinput="input" maxlength="16"/><input placeholder="兴趣，以顿号分隔，如摄影、羽毛球" value="{{interests}}" data-field="interests" bindinput="input" maxlength="120"/><textarea placeholder="一句话介绍自己" value="{{bio}}" data-field="bio" bindinput="input" maxlength="160"/><input placeholder="最近想做什么 / 希望认识怎样的人" value="{{lookingFor}}" data-field="lookingFor" bindinput="input" maxlength="80"/>
-<checkbox-group bindchange="consent"><label class="checks"><checkbox value="adult" checked="{{adultDeclared}}"/>我已年满18周岁，理解这是本人声明</label><label class="checks"><checkbox value="enabled" checked="{{enabled}}"/>主动开启心动模式，同意资料向符合条件的同校用户推荐</label><label class="checks"><checkbox value="fate" checked="{{allowFateCard}}"/>允许我的卡片出现在缘分卡推荐中（可选）</label></checkbox-group><view class="muted">尊重他人意愿；双方感兴趣后方可发起心动私聊。可随时退出，停止新的推荐曝光。其他校园功能不受影响。</view><button class="primary" bindtap="save" disabled="{{busy}}">保存并开启</button></view></view>
+<!-- packageBuddy/pages/heart-profile-edit/heart-profile-edit.wxml -->
+<view class="edit-container">
+  <!-- 顶部标题引导区 -->
+  <view class="hero-section">
+    <view class="hero-badge">❤️ 同频 · 心动名片</view>
+    <view class="hero-title">让同校同学认识真实的你</view>
+    <view class="hero-subtitle">分享你的兴趣与生活步调。公开名片不含任何联系方式，只有双方互相心动才会开启私信。</view>
+  </view>
+
+  <!-- 错误提示 -->
+  <view wx:if="{{error}}" class="error-banner">
+    <text class="error-icon">⚠️</text>
+    <text class="error-text">{{error}}</text>
+  </view>
+
+  <!-- 板块 1: 照片管理 -->
+  <view class="form-card">
+    <view class="section-header">
+      <view class="section-title-wrap">
+        <text class="section-title">生活照片</text>
+        <text class="section-tag">必填</text>
+      </view>
+      <text class="section-counter">{{photos.length}} / 3</text>
+    </view>
+    <view class="section-tip">上传 1 ~ 3 张生活照，第一张将作为卡片封面展示（点击照片右上角可删除）</view>
+
+    <view class="photo-grid">
+      <!-- 已上传照片 -->
+      <view class="photo-item" wx:for="{{photos}}" wx:key="*this">
+        <image class="photo-img" src="{{item}}" mode="aspectFill" />
+        <view class="photo-delete-btn" data-index="{{index}}" bindtap="remove" hover-class="btn-hover">
+          <text class="delete-icon">×</text>
+        </view>
+        <view class="photo-cover-tag" wx:if="{{index === 0}}">封面</view>
+      </view>
+
+      <!-- 添加照片按钮插槽 -->
+      <view
+        class="photo-upload-slot"
+        wx:if="{{photos.length < 3}}"
+        bindtap="photos"
+        hover-class="slot-hover"
+      >
+        <text class="upload-icon">📷</text>
+        <text class="upload-label">上传照片</text>
+        <text class="upload-sub">云端安全存储</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 板块 2: 性别与交友意向 -->
+  <view class="form-card">
+    <view class="section-header">
+      <view class="section-title-wrap">
+        <text class="section-title">性别与意向</text>
+        <text class="section-tag">双向匹配</text>
+      </view>
+    </view>
+    <view class="section-tip">系统将严格依据双方偏好双向推荐，不会单向推送</view>
+
+    <!-- 我的性别 -->
+    <view class="field-group">
+      <text class="field-label">我的性别</text>
+      <view class="pill-group">
+        <view
+          wx:for="{{genders}}"
+          wx:key="id"
+          class="pill-item {{genderIndex === index ? 'pill-active' : ''}}"
+          data-index="{{index}}"
+          bindtap="selectGender"
+        >
+          <text class="pill-icon">{{item.icon}}</text>
+          <text class="pill-text">{{item.label}}</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 我希望认识 -->
+    <view class="field-group">
+      <text class="field-label">我希望认识</text>
+      <view class="pill-group">
+        <view
+          class="pill-item {{maleSelected ? 'pill-active' : ''}}"
+          data-val="male"
+          bindtap="togglePreference"
+        >
+          <text class="pill-check" wx:if="{{maleSelected}}">✓</text>
+          <text class="pill-text">男生</text>
+        </view>
+        <view
+          class="pill-item {{femaleSelected ? 'pill-active' : ''}}"
+          data-val="female"
+          bindtap="togglePreference"
+        >
+          <text class="pill-check" wx:if="{{femaleSelected}}">✓</text>
+          <text class="pill-text">女生</text>
+        </view>
+        <view
+          class="pill-item {{otherSelected ? 'pill-active' : ''}}"
+          data-val="other"
+          bindtap="togglePreference"
+        >
+          <text class="pill-check" wx:if="{{otherSelected}}">✓</text>
+          <text class="pill-text">其他</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 板块 3: 年级信息 -->
+  <view class="form-card">
+    <view class="section-header">
+      <view class="section-title-wrap">
+        <text class="section-title">年级信息</text>
+      </view>
+    </view>
+    <view class="input-container">
+      <input
+        class="modern-input"
+        placeholder="如：大二、大三、研一"
+        placeholder-class="input-placeholder"
+        value="{{grade}}"
+        data-field="grade"
+        bindinput="input"
+        maxlength="16"
+      />
+    </view>
+    <!-- 快捷点选标签 -->
+    <view class="quick-chips">
+      <view
+        wx:for="{{presetGrades}}"
+        wx:key="*this"
+        class="chip-item {{grade === item ? 'chip-active' : ''}}"
+        data-grade="{{item}}"
+        bindtap="selectGrade"
+      >
+        {{item}}
+      </view>
+    </view>
+  </view>
+
+  <!-- 板块 4: 兴趣爱好 -->
+  <view class="form-card">
+    <view class="section-header">
+      <view class="section-title-wrap">
+        <text class="section-title">兴趣标签</text>
+        <text class="section-tag">最多12个</text>
+      </view>
+      <text class="section-counter">{{interestList.length}} / 12</text>
+    </view>
+    <view class="section-tip">共同兴趣是同频评分的核心依据，也是相识最好的话题起点</view>
+
+    <!-- 已选标签区 -->
+    <view class="selected-tags-box" wx:if="{{interestList.length}}">
+      <view class="selected-tag" wx:for="{{interestList}}" wx:key="*this">
+        <text class="tag-name">{{item}}</text>
+        <text class="tag-remove" data-index="{{index}}" bindtap="removeInterest">×</text>
+      </view>
+    </view>
+
+    <!-- 快捷灵感推荐 -->
+    <view class="preset-label">常见灵感 (点击直接添加/取消)：</view>
+    <view class="quick-chips">
+      <view
+        wx:for="{{presetInterests}}"
+        wx:key="*this"
+        class="chip-item {{interestList.indexOf(item) !== -1 ? 'chip-active' : ''}}"
+        data-interest="{{item}}"
+        bindtap="togglePresetInterest"
+      >
+        {{item}}
+      </view>
+    </view>
+
+    <!-- 自定义输入 -->
+    <view class="custom-tag-row">
+      <input
+        class="custom-tag-input"
+        placeholder="输入自定义兴趣（如胶片摄影）"
+        placeholder-class="input-placeholder"
+        value="{{customInterestInput}}"
+        data-field="customInterestInput"
+        bindinput="input"
+        bindconfirm="addCustomInterest"
+        maxlength="20"
+      />
+      <button class="custom-add-btn" size="mini" bindtap="addCustomInterest">添加</button>
+    </view>
+  </view>
+
+  <!-- 板块 5: 真实介绍与想做的事 -->
+  <view class="form-card">
+    <view class="section-header">
+      <view class="section-title-wrap">
+        <text class="section-title">自我介绍与期待</text>
+      </view>
+    </view>
+
+    <view class="field-group">
+      <view class="field-header">
+        <text class="field-label">一句话自我介绍</text>
+        <text class="field-counter">{{bio.length || 0}} / 160</text>
+      </view>
+      <textarea
+        class="modern-textarea"
+        placeholder="简单说说平时的状态，例如：常泡图书馆，喜欢淘二手黑胶，周末会去周边骑行..."
+        placeholder-class="input-placeholder"
+        value="{{bio}}"
+        data-field="bio"
+        bindinput="input"
+        maxlength="160"
+      />
+    </view>
+
+    <view class="field-group">
+      <view class="field-header">
+        <text class="field-label">最近想做的事情 / 期待认识怎样的人</text>
+        <text class="field-counter">{{lookingFor.length || 0}} / 80</text>
+      </view>
+      <input
+        class="modern-input"
+        placeholder="如：想周末去花鸟市场走走 / 想找一起刷期末题的同校伙伴"
+        placeholder-class="input-placeholder"
+        value="{{lookingFor}}"
+        data-field="lookingFor"
+        bindinput="input"
+        maxlength="80"
+      />
+    </view>
+  </view>
+
+  <!-- 板块 6: 合规声明与授权 -->
+  <view class="form-card consent-card">
+    <view class="section-header">
+      <view class="section-title-wrap">
+        <text class="section-title">授权与合规声明</text>
+      </view>
+    </view>
+
+    <view class="consent-tile {{adultDeclared ? 'consent-tile-active' : ''}}" data-key="adultDeclared" bindtap="toggleConsent">
+      <view class="custom-checkbox {{adultDeclared ? 'checked' : ''}}">
+        <text wx:if="{{adultDeclared}}">✓</text>
+      </view>
+      <view class="consent-text-wrap">
+        <view class="consent-main">我已年满 18 周岁</view>
+        <view class="consent-sub">本人实事求是声明，心动找对象仅面向 18 岁及以上在校大学生</view>
+      </view>
+    </view>
+
+    <view class="consent-tile {{enabled ? 'consent-tile-active' : ''}}" data-key="enabled" bindtap="toggleConsent">
+      <view class="custom-checkbox {{enabled ? 'checked' : ''}}">
+        <text wx:if="{{enabled}}">✓</text>
+      </view>
+      <view class="consent-text-wrap">
+        <view class="consent-main">主动开启心动模式</view>
+        <view class="consent-sub">仅向符合双方偏好的同校同学推荐展示。可随时退出，退出后立即停止推荐</view>
+      </view>
+    </view>
+
+    <view class="consent-tile {{allowFateCard ? 'consent-tile-active' : ''}}" data-key="allowFateCard" bindtap="toggleConsent">
+      <view class="custom-checkbox {{allowFateCard ? 'checked' : ''}}">
+        <text wx:if="{{allowFateCard}}">✓</text>
+      </view>
+      <view class="consent-text-wrap">
+        <view class="consent-main">允许进入「今日缘分」推荐 (可选)</view>
+        <view class="consent-sub">开启后系统每日有限次向与你共同兴趣极高的同校同学推荐你的缘分卡</view>
+      </view>
+    </view>
+
+    <view class="privacy-note">
+      <text class="note-icon">🔒</text>
+      <text class="note-content">严格遵守校园隐私保护：公开名片绝不展示微信号、手机号或 OpenID，不强制要求个人敏感信息。普通校园找搭子、二手集市与互助生活功能不受此模式限制。</text>
+    </view>
+  </view>
+
+  <!-- 底部固定保存操作栏 -->
+  <view class="bottom-bar-placeholder"></view>
+  <view class="bottom-bar">
+    <button class="submit-btn" bindtap="save" disabled="{{busy}}" hover-class="btn-hover-active">
+      <text class="btn-text">保存并开启心动名片</text>
+    </button>
+  </view>
+</view>
