@@ -1,4 +1,5 @@
 <view class="chat-page">
+  <campus-page-header title="聊天" subtitle="围绕校园里的具体事情交流" />
   <view class="chat-user-bar" bindtap="onViewProfile">
     <image class="chat-user-avatar" src="{{targetUser.avatarUrl || '/images/avatar_default.png'}}" mode="aspectFill"></image>
     <text class="chat-user-name">{{targetUser.nickName || '对方'}}</text>

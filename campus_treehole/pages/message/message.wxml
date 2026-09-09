@@ -1,7 +1,8 @@
 <view class="page-container">
+  <campus-page-header title="消息" subtitle="把具体的事情聊清楚" />
   <view class="msg-header">
     <view class="msg-header-main">
-      <text class="msg-title">消息</text>
+      <text class="msg-title" wx:if="{{false}}">消息</text>
       <text class="msg-subtitle" wx:if="{{currentTab === 'chat'}}">{{totalUnread > 0 ? ('你有 ' + totalUnread + ' 条未读私信') : '下拉可以刷新最新会话'}}</text>
       <text class="msg-subtitle" wx:else>{{interactionUnread > 0 ? ('你有 ' + interactionUnread + ' 条未读互动') : '点赞、评论、私信、收藏和关注会在这里提醒（与微信服务通知一致）'}}</text>
     </view>
