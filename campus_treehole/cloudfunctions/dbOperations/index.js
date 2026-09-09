@@ -628,6 +628,9 @@ async function triggerSubscribeNotify(payload) {
 exports.main = async (event, context) => {
   const { action, webSecret } = event
   const data = { ...(event.data || {}) }
+  // Public, side-effect-free deployment check. It intentionally exposes no
+  // environment, version, account, or user information.
+  if (action === 'health') return { code: 0, data: { service: 'dbOperations' } }
   const campusActions = new Set(['getPosts','getMarketGoods','getBuddyPosts','getLanguagePartners','getMutualPosts','addPost','updatePost','addMarketGoods','addBuddyPost','addMutualPost','updateProfile','updateLanguageProfile'])
   if (campusActions.has(action)) {
     let requestedCampus = data.campusId

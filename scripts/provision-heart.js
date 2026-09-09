@@ -1,10 +1,11 @@
 #!/usr/bin/env node
 // Idempotent Heart collection provisioning. It never deletes data.
 const { spawnSync } = require('child_process')
+const { isProductionEnv, normalizeEnvId } = require('./cloudbase-target')
 
 const args = process.argv.slice(2)
 const envIndex = args.indexOf('--env')
-const envId = envIndex >= 0 ? String(args[envIndex + 1] || '').trim() : ''
+const envId = envIndex >= 0 ? normalizeEnvId(args[envIndex + 1]) : ''
 const apply = args.includes('--apply')
 const collections = ['heart_profiles', 'heart_likes', 'heart_matches', 'fate_card_usage', 'fate_card_history', 'heart_events', 'heart_block_fences']
 const indexes = [
@@ -24,7 +25,7 @@ if (!apply) {
   console.log('No collection or index was changed. Re-run with --apply to create missing collections.')
   process.exit(0)
 }
-if (/^xyblh-5gb26qrnf9d30feb$/i.test(envId)) {
+if (isProductionEnv(envId)) {
   console.error('REFUSED: provisioning production requires a manual CloudBase Console change review.')
   process.exitCode = 1
   process.exit()

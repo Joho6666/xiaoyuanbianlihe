@@ -1,16 +1,8 @@
 // scripts/env.js - 环境配置提取与平滑回退
 const path = require('path')
-const fs = require('fs')
 
 function getEnvId() {
   if (process.env.CLOUDBASE_ENV_ID) return process.env.CLOUDBASE_ENV_ID.trim()
-  try {
-    const rcPath = path.join(__dirname, '..', 'cloudbaserc.json')
-    if (fs.existsSync(rcPath)) {
-      const cfg = JSON.parse(fs.readFileSync(rcPath, 'utf8'))
-      if (cfg && cfg.envId) return cfg.envId.trim()
-    }
-  } catch (e) {}
   return ''
 }
 

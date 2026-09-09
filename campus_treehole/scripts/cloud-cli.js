@@ -7,7 +7,12 @@ const args = process.argv.slice(2)
 const envId = getEnvId()
 
 const hasEnv = args.some((a) => a === '-e' || a === '--env')
-const envArgs = hasEnv ? '' : `-e ${envId}`
+const isEnvironmentLoginCommand = args[0] === 'env' && args[1] === 'login'
+if (!hasEnv && !envId && !isEnvironmentLoginCommand) {
+  console.error('CLOUDBASE_ENV_ID is required. Refusing to fall back to cloudbaserc.json or any default environment.')
+  process.exit(1)
+}
+const envArgs = hasEnv || !envId ? '' : `-e ${envId}`
 
 const cmd = `npx -p @cloudbase/cli@latest tcb ${args.join(' ')} ${envArgs}`.trim()
 console.log(`[CloudBase] 正在执行: ${cmd}`)

@@ -1,8 +1,11 @@
 # 逐个部署 cloudbaserc.json 中的云函数（CLI 一次只接受一个函数名）
 $ErrorActionPreference = 'Stop'
-Set-Location $PSScriptRoot + '\..'
+Set-Location (Join-Path $PSScriptRoot '..')
 
-$envId = if ($env:CLOUDBASE_ENV_ID) { $env:CLOUDBASE_ENV_ID } else { 'xyblh-5gb26qrnf9d30feb' }
+$envId = $env:CLOUDBASE_ENV_ID
+if ([string]::IsNullOrWhiteSpace($envId)) {
+  throw 'CLOUDBASE_ENV_ID is required. Refusing to fall back to any CloudBase environment.'
+}
 $names = @(
   'userReferral',
   'bindInviteEmployee',
