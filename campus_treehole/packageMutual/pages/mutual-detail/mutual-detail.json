@@ -1,4 +1,5 @@
 {
   "navigationBarTitleText": "互助与失物详情",
-  "backgroundTextStyle": "dark"
+  "backgroundTextStyle": "dark",
+  "usingComponents": {"campus-page-header":"/components/campus-page-header/campus-page-header","section-header":"/components/section-header/section-header"}
 }

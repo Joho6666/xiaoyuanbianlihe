@@ -1,5 +1,6 @@
 <!-- packageMutual/pages/mutual-list/mutual-list.wxml - 校园互助与失物招领 -->
 <view class="mutual-container">
+  <campus-page-header title="校园互助" subtitle="求助、寻物和招领都在这里" />
   <!-- 顶部双通道分段切换 -->
   <view class="top-nav-bar">
     <view class="segmented-control">

@@ -1,5 +1,6 @@
 <!-- packageMutual/pages/mutual-detail/mutual-detail.wxml - 互助与失物详情 -->
 <view class="detail-container" wx:if="{{!loading && post}}">
+  <campus-page-header title="互助详情" subtitle="地点、时间与当前状态" />
   <!-- 状态横幅 -->
   <view class="status-banner status-{{post.status}}">
     <text class="status-title" wx:if="{{post.status === 'open'}}">

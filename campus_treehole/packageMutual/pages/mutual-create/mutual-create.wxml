@@ -1,5 +1,6 @@
 <!-- packageMutual/pages/mutual-create/mutual-create.wxml - 发布互助或寻物 -->
 <view class="create-container">
+  <campus-page-header title="发布互助" subtitle="把需求和地点写清楚" />
   <view class="form-card">
     <view class="group-label">发布类型</view>
     <radio-group class="type-radio-group" bindchange="onTypeChange">
