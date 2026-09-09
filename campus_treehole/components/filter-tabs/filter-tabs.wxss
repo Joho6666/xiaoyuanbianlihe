@@ -1,0 +1,1 @@
+.filter-tabs{width:100%;white-space:nowrap}.filter-tabs-track{display:flex;gap:16rpx;padding:4rpx 0}.filter-tab{padding:12rpx 24rpx;border-radius:999rpx;background:var(--surface-container-low);color:var(--on-surface-variant);font-size:24rpx}.filter-tab-active{background:var(--primary);color:#fff}

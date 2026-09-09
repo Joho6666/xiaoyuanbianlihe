@@ -2,5 +2,5 @@
   "navigationBarTitleText": "校园互助与失物招领",
   "enablePullDownRefresh": true,
   "backgroundTextStyle": "dark",
-  "usingComponents": {"campus-page-header":"/components/campus-page-header/campus-page-header","section-header":"/components/section-header/section-header"}
+  "usingComponents": {"campus-page-header":"/components/campus-page-header/campus-page-header","section-header":"/components/section-header/section-header","content-card":"/components/content-card/content-card","empty-state":"/components/empty-state/empty-state"}
 }

@@ -1,0 +1,1 @@
+Component({properties:{item:{type:Object,value:{}}},methods:{onTap(){this.triggerEvent('tap',{item:this.data.item})},onLike(){this.triggerEvent('like',{item:this.data.item})},onPass(){this.triggerEvent('pass',{item:this.data.item})},onChat(){this.triggerEvent('chat',{item:this.data.item})}}})

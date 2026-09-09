@@ -161,6 +161,11 @@ Page({
     })
   },
 
+  onBuddyCardTap(e) {
+    const id = e && e.detail && e.detail.item && e.detail.item._id
+    if (id) this.goToDetail({ currentTarget: { dataset: { id } } })
+  },
+
   goToCreate() {
     wx.navigateTo({
       url: '/packageBuddy/pages/buddy-create/buddy-create'

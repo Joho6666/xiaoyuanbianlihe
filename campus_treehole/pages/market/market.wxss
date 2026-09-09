@@ -150,6 +150,11 @@
   box-sizing: border-box;
   align-items: flex-start;
 }
+.legacy-waterfall { display:none; }
+.legacy-cat-scroll { display:none; }
+.product-feed { padding: 12rpx 24rpx 180rpx; }
+.product-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:18rpx; }
+.market-filters { display:block; padding:0 24rpx 12rpx; box-sizing:border-box; }
 
 .wf-col {
   flex: 1;

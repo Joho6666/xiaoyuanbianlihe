@@ -97,6 +97,7 @@
 .card-list {
   padding: 24rpx 28rpx;
 }
+.legacy-buddy-list,.legacy-empty-state{display:none}.buddy-feed{padding:0 4rpx}.buddy-feed .buddy-card{margin-bottom:20rpx}
 
 .buddy-card {
   background: #ffffff;

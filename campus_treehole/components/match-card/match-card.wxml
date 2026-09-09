@@ -1,0 +1,1 @@
+<view class="match-card"><image src="{{item.avatar || item.avatarUrl || '/images/avatar_default.png'}}"/><view class="match-copy"><view class="match-title">{{item.nickname || item.nickName || '同频同学'}}</view><view class="match-meta">你们互相表达了兴趣</view></view><button bindtap="onChat">聊一聊</button></view>

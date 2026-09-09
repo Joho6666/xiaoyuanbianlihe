@@ -94,6 +94,10 @@ Page({
       url: `/packageBridge/pages/partner-detail/partner-detail?id=${id}`
     })
   },
+  onPartnerRowTap(e) {
+    const id = e && e.detail && e.detail.item && e.detail.item.id
+    if (id) this.goToPartnerDetail({ currentTarget: { dataset: { id } } })
+  },
 
   goToSetupProfile() {
     wx.navigateTo({

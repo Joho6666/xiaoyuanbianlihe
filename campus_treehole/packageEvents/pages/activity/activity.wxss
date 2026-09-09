@@ -10,6 +10,7 @@
   box-sizing: border-box;
   align-items: flex-start;
 }
+.legacy-waterfall{display:none}.activity-feed{padding:0 24rpx 120rpx}.activity-modern .content-card{margin-bottom:24rpx}
 
 .wf-col {
   flex: 1;

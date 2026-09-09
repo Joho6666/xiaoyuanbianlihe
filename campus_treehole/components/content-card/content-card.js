@@ -1,0 +1,1 @@
+Component({properties:{item:{type:Object,value:{}},compact:Boolean},methods:{onTap(){this.triggerEvent('tap',{item:this.data.item})},onLike(e){this.triggerEvent('like',{item:this.data.item})},onFavorite(){this.triggerEvent('favorite',{item:this.data.item})}}})

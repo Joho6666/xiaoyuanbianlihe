@@ -56,6 +56,8 @@
 
   <!-- 条目列表 -->
   <view class="post-list">
+    <view class="modern-post-list"><content-card wx:for="{{posts}}" wx:key="_id" item="{{item}}" bindtap="onMutualCardTap" /></view>
+    <view class="legacy-post-list" wx:if="{{false}}">
     <!-- 互助卡片 -->
     <block wx:if="{{activeTab === 'help'}}">
       <view
@@ -125,11 +127,9 @@
       </view>
     </block>
 
-    <!-- 空状态 -->
-    <view class="empty-state" wx:if="{{!loading && posts.length === 0}}">
-      <text class="empty-text">当前暂无信息</text>
-      <button class="empty-btn" bindtap="goToCreate">发布第一条信息</button>
     </view>
+    <!-- 空状态 -->
+    <empty-state wx:if="{{!loading && posts.length === 0}}" icon="🤝" title="暂时没有求助" description="有需要就发一条校园服务信息" action-text="发布第一条信息" bindaction="goToCreate" />
 
     <!-- 加载指示 -->
     <view class="loading-bar" wx:if="{{loading}}">加载中...</view>

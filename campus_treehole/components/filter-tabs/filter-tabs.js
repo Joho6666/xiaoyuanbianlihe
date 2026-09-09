@@ -1,0 +1,1 @@
+Component({ properties: { items: { type: Array, value: [] }, activeIndex: { type: Number, value: 0 } }, methods: { onChange(e) { this.triggerEvent('change', { index: Number(e.currentTarget.dataset.index), value: this.data.items[Number(e.currentTarget.dataset.index)] }) } } })

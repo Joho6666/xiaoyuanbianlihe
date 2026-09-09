@@ -135,6 +135,10 @@ Page({
       url: `/packageMutual/pages/mutual-detail/mutual-detail?id=${id}`
     })
   },
+  onMutualCardTap(e) {
+    const id = e && e.detail && e.detail.item && e.detail.item._id
+    if (id) this.goToDetail({ currentTarget: { dataset: { id } } })
+  },
 
   goToCreate() {
     const defaultType = this.data.activeTab === 'lost'

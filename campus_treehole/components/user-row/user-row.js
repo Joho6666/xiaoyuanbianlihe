@@ -1,0 +1,1 @@
+Component({ properties: { item: { type: Object, value: {} }, avatar: String, name: String, meta: String, badge: String }, methods: { onTap() { this.triggerEvent('tap', { item: this.data.item }) } } })

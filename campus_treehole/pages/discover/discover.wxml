@@ -4,6 +4,7 @@
   <!-- 核心频道矩阵 (2x2 Grid) -->
   <view class="channel-section">
     <section-header title="核心频道" subtitle="全域校园矩阵" />
+    <view class="service-feed"><service-card title="同频搭子" description="先看今晚要做什么" icon="🎯" tone="coral" badge="热门组局" bindtap="onOpenTongpin"/><service-card title="友桥 UniBridge" description="母语与目标语言互助" icon="🌐" tone="green" badge="语言交换" bindtap="onOpenUniBridge"/><service-card title="校园集市" description="闲置好物，校园内交易" icon="🛍️" tone="blue" badge="现已开通" bindtap="goToMarket"/><service-card title="校园活动" description="讲座、社团与竞赛日程" icon="🎪" tone="blue" badge="官方活动" bindtap="goToEvents"/></view>
 
     <view class="channel-grid">
       <!-- 1. 同频搭子 (Tongpin) -->

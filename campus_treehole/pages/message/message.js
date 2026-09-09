@@ -280,6 +280,10 @@ Page({
       url: `/pages/chat/chat?targetUserId=${encodeURIComponent(userId)}&nickname=${encodeURIComponent(nickname)}`
     })
   },
+  onModernChatTap(e) {
+    const item = e && e.detail && e.detail.item
+    if (item) this.onChatTap({ currentTarget: { dataset: { userId: item.targetUserId, nickname: item.targetNickName } } })
+  },
 
   onNotificationTap(e) {
     const { targetType, targetId, postId, goodsId, fromOpenid } = e.currentTarget.dataset

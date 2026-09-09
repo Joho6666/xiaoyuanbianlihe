@@ -1,6 +1,6 @@
 {
   "navigationBarTitleText": "聊天",
-  "usingComponents": {"campus-page-header":"/components/campus-page-header/campus-page-header"},
+  "usingComponents": {"campus-page-header":"/components/campus-page-header/campus-page-header","empty-state":"/components/empty-state/empty-state"},
   "enablePullDownRefresh": true,
   "backgroundTextStyle": "dark"
 }

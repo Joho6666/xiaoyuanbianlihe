@@ -18,6 +18,7 @@
 
   <!-- 价格区 -->
   <view class="price-card">
+    <price-text class="market-price-modern" amount="{{goods.price}}" original="{{goods.originalPrice}}" />
     <view class="price-row">
       <text class="price-main">¥{{goods.price}}</text>
       <text class="price-original" wx:if="{{goods.originalPrice}}">¥{{goods.originalPrice}}</text>
@@ -38,6 +39,7 @@
   </view>
 
   <!-- 卖家信息 -->
+  <user-row class="market-seller-modern" avatar="{{goods.avatar}}" name="{{goods.nickname || '卖家'}}" meta="{{goods.timeStr}}" bindtap="onSellerTap" />
   <view class="seller-card" bindtap="onSellerTap">
     <image class="seller-avatar" src="{{goods.avatar || '/images/avatar_default.png'}}" />
     <view class="seller-info">

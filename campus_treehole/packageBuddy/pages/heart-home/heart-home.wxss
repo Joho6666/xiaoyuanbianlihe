@@ -9,6 +9,8 @@ page {
   padding: 24rpx 28rpx 80rpx;
   box-sizing: border-box;
 }
+.heart-feed,.match-feed{padding:0 8rpx}.heart-container .profile-card,.heart-container .match-row-card,.heart-container .empty-state-card{display:none}
+.fate-modern{margin:0 8rpx 20rpx}.fate-modern-quota{margin-bottom:14rpx;padding:16rpx 20rpx;border-radius:18rpx;background:var(--accent-soft);color:var(--accent);font-size:24rpx;font-weight:700}.heart-container .fate-card-container{display:none}
 
 /* 顶栏分段切换：找搭子 / 心动 */
 .top-nav-bar {

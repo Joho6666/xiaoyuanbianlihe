@@ -52,7 +52,9 @@
     <text>{{searchKeyword ? '正在搜索…' : '下拉刷新 · 上拉加载更多'}}</text>
   </view>
 
-  <view class="waterfall">
+  <view class="activity-feed">
+    <view class="activity-modern"><content-card wx:for="{{posts}}" wx:key="_id" item="{{item}}" bindtap="onActivityCardTap" /></view>
+  <view class="legacy-waterfall" wx:if="{{false}}">
     <view class="wf-col">
       <view class="wf-card wf-card-enter" wx:for="{{leftCol}}" wx:key="_id" bindtap="goToDetail" data-id="{{item._id}}">
         <view class="wf-activity-tag">活动</view>
@@ -125,6 +127,7 @@
     </view>
   </view>
 
+  </view>
   <view class="load-status" wx:if="{{loading || searchLoading}}">
     <text class="load-text">加载中...</text>
   </view>
@@ -136,7 +139,7 @@
   </view>
   <view class="load-status empty" wx:elif="{{!loading && posts.length === 0}}">
     <text class="empty-emoji">📅</text>
-    <text class="load-text">{{searchKeyword ? '没有找到相关活动' : '本期暂无参与帖，请在活动进行中发布并选择「校园活动」分类'}}</text>
+    <text class="load-text">{{searchKeyword ? '没有找到相关活动' : '近期暂无活动'}}</text>
   </view>
 
   <view style="height: 120rpx;"></view>

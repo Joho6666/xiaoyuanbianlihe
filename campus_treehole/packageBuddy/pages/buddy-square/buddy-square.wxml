@@ -38,6 +38,8 @@
 
   <!-- 搭子卡片列表 (事件优先，拒绝 Tinder 颜值卡) -->
   <view class="card-list">
+    <view class="buddy-feed"><buddy-card wx:for="{{posts}}" wx:key="_id" item="{{item}}" bindtap="onBuddyCardTap" /></view>
+    <view class="legacy-buddy-list" wx:if="{{false}}">
     <view
       wx:for="{{posts}}"
       wx:key="_id"
@@ -99,8 +101,11 @@
       </view>
     </view>
 
+    </view>
+
     <!-- 空状态 -->
-    <view class="empty-state" wx:if="{{!loading && posts.length === 0}}">
+    <empty-state wx:if="{{!loading && posts.length === 0}}" icon="🏸" title="今天还没人发起？" description="做第一个发起组局的人" action-text="立即发起" bindaction="goToCreate" />
+    <view class="legacy-empty-state" wx:if="{{false}}">
       <view class="empty-icon">🏸</view>
       <text class="empty-title">今晚还没人约？</text>
       <text class="empty-sub">做第一个发起组局的人，随时成局！</text>

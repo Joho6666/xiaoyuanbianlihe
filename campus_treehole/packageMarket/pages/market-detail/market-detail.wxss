@@ -69,6 +69,7 @@
   position: relative;
   z-index: 1;
 }
+.market-price-modern{margin-bottom:12rpx}.price-card .price-row{display:none}.market-seller-modern{display:flex;padding:0 28rpx 14rpx;background:var(--surface-container-lowest);border-radius:var(--radius-lg)}.seller-card{display:none}
 
 .price-row { display: flex; align-items: baseline; gap: 16rpx; margin-bottom: 12rpx; }
 .price-main { font-size: 52rpx; font-weight: 800; color: var(--accent); letter-spacing: -1rpx; }

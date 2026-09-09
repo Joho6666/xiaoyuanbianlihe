@@ -741,6 +741,21 @@ Page({
     wx.navigateTo({ url: `/pages/detail/detail?id=${encodeURIComponent(id)}` })
   },
 
+  onContentCardTap(e) {
+    const id = e && e.detail && e.detail.item && e.detail.item._id
+    if (id) this.goToDetail({ currentTarget: { dataset: { id } } })
+  },
+
+  onContentCardLike(e) {
+    const id = e && e.detail && e.detail.item && e.detail.item._id
+    if (id) this.onLikeTap({ currentTarget: { dataset: { id } } })
+  },
+
+  onContentCardFavorite(e) {
+    const id = e && e.detail && e.detail.item && e.detail.item._id
+    if (id) this.onFavorTap({ currentTarget: { dataset: { id } } })
+  },
+
   _findCardPath(id) {
     const li = this.data.leftCol.findIndex((p) => p._id === id)
     if (li !== -1) return { col: 'leftCol', idx: li }

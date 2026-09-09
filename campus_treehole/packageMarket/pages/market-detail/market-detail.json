@@ -1,5 +1,5 @@
 {
-  "usingComponents": {"campus-page-header":"/components/campus-page-header/campus-page-header","section-header":"/components/section-header/section-header"},
+  "usingComponents": {"campus-page-header":"/components/campus-page-header/campus-page-header","section-header":"/components/section-header/section-header","price-text":"/components/price-text/price-text","user-row":"/components/user-row/user-row"},
   "navigationBarTitleText": "商品详情",
   "enableShareTimeline": true
 }

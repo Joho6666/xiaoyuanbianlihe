@@ -2,5 +2,5 @@
   "navigationBarTitleText": "同频搭子广场",
   "enablePullDownRefresh": true,
   "backgroundTextStyle": "dark",
-  "usingComponents": {"campus-page-header":"/components/campus-page-header/campus-page-header","section-header":"/components/section-header/section-header"}
+  "usingComponents": {"campus-page-header":"/components/campus-page-header/campus-page-header","section-header":"/components/section-header/section-header","buddy-card":"/components/buddy-card/buddy-card","empty-state":"/components/empty-state/empty-state"}
 }

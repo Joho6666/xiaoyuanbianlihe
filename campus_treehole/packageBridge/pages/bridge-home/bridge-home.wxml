@@ -44,6 +44,7 @@
 
   <!-- 语伴卡片流 -->
   <view class="partner-list">
+    <view class="bridge-feed"><user-row wx:for="{{partners}}" wx:key="id" item="{{item}}" meta="{{item.languageProfile.nativeLanguages.join(' / ') + ' → ' + item.languageProfile.targetLanguages.join(' / ')}}" badge="{{item.languageProfile.exchangeMode === 'offline' ? '线下' : '线上'}}" bindtap="onPartnerRowTap" /></view>
     <view
       wx:for="{{partners}}"
       wx:key="id"
@@ -96,7 +97,8 @@
 
     <!-- 加载中 -->
     <view class="loading-bar" wx:if="{{loading}}">Loading partners...</view>
-    <view class="empty-state" wx:if="{{!loading && partners.length === 0}}">
+    <empty-state wx:if="{{!loading && partners.length === 0}}" icon="🌍" title="完善语言资料" description="选择母语与目标语言，让语伴更容易找到你" action-text="去完善" bindaction="goToSetupProfile" />
+    <view class="legacy-empty-state" wx:if="{{false}}">
       <view class="empty-icon">🌍</view>
       <text class="empty-title">暂时还没有匹配你的语伴</text>
       <text class="empty-sub">完善语言资料，让更多同学发现你</text>

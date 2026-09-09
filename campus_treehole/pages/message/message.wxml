@@ -58,6 +58,8 @@
       </view>
 
       <view class="conv-list" wx:elif="{{conversations.length > 0}}">
+        <view class="modern-conv-list"><user-row wx:for="{{conversations}}" wx:key="targetUserId" item="{{item}}" avatar="{{item.targetAvatar}}" name="{{item.targetNickName}}" meta="{{item.lastMessage || '开始一段对话'}}" badge="{{item.unreadCount > 0 ? item.unreadCount : ''}}" bindtap="onModernChatTap" /></view>
+        <view class="legacy-conv-list" wx:if="{{false}}">
         <view
           class="conv-item {{item.isUnread ? 'conv-item-unread' : ''}}"
           wx:for="{{conversations}}"
@@ -83,6 +85,7 @@
               <view class="conv-badge" wx:if="{{item.unreadCount > 0}}">{{item.unreadCount > 99 ? '99+' : item.unreadCount}}</view>
             </view>
           </view>
+        </view>
         </view>
       </view>
     </block>

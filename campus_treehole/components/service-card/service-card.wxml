@@ -1,0 +1,5 @@
+<view class="service-card service-card-{{tone}}" bindtap="onTap">
+  <view class="service-card-icon">{{icon}}</view>
+  <view class="service-card-copy"><view class="service-card-title">{{title}}</view><view class="service-card-description">{{description}}</view></view>
+  <text class="service-card-badge" wx:if="{{badge}}">{{badge}}</text><text class="service-card-arrow">›</text>
+</view>

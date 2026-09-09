@@ -85,6 +85,8 @@
 
     <!-- TAB 1: 发现同学 (Discover) -->
     <view wx:if="{{tab === 'discover'}}" class="tab-content">
+      <view class="heart-feed" wx:if="{{cards && cards.length > 0}}"><heart-card wx:for="{{cards}}" wx:key="userId" item="{{item}}" bindlike="onHeartLike" bindpass="onHeartPass" /></view>
+      <empty-state wx:if="{{!cards || cards.length === 0}}" icon="🍃" title="暂时没有新同频同学" description="完善兴趣爱好，或去搭子广场看看" action-text="完善兴趣" bindaction="edit" />
       <view wx:if="{{cards && cards.length > 0}}" class="cards-list">
         <view wx:for="{{cards}}" wx:key="userId" class="profile-card">
           <!-- 顶部右上更多菜单 -->
@@ -188,6 +190,8 @@
 
     <!-- TAB 2: 今日缘分卡 (Fate Card) -->
     <view wx:if="{{tab === 'fate'}}" class="tab-content">
+      <view class="fate-modern" wx:if="{{!fate}}"><view class="fate-modern-quota">今日缘分 · 剩余 {{quota.remaining}} / {{quota.limit}} 次</view><empty-state icon="✦" title="今天会遇见谁？" description="同频指数仅用于推荐排序" action-text="遇见今日缘分" bindaction="draw" /></view>
+      <fate-card wx:else item="{{fate}}" revealed="{{revealed}}" bindreveal="reveal" bindlike="onHeartLike" bindpass="onHeartPass" />
       <view class="fate-card-container">
         <!-- 额度信息提示条 -->
         <view class="quota-badge-row">
@@ -289,6 +293,8 @@
 
     <!-- TAB 3: 已同频 (Matches) -->
     <view wx:if="{{tab === 'matches'}}" class="tab-content">
+      <view class="match-feed" wx:if="{{cards && cards.length > 0}}"><match-card wx:for="{{cards}}" wx:key="userId" item="{{item}}" bindchat="onMatchChat" /></view>
+      <empty-state wx:if="{{!cards || cards.length === 0}}" icon="💌" title="还没有同频匹配" description="去发现同学，表达你的兴趣" action-text="去发现同学" bindaction="onDiscoverTab" />
       <view wx:if="{{cards && cards.length > 0}}" class="matches-list">
         <view wx:for="{{cards}}" wx:key="userId" class="match-row-card">
           <image class="match-avatar" src="{{item.photos[0]}}" mode="aspectFill" />

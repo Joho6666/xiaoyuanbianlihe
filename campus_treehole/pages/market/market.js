@@ -450,6 +450,15 @@ Page({
     wx.navigateTo({ url: `/packageMarket/pages/market-detail/market-detail?id=${encodeURIComponent(id)}` })
   },
 
+  onMarketFilterChange(e) {
+    this.onCategoryTap({ currentTarget: { dataset: { index: e.detail.index } } })
+  },
+
+  onProductCardTap(e) {
+    const id = e && e.detail && e.detail.item && e.detail.item._id
+    if (id) this.goToDetail({ currentTarget: { dataset: { id } } })
+  },
+
   goPublish() {
     wx.navigateTo({ url: '/packageMarket/pages/market-post/market-post' })
   },

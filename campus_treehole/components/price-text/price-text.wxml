@@ -1,0 +1,1 @@
+<view class="price-text"><text class="price-main">{{currency}}{{amount}}</text><text class="price-original" wx:if="{{original}}">{{currency}}{{original}}</text></view>

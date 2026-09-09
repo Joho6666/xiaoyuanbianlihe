@@ -1203,6 +1203,14 @@
   padding: 16rpx 20rpx;
   box-shadow: 0 4rpx 14rpx rgba(66, 96, 137, 0.06);
 }
+
+/* Campus Box：首页精选采用单列节奏；保留原列容器仅用于兼容旧数据定位。 */
+.content-feed { display: block; padding: 16rpx 24rpx; }
+.content-feed .wf-col { display: contents; }
+.content-feed .wf-card { margin-bottom: 24rpx; border-radius: var(--radius-lg); box-shadow: var(--shadow-card); border: 0; }
+.content-feed .wf-cover-wrap, .content-feed .wf-video-wrap { height: 420rpx; padding-bottom: 0; }
+.content-feed .wf-info { padding: 24rpx 26rpx 26rpx; }
+.legacy-waterfall { display: none; }
 .campus-now-head {
   display: flex;
   align-items: center;

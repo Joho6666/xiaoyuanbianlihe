@@ -1,1 +1,1 @@
-{"navigationBarTitleText":"同频 · 心动","usingComponents":{"campus-page-header":"/components/campus-page-header/campus-page-header","section-header":"/components/section-header/section-header"}}
+{"navigationBarTitleText":"同频 · 心动","usingComponents":{"campus-page-header":"/components/campus-page-header/campus-page-header","section-header":"/components/section-header/section-header","heart-card":"/components/heart-card/heart-card","match-card":"/components/match-card/match-card","fate-card":"/components/fate-card/fate-card","empty-state":"/components/empty-state/empty-state"}}

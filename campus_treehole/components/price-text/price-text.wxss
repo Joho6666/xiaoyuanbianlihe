@@ -1,0 +1,1 @@
+.price-text{display:flex;align-items:baseline;gap:12rpx}.price-main{font-size:36rpx;font-weight:800;color:#c24b45}.price-original{font-size:22rpx;color:var(--outline);text-decoration:line-through}

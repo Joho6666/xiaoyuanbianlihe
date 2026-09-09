@@ -1,6 +1,6 @@
 {
   "navigationBarTitleText": "消息",
-  "usingComponents": {"campus-page-header":"/components/campus-page-header/campus-page-header"},
+  "usingComponents": {"campus-page-header":"/components/campus-page-header/campus-page-header","user-row":"/components/user-row/user-row","empty-state":"/components/empty-state/empty-state"},
   "enablePullDownRefresh": true,
   "backgroundTextStyle": "dark",
   "initialRenderingCache": "static"

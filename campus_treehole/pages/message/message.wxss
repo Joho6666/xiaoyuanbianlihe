@@ -6,6 +6,7 @@
   flex-direction: column;
   overflow: hidden;
 }
+.modern-conv-list{padding:0 24rpx;background:var(--surface-container-lowest);border-radius:var(--radius-lg)}.legacy-conv-list{display:none}
 
 .msg-header {
   display: flex;

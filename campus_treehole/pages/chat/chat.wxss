@@ -15,6 +15,7 @@
   border-bottom: 1rpx solid var(--hairline);
   box-shadow: 0 4rpx 20rpx rgba(44, 51, 56, 0.04);
 }
+.chat-context{display:flex;align-items:center;gap:12rpx;padding:14rpx 28rpx;background:var(--info-container);color:var(--on-info-container);font-size:22rpx}.chat-context-label{font-weight:750}.chat-context-copy{opacity:.78}
 
 .chat-user-avatar {
   width: 64rpx;

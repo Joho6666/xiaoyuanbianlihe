@@ -5,6 +5,7 @@
   padding-bottom: 140rpx;
   box-sizing: border-box;
 }
+.modern-post-list{padding:0 4rpx}.legacy-post-list{display:none}
 
 .top-nav-bar {
   background: #ffffff;

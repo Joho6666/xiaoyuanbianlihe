@@ -1,0 +1,1 @@
+<scroll-view class="filter-tabs" scroll-x enable-flex show-scrollbar="{{false}}"><view class="filter-tabs-track"><view wx:for="{{items}}" wx:key="index" class="filter-tab {{index === activeIndex ? 'filter-tab-active' : ''}}" data-index="{{index}}" bindtap="onChange">{{item.name || item}}</view></view></scroll-view>

@@ -226,6 +226,10 @@ Page({
     if (!id) return
     wx.navigateTo({ url: `/pages/detail/detail?id=${encodeURIComponent(id)}` })
   },
+  onActivityCardTap(e) {
+    const id = e && e.detail && e.detail.item && e.detail.item._id
+    if (id) this.goToDetail({ currentTarget: { dataset: { id } } })
+  },
 
   _findCardPath(id) {
     const li = this.data.leftCol.findIndex((p) => p._id === id)

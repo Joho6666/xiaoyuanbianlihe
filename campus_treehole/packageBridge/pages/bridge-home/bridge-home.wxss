@@ -5,6 +5,7 @@
   padding: 24rpx;
   box-sizing: border-box;
 }
+.bridge-feed{padding:0 4rpx}.bridge-container .partner-card,.bridge-container .legacy-empty-state{display:none}
 
 .top-nav {
   display: flex;

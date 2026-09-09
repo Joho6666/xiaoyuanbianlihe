@@ -192,7 +192,11 @@
     <text>{{searchKeyword ? '正在按关键词筛选内容' : '下拉刷新获取最新动态'}}</text>
   </view>
 
-  <view class="waterfall" wx:if="{{!showSkeleton}}">
+  <view class="content-feed" wx:if="{{!showSkeleton}}">
+    <content-card wx:for="{{posts}}" wx:key="_id" item="{{item}}" bindtap="onContentCardTap" bindlike="onContentCardLike" bindfavorite="onContentCardFavorite" />
+  </view>
+
+  <view class="legacy-waterfall" wx:if="{{false}}">
     <view class="wf-col">
       <view class="wf-card wf-card-enter" wx:for="{{leftCol}}" wx:key="_id" bindtap="goToDetail" data-id="{{item._id}}" style="animation-delay: {{index * 40}}ms;">
         <view class="wf-activity-tag" wx:if="{{item.inActivityZone}}">活动</view>
@@ -278,7 +282,7 @@
   </view>
   <view class="load-status empty" wx:elif="{{!loading && posts.length === 0}}">
     <text class="empty-emoji">{{searchKeyword ? '🔎' : '🫧'}}</text>
-    <text class="load-text">{{searchKeyword ? '没有找到相关动态' : '还没有动态，快去发布吧'}}</text>
+    <text class="load-text">{{searchKeyword ? '没有找到相关动态' : '今天还没人发起？去发布第一条校园动态吧'}}</text>
   </view>
 
   <view style="height: 180rpx;"></view>
