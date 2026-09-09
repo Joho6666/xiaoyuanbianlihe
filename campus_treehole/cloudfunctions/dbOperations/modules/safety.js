@@ -1,3 +1,5 @@
+const { publicId } = require('../shared/public-data')
+const { pairId } = require('../shared/heart')
 // modules/safety.js - 安全与风控业务模块
 // 涵盖举报处理、拉黑关系过滤、用户封禁管理
 const USER_BLOCKS = 'user_blocks'
@@ -122,6 +124,11 @@ function createSafetyModule({ db, _, cloud, helpers }) {
         return { code: 0, data: { blocked: false } }
       }
 
+      // Fail closed for Heart interactions before creating the existing block relation.
+      // The fence remains conservative after unblock; a future explicit re-consent can reset it.
+      const blocker = await getUserForAction(openid, { requireActive: true })
+      const target = targetRes.data[0]
+      await db.collection('heart_block_fences').doc(pairId(blocker.internalUserId || publicId(openid), target.internalUserId || publicId(normalizedTarget))).set({data:{blocked:true}})
       await db.collection(USER_BLOCKS).add({
         data: {
           blockerOpenid: openid,
@@ -215,6 +222,11 @@ function createSafetyModule({ db, _, cloud, helpers }) {
   // ========== 举报操作 ==========
   async function reportContent(openid, data) {
     await getUserForAction(openid, { requireActive: true })
+    if (['heart_profile','heart_photo'].includes(data.targetType)) {
+      if (typeof data.targetId !== 'string' || !data.targetId || typeof data.reason !== 'string' || !data.reason.trim() || data.reason.length > 200) return {code:-1,msg:'请填写有效举报原因（最多200字）'}
+      const target = await db.collection('heart_profiles').doc(data.targetId).get()
+      if (!target.data) return {code:-1,msg:'资料不存在'}
+    }
     const existing = await db.collection('reports').where({
       _openid: openid,
       targetId: data.targetId,

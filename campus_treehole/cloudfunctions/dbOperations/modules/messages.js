@@ -164,6 +164,11 @@ function createMessagesModule({ db, _, cloud, helpers }) {
       return { code: -1, msg: '无法与对方发送私信' }
     }
 
+    if (typeof helpers.authorizeHeartMessage === 'function') {
+      const allowed = await helpers.authorizeHeartMessage(user, targetRes.data[0])
+      if (!allowed) return { code: -1, msg: '双方感兴趣后才能发起心动私聊' }
+    }
+
     const type = typeof data.type === 'string' ? data.type : 'text'
     const allowedTypes = ['text', 'emoji', 'image', 'voice', 'post_share', 'goods_share']
     if (!allowedTypes.includes(type)) return { code: -1, msg: '不支持的消息类型' }

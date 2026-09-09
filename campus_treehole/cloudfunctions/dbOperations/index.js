@@ -268,6 +268,7 @@ function getMessagesModule() {
         checkBannedWords,
         wxTextCheck,
         wxImageCheck,
+        authorizeHeartMessage: (a,b) => getHeartModule().authorizeHeartMessage(a,b),
         triggerSubscribeNotify,
         trimSnippet,
         conversationBlocked: (a, b) => getSafetyModule().conversationBlocked(a, b),
@@ -278,6 +279,17 @@ function getMessagesModule() {
     })
   }
   return messagesModuleInstance
+}
+
+const createHeartModule = require('./modules/heart')
+let heartModuleInstance
+function getHeartModule() {
+  if (!heartModuleInstance) heartModuleInstance = createHeartModule({db, _, helpers: {
+    getUserForAction, checkBannedWords, wxTextCheck, wxImageBatchCheck,
+    findAuthorsHiddenByBlockRelation: (a,ids) => getSafetyModule().findAuthorsHiddenByBlockRelation(a,ids),
+    conversationBlocked: (a,b) => getSafetyModule().conversationBlocked(a,b)
+  }})
+  return heartModuleInstance
 }
 
 const createPostsModule = require('./modules/posts')
@@ -680,6 +692,7 @@ exports.main = async (event, context) => {
         if (!data.targetOpenid) return { code: -1, msg: '目标用户不存在' }
       }
     }
+    if (["getHeartProfile", "updateHeartProfile", "disableHeartProfile", "getHeartDiscover", "likeHeartProfile", "passHeartProfile", "getHeartMatches", "drawFateCard", "getFateCardQuota", "toggleFateCardOptIn", "startHeartChat"].includes(action)) return await getHeartModule()[action](openid, data)
     switch (action) {
       // ===== 帖子动态相关 (modules/posts.js) =====
       case 'getPosts':
