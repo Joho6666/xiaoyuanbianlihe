@@ -32,3 +32,25 @@ Payment: NOT IMPLEMENTED。
 正式运行需新建7个服务端专用集合和索引，核验存储权限，并真实验证事务冲突、Block/退出竞争、同校异校区推荐、跨校隔离与双账号聊天。解除普通拉黑后Heart阻断保守保留，当前无重新授权入口。
 
 当前发现使用15条候选窗口，过滤后不足15条时仍允许继续下一页。缘分最多扫描2000条候选；仅面向30–100人试点，不能据此宣称扩校扩量完成。照片内容审核复用现有服务，Storage文件归属与跨用户读取需要独立环境验证。
+
+## Heart Beta Hardening + Real CloudBase Readiness（2026-09-09）
+
+基线：`78f2c06`；实现与验证均在 `refactor/campus-platform-foundation`。Heart 不再参与通用私信授权：Market、Buddy、Mutual 和既有会话保留其原有的通用账号、拉黑、禁言、频率与内容安全规则；仅 `startHeartChat` 需要 Heart Match。
+
+| 项目 | 当前结果 |
+|---|---|
+| Node CI | PASS（新增 5 个 Heart 回归文件已由统一运行器执行） |
+| Heart Chat Isolation：Market / Buddy / 历史会话 | PASS（内存回归） |
+| Heart no match / matched / block | PASS（内存回归） |
+| Fate Free 1/day / Premium Test 3/day | PASS（内存回归） |
+| Fate reaction exclusion | PASS：LIKED、PASSED、MATCHED、BLOCKED 均不回流 |
+| OpenID client URL | 通知、Heart、Buddy、Bridge、Mutual、Market 已改为 public `userId` 路由；详见 `docs/security/OPENID_CLIENT_AUDIT.md` |
+| School feature flag | PASS（客户端入口隐藏 + 每个 Heart API 服务端拒绝） |
+| Collections | READY FOR PROVISIONING：`npm run provision:heart -- --env <test-env>` 已验证 dry run |
+| Indexes | MANUAL ACTION REQUIRED：详见 `docs/heart/CLOUDBASE_INDEX_PLAN.md` |
+| CloudBase Real Smoke | NOT RUN：Missing Test Environment Credentials；required 模式已验证 exit 1 |
+| WeChat DevTools | NOT RUN：CLI 已安装，但本轮未取得启用服务端口后的真实 preview/build 结果 |
+| A/B real device | NOT RUN |
+| Payment | NOT IMPLEMENTED |
+
+Release blockers: independent CloudBase test environment credentials/provisioning, deployed-function real smoke, WeChat DevTools preview validation, and two-account physical-device acceptance. No production deployment or production database mutation occurred.

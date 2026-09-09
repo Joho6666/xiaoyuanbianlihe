@@ -13,7 +13,9 @@
     "sync:schools": "node scripts/sync-schools.js",
     "check:schools": "node scripts/sync-schools.js --check",
     "test:integration:memory": "node scripts/smoke/run-smoke.js && node scripts/smoke/run-heart-smoke.js && node test/regression/fate-card.test.js",
-    "smoke:cloudbase": "node scripts/cloudbase-smoke/run-real-smoke.js"
+    "smoke:cloudbase": "node scripts/cloudbase-smoke/run-real-smoke.js",
+    "smoke:cloudbase:required": "node scripts/cloudbase-smoke/run-real-smoke.js --required",
+    "provision:heart": "node scripts/provision-heart.js"
   },
   "keywords": [
     "wechat-miniprogram",

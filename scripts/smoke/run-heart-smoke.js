@@ -10,7 +10,7 @@ const {resolveUserOpenid}=require('../../campus_treehole/cloudfunctions/dbOperat
  assert.equal((await f.heart.likeHeartProfile(b.id,{targetUserId:a.userId})).data.status,'MATCHED')
  const chat=await f.heart.startHeartChat(a.id,{targetUserId:b.userId});assert.equal(chat.code,0)
  const targetOpenid=await resolveUserOpenid(f.db,chat.data.targetUserId);assert.equal(targetOpenid,b.id)
- const messages=createMessages({db:f.db,_:f.db.command,helpers:{getUserForAction:async id=>f.users[id],conversationBlocked:async()=>false,authorizeHeartMessage:f.heart.authorizeHeartMessage,checkRateLimit:async()=>true,checkBannedWords:()=>({pass:true}),wxTextCheck:async()=>({pass:true}),triggerSubscribeNotify:async()=>{},trimSnippet:s=>s}})
+ const messages=createMessages({db:f.db,_:f.db.command,helpers:{getUserForAction:async id=>f.users[id],conversationBlocked:async()=>false,checkRateLimit:async()=>true,checkBannedWords:()=>({pass:true}),wxTextCheck:async()=>({pass:true}),triggerSubscribeNotify:async()=>{},trimSnippet:s=>s,publicId:id=>id}})
  f.db.serverDate=()=>Date.now()
  const sent=await messages.sendMessage(a.id,{targetOpenid,content:'你好，我们都喜欢摄影',type:'text'});assert.equal(sent.code,0)
  assert.equal(Object.values(f.db.dump().messages)[0].toOpenid,b.id)

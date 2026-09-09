@@ -11,7 +11,7 @@ function getEnvId() {
       if (cfg && cfg.envId) return cfg.envId.trim()
     }
   } catch (e) {}
-  return 'xyblh-5gb26qrnf9d30feb'
+  return ''
 }
 
 function getAdminSourcePath() {

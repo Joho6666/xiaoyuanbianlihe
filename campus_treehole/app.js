@@ -19,7 +19,7 @@ function stableStringify(value) {
  * 查看：开发者工具 → 云开发 → 设置 → 环境设置 → 环境 ID（形如 cloud1-xxxx）。
  * 若你新建了环境，把下面改成新 ID；勿用 DYNAMIC_CURRENT_ENV（体验版/真机未绑默认环境时常报错）。
  */
-const CLOUD_ENV_ID = 'xyblh-5gb26qrnf9d30feb'
+const { CLOUD_ENV_ID } = require('./config/cloud-env')
 
 const campuses = require('./utils/campuses.js')
 const { parseLanding } = require('./utils/landing.js')
@@ -52,7 +52,11 @@ App({
     this.savePromoFromOptions(options)
 
     if (wx.cloud) {
-      const envId = String(CLOUD_ENV_ID || '').trim() || 'xyblh-5gb26qrnf9d30feb'
+      const envId = String(CLOUD_ENV_ID || '').trim()
+      if (!envId) {
+        console.error('[云开发] 未配置环境 ID；请检查 config/cloud-env.js')
+        return
+      }
       wx.cloud.init({
         env: envId,
         traceUser: true
