@@ -6,7 +6,7 @@ Page({
   async refresh(){
     const generation=this._generation=(this._generation||0)+1
     this.setData({loading:true,error:'',cards:[],fate:null,revealed:false,match:null})
-    try{const profile=await this.api('getHeartProfile');if(generation!==this._generation)return;this.setData({profile});if(profile.enabled){const quota=await this.api('getFateCardQuota');if(generation===this._generation)this.setData({quota});await this.loadTab(generation)}}catch(e){if(generation===this._generation)this.setData({error:e.message})}finally{if(generation===this._generation)this.setData({loading:false})}
+    try{const profile=await this.api('getHeartProfile');if(generation!==this._generation)return;this.setData({profile,error:profile.needsReconfirm?profile.message:''});if(profile.enabled){const quota=await this.api('getFateCardQuota');if(generation===this._generation)this.setData({quota});await this.loadTab(generation)}}catch(e){if(generation===this._generation)this.setData({error:e.message})}finally{if(generation===this._generation)this.setData({loading:false})}
   },
   async loadTab(generation=this._generation){
     let patch={}
@@ -24,6 +24,6 @@ Page({
   async chat(e){try{const targetUserId=e.currentTarget.dataset.id||this.data.match.targetUserId;await this.api('startHeartChat',{targetUserId});wx.navigateTo({url:'/pages/chat/chat?targetUserId='+encodeURIComponent(targetUserId)})}catch(e){this.setData({error:e.message})}},
   buddies(){const interests=this.data.match&&this.data.match.sharedInterests||[];const category=interests.some(x=>/羽毛球|篮球|运动/.test(x))?'sport':interests.some(x=>/摄影|拍照/.test(x))?'photo':'all';wx.redirectTo({url:'../buddy-square/buddy-square?category='+category})},
   viewBuddy(e){wx.navigateTo({url:'../buddy-detail/buddy-detail?id='+encodeURIComponent(e.currentTarget.dataset.id)})},
-  async safety(e){const id=e.currentTarget.dataset.id;wx.showActionSheet({itemList:['举报资料','举报照片','拉黑'],success:async r=>{try{if(r.tapIndex===2){await this.api('toggleUserBlock',{targetUserId:id});this.refresh()}else{wx.showModal({title:'举报',editable:true,placeholderText:'请说明原因（最多200字）',success:async m=>{if(!m.confirm)return;try{await this.api('reportContent',{targetType:r.tapIndex===0?'heart_profile':'heart_photo',targetId:id,reason:m.content});wx.showToast({title:'已提交'})}catch(err){this.setData({error:err.message})}}})}}catch(err){this.setData({error:err.message})}}})},
+  async safety(e){const {id,photo,photoIndex}=e.currentTarget.dataset;wx.showActionSheet({itemList:['举报资料','举报照片','拉黑'],success:async r=>{try{if(r.tapIndex===2){await this.api('toggleUserBlock',{targetUserId:id});this.refresh()}else{wx.showModal({title:'举报',editable:true,placeholderText:'请说明原因（最多200字）',success:async m=>{if(!m.confirm)return;try{const payload={targetType:r.tapIndex===0?'heart_profile':'heart_photo',targetId:id,reason:m.content};if(r.tapIndex===1){payload.photoFileId=photo;payload.photoIndex=Number(photoIndex)}await this.api('reportContent',payload);wx.showToast({title:'已提交'})}catch(err){this.setData({error:err.message})}}})}}catch(err){this.setData({error:err.message})}}})},
   disable(){wx.showModal({title:'退出心动模式',content:'退出后立即停止新的推荐曝光。',success:async r=>{if(r.confirm){try{await this.api('disableHeartProfile');this.refresh()}catch(e){this.setData({error:e.message})}}}})}
 })

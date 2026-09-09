@@ -7,6 +7,13 @@ const PRESET_INTERESTS = [
 
 const PRESET_GRADES = ['大一', '大二', '大三', '大四', '研一', '研二', '研三']
 
+function makeUploadId() {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, key => {
+    const value = Math.floor(Math.random() * 16)
+    return (key === 'x' ? value : (value & 0x3) | 0x8).toString(16)
+  })
+}
+
 Page({
   data: {
     busy: false,
@@ -156,11 +163,13 @@ Page({
         mediaType: ['image'],
         sourceType: ['album', 'camera']
       })
+      const userId = String((app.globalData.userInfo || {}).internalUserId || '')
+      if (!userId) throw new Error('登录身份尚未就绪，请稍后再试')
       const files = []
       for (const file of selected.tempFiles) {
         wx.showLoading({ title: '安全上传中...' })
         const r = await wx.cloud.uploadFile({
-          cloudPath: 'heart/' + Date.now() + '-' + Math.random().toString(36).slice(2) + '.jpg',
+          cloudPath: `heart/${encodeURIComponent(userId)}/${makeUploadId()}.jpg`,
           filePath: file.tempFilePath
         })
         files.push(r.fileID)

@@ -31,14 +31,14 @@
     </view>
     <view class="onboard-title">开启同频 · 心动名片</view>
     <view class="onboard-desc">
-      专属于同校同学的认真相识空间。基于真实的共同爱好与校园生活节奏推荐，公开卡片不显示微信号或 OpenID，双方彼此心动才会开启私信。
+      专属于同校圈的认真相识空间。基于共同爱好与校园生活节奏推荐，公开卡片不显示微信号或 OpenID，双方彼此心动才会开启私信。学校信息由用户自行选择，目前不代表校方身份认证。
     </view>
     <view class="feature-bullets">
       <view class="bullet-item">
         <text class="bullet-icon">🏫</text>
         <view class="bullet-content">
-          <text class="bullet-title">同校真实交友</text>
-          <text class="bullet-sub">仅向同校符合条件的在校同学推荐</text>
+          <text class="bullet-title">同校圈认识</text>
+          <text class="bullet-sub">优先发现与你选择同一学校的同学</text>
         </view>
       </view>
       <view class="bullet-item">
@@ -87,7 +87,7 @@
       <view wx:if="{{cards && cards.length > 0}}" class="cards-list">
         <view wx:for="{{cards}}" wx:key="userId" class="profile-card">
           <!-- 顶部右上更多菜单 -->
-          <view class="card-more-action" data-id="{{item.userId}}" bindtap="safety" hover-class="btn-hover">
+          <view class="card-more-action" data-id="{{item.userId}}" data-photo="{{item.photos[0]}}" data-photo-index="0" bindtap="safety" hover-class="btn-hover">
             <text class="more-dots">⋯</text>
           </view>
 
@@ -199,7 +199,7 @@
           <view class="fate-gift-icon">🎁</view>
           <view class="fate-title">今天会遇见谁？</view>
           <view class="fate-desc">
-            {{emptyFate ? '今天暂时没有符合条件的未遇见同学，请明天再来。' : quota.remaining > 0 ? '每日限定次数，系统将根据你们的共同兴趣与校区，为你寻觅一位契合度极高的同校伙伴。' : '今天的缘分卡次数已用完，明天零点重置。'}}
+            {{emptyFate ? '今天暂时没有新的同频同学。' : quota.remaining > 0 ? '每日限定次数，系统将根据共同兴趣、校园范围和近期活跃为你推荐一位同频同学。' : '今天的缘分卡次数已用完，明天零点重置。'}}
           </view>
           <button
             wx:if="{{quota.remaining > 0}}"
@@ -217,13 +217,13 @@
           <view class="mystery-sparkle">✨</view>
           <view class="mystery-title">为你寻觅到一位同频同学</view>
           <view class="mystery-score-badge">
-            <text class="score-num">{{fate.matchScore}}%</text>
-            <text class="score-label">匹配度</text>
+            <text class="score-num">{{fate.matchScore}}</text>
+            <text class="score-label">同频指数</text>
           </view>
           <view class="mystery-tags">
             <text class="shared-chip" wx:for="{{fate.sharedInterests}}" wx:key="*this">{{item}}</text>
           </view>
-          <view class="mystery-tip">TA 也在这个校区，等待被认真认识</view>
+          <view class="mystery-tip">根据共同兴趣、校园范围和近期活跃计算，仅用于推荐排序</view>
           <button class="primary-btn" bindtap="reveal" hover-class="btn-hover-active">
             <text class="btn-text">✨ 揭开缘分卡</text>
           </button>
@@ -231,14 +231,14 @@
 
         <!-- 状态 C: 已揭开卡片 -->
         <view wx:else class="profile-card fate-revealed-card">
-          <view class="card-more-action" data-id="{{fate.userId}}" bindtap="safety">
+          <view class="card-more-action" data-id="{{fate.userId}}" data-photo="{{fate.photos[0]}}" data-photo-index="0" bindtap="safety">
             <text class="more-dots">⋯</text>
           </view>
 
           <view class="photo-wrapper">
             <image class="main-photo" src="{{fate.photos[0]}}" mode="aspectFill" lazy-load />
             <view class="campus-pill">{{fate.campusName || '同校同学'}}</view>
-            <view class="fate-match-tag">{{fate.matchScore}}% 契合</view>
+            <view class="fate-match-tag">同频指数 {{fate.matchScore}}</view>
           </view>
 
           <view class="profile-info-body">
@@ -329,15 +329,10 @@
       </view>
     </view>
 
-    <!-- 会员权益说明条 -->
     <view class="plus-preview-card">
-      <view class="plus-header">
-        <text class="plus-title">同频 Plus · 权益体验</text>
-        <text class="plus-tag">内测中</text>
-      </view>
-      <view class="plus-item">✓ 每日 3 次缘分卡额度 (当前账号限额: {{quota.limit}} 次/天)</view>
-      <view class="plus-item item-muted">· 更多高级筛选与谁喜欢我 (即将开放)</view>
-      <view class="plus-note">暂不提供任何付费购买，仅作为产品能力演示</view>
+      <view class="plus-header"><text class="plus-title">缘分卡额度</text><text class="plus-tag">内测</text></view>
+      <view class="plus-item">当前账号每天可使用 {{quota.limit}} 次缘分卡</view>
+      <view class="plus-note">学校信息由用户自行选择，目前不代表校方身份认证。</view>
     </view>
 
     <!-- 底部设置选项 -->

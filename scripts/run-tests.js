@@ -12,6 +12,11 @@ const testFiles = [
   path.join(__dirname, '..', 'test', 'regression', 'heart-like.test.js'),
   path.join(__dirname, '..', 'test', 'regression', 'fate-card.test.js'),
   path.join(__dirname, '..', 'test', 'regression', 'heart-privacy.test.js'),
+  path.join(__dirname, '..', 'test', 'regression', 'chat-context.test.js'),
+  path.join(__dirname, '..', 'test', 'regression', 'heart-reaction-transition.test.js'),
+  path.join(__dirname, '..', 'test', 'regression', 'heart-feature-flag.test.js'),
+  path.join(__dirname, '..', 'test', 'regression', 'heart-storage.test.js'),
+  path.join(__dirname, '..', 'test', 'regression', 'heart-ban.test.js'),
 
   path.join(__dirname, '..', 'test', 'regression', 'school-isolation.test.js'),
   path.join(__dirname, '..', 'test', 'regression', 'campus-now-and-expiry.test.js'),

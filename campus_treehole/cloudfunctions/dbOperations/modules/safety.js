@@ -226,11 +226,19 @@ function createSafetyModule({ db, _, cloud, helpers }) {
       if (typeof data.targetId !== 'string' || !data.targetId || typeof data.reason !== 'string' || !data.reason.trim() || data.reason.length > 200) return {code:-1,msg:'请填写有效举报原因（最多200字）'}
       const target = await db.collection('heart_profiles').doc(data.targetId).get()
       if (!target.data) return {code:-1,msg:'资料不存在'}
+      if (data.targetType === 'heart_photo') {
+        const photoFileId = typeof data.photoFileId === 'string' ? data.photoFileId.trim() : ''
+        const photoIndex = Number(data.photoIndex)
+        if (!photoFileId || !Number.isInteger(photoIndex) || photoIndex < 0 || !Array.isArray(target.data.photos) || target.data.photos[photoIndex] !== photoFileId) {
+          return { code: -1, msg: '举报图片与心动资料不匹配' }
+        }
+      }
     }
     const existing = await db.collection('reports').where({
       _openid: openid,
       targetId: data.targetId,
-      targetType: data.targetType
+      targetType: data.targetType,
+      ...(data.targetType === 'heart_photo' ? { photoFileId: data.photoFileId } : {})
     }).count()
 
     if (existing.total > 0) return { code: -1, msg: '您已举报过该内容' }
@@ -240,6 +248,7 @@ function createSafetyModule({ db, _, cloud, helpers }) {
         _openid: openid,
         targetId: data.targetId,
         targetType: data.targetType,
+        ...(data.targetType === 'heart_photo' ? { photoFileId: data.photoFileId, photoIndex: Number(data.photoIndex) } : {}),
         reason: data.reason,
         status: 'pending',
         createTime: db.serverDate()
@@ -254,6 +263,8 @@ function createSafetyModule({ db, _, cloud, helpers }) {
     const isAdmin = await checkAdmin(openid)
     if (!isAdmin) return { code: -1, msg: '无管理员权限' }
 
+    const targetRes = await db.collection('users').where({ _openid: targetOpenid }).limit(1).get()
+    const targetUser = (targetRes.data || [])[0]
     await db.collection('users').where({ _openid: targetOpenid }).update({
       data: { status: 'banned', banTime: db.serverDate() }
     })
@@ -274,6 +285,14 @@ function createSafetyModule({ db, _, cloud, helpers }) {
     }).catch((err) => {
       if (!(err && err.message && err.message.includes('not exist'))) throw err
     })
+    if (targetUser) {
+      const targetUserId = targetUser.internalUserId || publicId(targetOpenid)
+      await db.collection('heart_profiles').doc(targetUserId).update({
+        data: { enabled: false, allowFateCard: false, updatedAt: db.serverDate(), disabledBy: 'banUser' }
+      }).catch((err) => {
+        if (!(err && /(?:not exist|not found)/i.test(String(err.message || err.errMsg || '')))) throw err
+      })
+    }
 
     return { code: 0, msg: '用户已封禁' }
   }

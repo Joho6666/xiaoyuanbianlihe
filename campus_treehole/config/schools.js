@@ -15,6 +15,7 @@ const SCHOOLS = [
       }
     ],
     "enabled": true,
+    "features": { "buddy": true, "heart": true, "bridge": true, "market": true, "mutual": true },
     "aliases": [
       "guat",
       "桂航"
@@ -46,6 +47,7 @@ const SCHOOLS = [
       }
     ],
     "enabled": true,
+    "features": { "buddy": true, "heart": true, "bridge": true, "market": true, "mutual": true },
     "aliases": [
       "gxnu",
       "广西师大",
@@ -79,6 +81,7 @@ const SCHOOLS = [
       }
     ],
     "enabled": true,
+    "features": { "buddy": true, "heart": true, "bridge": true, "market": true, "mutual": true },
     "aliases": [
       "guet",
       "桂电"
@@ -110,6 +113,7 @@ const SCHOOLS = [
       }
     ],
     "enabled": true,
+    "features": { "buddy": true, "heart": true, "bridge": true, "market": true, "mutual": true },
     "aliases": [
       "glut",
       "桂工"
@@ -151,6 +155,7 @@ const SCHOOLS = [
       }
     ],
     "enabled": true,
+    "features": { "buddy": true, "heart": true, "bridge": true, "market": true, "mutual": true },
     "aliases": [
       "glmu",
       "桂医",
@@ -184,6 +189,7 @@ const SCHOOLS = [
       }
     ],
     "enabled": true,
+    "features": { "buddy": true, "heart": true, "bridge": true, "market": true, "mutual": true },
     "aliases": [
       "gltu",
       "桂旅"
@@ -200,6 +206,7 @@ const SCHOOLS = [
     "city": "桂林",
     "campuses": [],
     "enabled": false,
+    "features": { "buddy": false, "heart": false, "bridge": false, "market": false, "mutual": false },
     "aliases": [
       "guilin-college",
       "桂院"
@@ -224,6 +231,7 @@ const SCHOOLS = [
       }
     ],
     "enabled": true,
+    "features": { "buddy": true, "heart": true, "bridge": true, "market": true, "mutual": true },
     "aliases": [
       "glnc",
       "桂林师院"
@@ -248,6 +256,7 @@ const SCHOOLS = [
       }
     ],
     "enabled": true,
+    "features": { "buddy": true, "heart": true, "bridge": true, "market": true, "mutual": true },
     "aliases": [
       "gist",
       "信科"
@@ -273,6 +282,7 @@ const SCHOOLS = [
       }
     ],
     "enabled": true,
+    "features": { "buddy": true, "heart": true, "bridge": true, "market": true, "mutual": true },
     "aliases": [
       "nnlgxy",
       "南宁理工"

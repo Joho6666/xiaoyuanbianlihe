@@ -1,6 +1,7 @@
 // packageBuddy/pages/buddy-square/buddy-square.js - Tongpin 同频搭子广场
 const app = getApp()
 const { BUDDY_CATEGORIES } = require('../../../utils/domain/buddy')
+const { getCampusById, getSchoolById } = require('../../../config/schools')
 
 Page({
   data: {
@@ -12,12 +13,14 @@ Page({
     page: 1,
     pageSize: 15,
     hasMore: true,
-    keyword: ''
+    keyword: '',
+    heartEnabled: false
   },
 
   onLoad(options = {}) {
     if (this.data.categories.some(c => c.id === options.category)) this.setData({currentCategory: options.category})
     this._shownCampus = app.getSelectedCampusId()
+    this.refreshHeartFlag()
     this.loadPosts(true)
   },
 
@@ -28,6 +31,13 @@ Page({
       this.setData({ posts: [], loading: false, page: 1, hasMore: true })
       this.loadPosts(true)
     }
+    this.refreshHeartFlag()
+  },
+
+  refreshHeartFlag() {
+    const campus = getCampusById(app.getSelectedCampusId ? app.getSelectedCampusId() : '')
+    const school = campus && getSchoolById(campus.schoolId)
+    this.setData({ heartEnabled: !!(school && school.features && school.features.heart) })
   },
 
   onPullDownRefresh() {

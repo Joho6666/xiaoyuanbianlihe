@@ -1,5 +1,5 @@
 const assert=require('assert');const {fixture}=require('../helpers/heart-fixture')
-;(async()=>{const f=await fixture(),a=await f.add('a','male');await f.add('b');await f.add('c');await f.add('d');await f.add('e')
+;(async()=>{const f=await fixture(),a=await f.add('a','male');await f.add('b');await f.add('c');await f.add('d');await f.add('e');await f.add('f');await f.add('g')
 const results=await Promise.allSettled([f.heart.drawFateCard('a'),f.heart.drawFateCard('a'),f.heart.drawFateCard('a')]);assert.equal(results.filter(r=>r.status==='fulfilled'&&r.value.code===0).length,1);assert.equal((await f.heart.getFateCardQuota('a')).data.remaining,0)
 f.setTime(Date.UTC(2026,8,9,16));assert.equal((await f.heart.getFateCardQuota('a')).data.remaining,1)
 f.db.failNextCommit();await assert.rejects(()=>f.heart.drawFateCard('a'));assert.equal((await f.heart.getFateCardQuota('a')).data.remaining,1)
