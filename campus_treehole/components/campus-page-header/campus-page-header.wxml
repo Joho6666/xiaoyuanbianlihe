@@ -1,0 +1,14 @@
+<view class="cph-header cph-{{accent}}">
+  <view class="cph-row">
+    <view class="cph-back" wx:if="{{showBack}}" bindtap="onBack" aria-label="返回">‹</view>
+    <view class="cph-copy">
+      <text class="cph-title">{{title}}</text>
+      <text class="cph-subtitle" wx:if="{{subtitle}}">{{subtitle}}</text>
+    </view>
+    <view class="cph-campus" wx:if="{{campus}}" bindtap="onCampusTap">
+      <text class="cph-dot"></text>
+      <text class="cph-campus-text">{{campus}}</text>
+      <text class="cph-chevron">›</text>
+    </view>
+  </view>
+</view>

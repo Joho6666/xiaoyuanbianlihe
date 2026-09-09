@@ -1,0 +1,7 @@
+<view class="sh-header">
+  <view class="sh-copy">
+    <text class="sh-title">{{title}}</text>
+    <text class="sh-subtitle" wx:if="{{subtitle}}">{{subtitle}}</text>
+  </view>
+  <view class="sh-action" wx:if="{{actionText}}" bindtap="onAction">{{actionText}} ›</view>
+</view>
