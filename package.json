@@ -15,7 +15,8 @@
     "test:integration:memory": "node scripts/smoke/run-smoke.js && node scripts/smoke/run-heart-smoke.js && node test/regression/fate-card.test.js",
     "smoke:cloudbase": "node scripts/cloudbase-smoke/run-real-smoke.js",
     "smoke:cloudbase:required": "node scripts/cloudbase-smoke/run-real-smoke.js --required",
-    "provision:heart": "node scripts/provision-heart.js"
+    "provision:heart": "node scripts/provision-heart.js",
+    "deploy:cloudbase:test:dboperations": "node scripts/cloudbase-smoke/deploy-test-dboperations.js"
   },
   "keywords": [
     "wechat-miniprogram",
