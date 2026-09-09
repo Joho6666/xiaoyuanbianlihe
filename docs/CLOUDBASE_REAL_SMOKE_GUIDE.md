@@ -1,51 +1,48 @@
-# 真实 CloudBase 云开发端到端 Smoke 操作指南 (CLOUDBASE_REAL_SMOKE_GUIDE)
+# 独立 CloudBase Heart Smoke 指南
 
-> 目标：提供在真实独立腾讯云开发环境（CloudBase）上执行全功能链路验收的标准流程，坚决杜绝测试脏数据污染正式校区。
+> 本指南只验收 Heart 在独立 CloudBase 测试环境中的数据库、Storage 和部署可用性。它不代表微信真机验收，也不覆盖 Buddy、Bridge、Mutual、Market 或树洞的真实云端流程。
 
----
+## 安全边界
 
-## 一、基本原则与安全防线
+1. 仅使用独立的开发或预发环境。脚本从小程序唯一的生产环境配置读取拒绝目标；生产环境会被直接拒绝，不能以参数绕过。
+2. 本机临时设置 `TCB_ENV_ID`、`TCB_SECRET_ID`、`TCB_SECRET_KEY`，不要写入 `.env`、`cloudbaserc.json`、仓库或终端记录。
+3. Smoke 使用有效的 `guit-hangtian` 校区来覆盖学校功能开关；隔离依赖独立环境、唯一 `runId`、专属文档 ID 和 Storage 路径，而不是无效的 `campusId: "__test__"`。
+4. 所有数据库和 Storage 测试对象均由当前 run 跟踪并在完成或失败后清理；清理失败即为 `FAIL`。
 
-1. **环境隔离**：
-   - 默认**严禁**直接向线上正式环境运行自动化增删脚本；即使传入生产环境 ID，脚本也会拒绝。
-   - 必须使用独立的开发/预发环境（如新建独立的腾讯云开发环境 `xyblh-dev-xxxx`）。
-2. **校区隔离**：
-   - 测试脚本写入的所有实体必须强制打上 `campusId: '__test__'` 标签。
-   - 正式微信小程序前端由于学校目录不存在 `__test__`，任何学生在正常使用中均无法看到测试内容。
-3. **闭环自清理**：
-   - 脚本必须在 `finally` 阶段逐一物理删除所有产生的测试记录。
+## 执行顺序
 
----
+在仓库根目录的同一 PowerShell 会话中临时设置凭证后执行：
 
-## 二、执行指令与参数
+```powershell
+# 无副作用地核对目标和集合清单
+npm run provision:heart -- --env <test-env>
 
-```bash
-# 1. 纯内存沙箱测试 (秒级完成，日常 CI 默认运行)
-npm run test:integration:memory
+# 显式创建缺失集合；已有集合保持不变
+npm run provision:heart -- --env <test-env> --apply
 
-# 2. 真实 CloudBase 端到端测试 (需先配置测试凭证)
-export TCB_ENV_ID="your-test-env-id"
-export TCB_SECRET_ID="AKIDxxxx"
-export TCB_SECRET_KEY="xxxx"
-npm run smoke:cloudbase
+# 在控制台按 docs/heart/CLOUDBASE_INDEX_PLAN.md 完成人工索引清单
 
-# Release Gate：凭证缺失、生产环境或真实 Smoke 失败都会退出 1
+# 仅部署独立环境的 dbOperations，并调用无副作用 health action
+$env:TCB_ENV_ID = '<test-env>'
+npm run deploy:cloudbase:test:dboperations -- --apply --required
+
+# 真实 Storage + 数据库 Heart Smoke
 npm run smoke:cloudbase:required
 ```
 
----
+`provision-heart` 默认是 dry-run，且永不删除数据。索引创建尚未由 CLI 证明时只能保持 `MANUAL ACTION REQUIRED`。
 
-无凭证时普通命令输出 `NOT RUN: Missing Test Environment Credentials` 并退出 0；required 命令退出 1。不得把此状态或内存测试写为 CloudBase PASS。
+## Smoke 覆盖与结果口径
 
-## 三、真实环境覆盖用例
+数据库 Smoke 真实执行：资料 A/B、Discover、Like → Match、`startHeartChat`、通用消息、Free 1 次、Premium Test 3 次、并发 Free 额度、Block 后 Discover/Fate/Match/Heart chat 阻断、Disable 停止曝光；同时上传 `heart/<publicUserId>/<uuid>.jpg`，验证跨用户照片拒绝和已移除照片删除。
 
-| 模块 | 测试链路 | 验证点 |
-| :--- | :--- | :--- |
-| **同频 Buddy** | `addBuddyPost` → `getBuddyPosts` → `applyBuddyPost` → `handleBuddyApplication` (ACCEPT) | 验证事务锁人数防超员、自动置为 FULL、过期时间计算 |
-| **友桥 Bridge** | `updateLanguageProfile` → `getLanguagePartners` → `getLanguagePartnerProfile` | 验证互补推荐打分、严格排除未完善资料用户、隐私 OpenID 隐藏 |
-| **校园互助** | `addMutualPost` → `getMutualPosts` → `updateMutualPostStatus` (resolved) | 验证违禁词拦截、微信文本安全审查、状态变更流转 |
-| **二手闲置** | `addMarketGoods` → `getMarketGoods` → `deleteMarketGoods` | 验证图片安全检查、价格校验、校区严格隔离 |
-| **树洞动态** | `addPost` → `getPosts` → `toggleLikePost` → `deletePost` | 验证点赞数自增、校区隔离与作者安全返回 |
-| **Heart** | 资料 A/B/C… → Discover → Like/Match → `startHeartChat` → `sendMessage` → Free/Premium Fate → Block → Disable | 验证真实集合写入、事务额度、聊天门槛、Block 和 finally 清理 |
+- 未设置凭证：普通命令输出 `NOT RUN` 且退出 0；`--required` 退出 1。
+- 生产环境 ID：拒绝执行，`--required` 退出 1。
+- 业务断言、CloudBase API 或清理失败：`FAIL` 且退出 1。
+- 只有所有断言及 run-scoped 清理成功时：`PASS`。
 
-执行前先运行 `npm run provision:heart -- --env <test-env>`。只在确认 dry run 输出正确后，再使用 `--apply` 创建缺失集合；索引按 `docs/heart/CLOUDBASE_INDEX_PLAN.md` 在控制台确认。
+部署 health 调用只证明测试环境的 `dbOperations` 已部署且可执行，不模拟微信 OpenID，因此不能替代 Heart 业务 Smoke 或双账号真机验收。
+
+## 仍需独立验收
+
+微信 DevTools 真正 build/preview、两名已登录微信账号的 A/B 流程、存储访问规则和 CloudBase 控制台人工索引均仍是 Pilot 发布条件；不能因内存测试、health 调用或缺凭证 `NOT RUN` 将其标记为通过。

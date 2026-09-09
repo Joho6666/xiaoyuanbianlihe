@@ -10,12 +10,12 @@ Heart public card 使用明确字段白名单，仅public userId、昵称、校�
 
 索引：heart_profiles(enabled,schoolId,userId)、heart_matches(userIds数组)、fate_card_history(userId,createdAt desc)，以及既有user_blocks双方查询索引。确定性_id用于其他查找。照片存储规则须核验仅本人可写，并验证对外可读策略符合用户授权；退出只停止新推荐，无法收回对方已保存照片。
 
-在独立开发环境创建集合与索引，记录当前云函数版本并保存可回滚代码后部署。运行真实SDK smoke：写入、读取、并发额度、拉黑竞争、清理都需要实际证据。本仓库现有scripts/cloudbase-smoke/run-real-smoke.js仍为脚手架，不能宣称PASS。不要对生产写测试资料。
+在独立开发环境创建集合与索引，记录当前云函数版本并保存可回滚代码后部署。`scripts/cloudbase-smoke/run-real-smoke.js` 会对独立环境进行真实 Storage 与数据库写入，并在 `finally` 清理本次 runId 创建的文件和文档；无凭证只能标记为 `NOT RUN`，不能宣称 PASS。部署校验只验证 `dbOperations` 可被无副作用 health action 调用；Heart 业务链路仍由同版本模块连接真实 CloudBase 数据库执行。不要对生产写测试资料。
 
 ## Release blockers
 
 - 新集合、索引、存储规则尚未在独立开发环境核验；本轮未部署Heart。
-- CloudBase真实事务冲突重试、拉黑/退出与Like/抽卡竞争未执行。
+- CloudBase真实事务冲突重试、拉黑/退出与Like/抽卡竞争，需在提供独立环境凭证后执行并记录实际结果。
 - 微信CLI服务端口关闭，页面编译/预览未完成。
 - A/B微信实际“自愿开启→同校发现→喜欢→匹配→聊天→拉黑”未执行。
 - 同校异校区、跨校、上传照片安全拒绝、退出后的推荐刷新需真机验证。
