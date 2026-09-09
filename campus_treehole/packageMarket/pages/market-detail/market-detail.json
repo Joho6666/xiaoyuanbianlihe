@@ -1,5 +1,5 @@
 {
-  "usingComponents": {},
+  "usingComponents": {"campus-page-header":"/components/campus-page-header/campus-page-header","section-header":"/components/section-header/section-header"},
   "navigationBarTitleText": "商品详情",
   "enableShareTimeline": true
 }

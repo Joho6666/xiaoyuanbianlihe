@@ -1,6 +1,7 @@
 <!-- pages/market-post/market-post.wxml - 发布闲置商品（闲鱼风格） -->
 
 <view class="page">
+  <campus-page-header title="发布闲置" subtitle="把物品信息写清楚，更快找到需要的人" />
   <view class="draft-banner" wx:if="{{draftStatus}}">
     <text>{{draftStatus}}</text>
   </view>

@@ -8,6 +8,7 @@
 </view>
 
 <view class="page" wx:elif="{{goods}}">
+  <campus-page-header title="商品详情" subtitle="校园内当面确认交易" />
   <!-- 图片轮播 -->
   <swiper class="image-swiper" indicator-dots autoplay circular>
     <swiper-item wx:for="{{goods.images}}" wx:key="index">
@@ -53,10 +54,7 @@
   </view>
 
   <view class="comment-card">
-    <view class="comment-header">
-      <text class="comment-title">商品讨论</text>
-      <text class="comment-count">{{commentCount}} 条评论</text>
-    </view>
+    <section-header title="商品讨论" subtitle="{{commentCount}} 条评论" />
 
     <view class="comment-editor">
       <view class="reply-banner" wx:if="{{replyTarget}}">
