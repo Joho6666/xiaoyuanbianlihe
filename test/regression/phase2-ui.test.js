@@ -18,9 +18,19 @@ const targetPages = [
   'packageEvents/pages/activity/activity'
 ]
 assert.deepEqual(targetPages.filter(page => !pages.includes(page)), [], 'all Phase 2 user pages are registered')
-for (const component of ['campus-page-header', 'section-header']) {
+for (const component of ['campus-page-header', 'section-header', 'service-card', 'user-row', 'empty-state', 'status-chip', 'price-text', 'filter-tabs', 'content-card', 'buddy-card', 'heart-card', 'match-card', 'fate-card', 'product-card']) {
   for (const ext of ['js', 'json', 'wxml', 'wxss']) assert(fs.existsSync(path.join(mini, 'components', component, `${component}.${ext}`)), `${component}.${ext} exists`)
 }
+const indexWxml = fs.readFileSync(path.join(mini, 'pages/index/index.wxml'), 'utf8')
+const activityWxml = fs.readFileSync(path.join(mini, 'packageEvents/pages/activity/activity.wxml'), 'utf8')
+assert(indexWxml.includes('<content-card'), 'Campus Feed renders shared content-card')
+assert(!indexWxml.includes('class="waterfall"'), 'Home no longer renders the legacy waterfall')
+assert(activityWxml.includes('<content-card'), 'Events renders shared content-card')
+assert(!activityWxml.includes('class="waterfall"'), 'Events no longer renders the legacy waterfall')
+assert(fs.readFileSync(path.join(mini, 'pages/market/market.wxml'), 'utf8').includes('<product-card'), 'Market renders shared product-card')
+assert(fs.readFileSync(path.join(mini, 'packageBuddy/pages/buddy-square/buddy-square.wxml'), 'utf8').includes('<buddy-card'), 'Buddy renders shared buddy-card')
+assert(fs.readFileSync(path.join(mini, 'packageBridge/pages/bridge-home/bridge-home.wxml'), 'utf8').includes('<user-row'), 'Bridge renders shared user-row')
+assert(fs.readFileSync(path.join(mini, 'packageMutual/pages/mutual-list/mutual-list.wxml'), 'utf8').includes('<content-card'), 'Mutual renders shared content-card')
 for (const page of targetPages) {
   const json = JSON.parse(fs.readFileSync(path.join(mini, `${page}.json`), 'utf8'))
   assert(json.usingComponents && json.usingComponents['campus-page-header'], `${page} uses campus-page-header`)
