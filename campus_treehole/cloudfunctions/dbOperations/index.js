@@ -695,7 +695,7 @@ exports.main = async (event, context) => {
       case 'toggleTopPost':
         return await getPostsModule().toggleTopPost(openid, data.postId)
       case 'getComments':
-        return await getPostsModule().getComments(data.postId, data.sortBy)
+        return await getPostsModule().getComments(data.postId, data.sortBy, openid)
       case 'addComment':
         return await getPostsModule().addComment(openid, data)
       case 'toggleLikePost':
@@ -807,7 +807,7 @@ exports.main = async (event, context) => {
       case 'deleteMarketGoods':
         return await getMarketModule().deleteMarketGoods(openid, data.goodsId)
       case 'getMarketComments':
-        return await getMarketModule().getMarketComments(data.goodsId)
+        return await getMarketModule().getMarketComments(data.goodsId, openid)
       case 'addMarketComment':
         return await getMarketModule().addMarketComment(openid, data)
       case 'getAdminMarketGoods':

@@ -421,7 +421,7 @@ function createPostsModule({ db, _, cloud, helpers }) {
       thumbImages,
       videos,
       image: images.length > 0 ? images[0] : '',
-      isAnonymous: false,
+      isAnonymous: typeof data.isAnonymous === 'boolean' ? data.isAnonymous : post.isAnonymous === true,
       location: data.location || '',
       nickname: user.nickName || post.nickname || '未知用户',
       avatar: user.avatarUrl || post.avatar || '/images/avatar_default.png',
@@ -489,7 +489,11 @@ function createPostsModule({ db, _, cloud, helpers }) {
     return { code: 0, data: { isTop: newIsTop } }
   }
 
-  async function getComments(postId, sortBy = 'hot') {
+  async function getComments(postId, sortBy = 'hot', openid) {
+    const parent = (await db.collection('posts').doc(postId).get()).data
+    if (!parent || parent.status !== 'active') return { code: -1, msg: '内容不存在或已下架' }
+    if (openid && await contentDetailBlocked(openid, parent._openid)) return { code: -1, msg: '无法访问该内容' }
+
     let query = db.collection('comments').where({ postId, status: 'active' })
     if (sortBy === 'hot') {
       query = query.orderBy('likes', 'desc')
@@ -521,6 +525,14 @@ function createPostsModule({ db, _, cloud, helpers }) {
     const userRes = await db.collection('users').where({ _openid: openid }).get()
     const user = userRes.data[0] || {}
 
+    const parentCommentId = data.parentCommentId
+    let parentComment = null
+    if (parentCommentId) {
+      parentComment = (await db.collection('comments').doc(parentCommentId).get()).data
+      if (!parentComment || parentComment.status !== 'active' || parentComment.postId !== data.postId || await contentDetailBlocked(openid, parentComment._openid)) {
+        return { code: -1, msg: '无法回复该评论' }
+      }
+    }
     const newComment = {
       _openid: openid,
       postId: data.postId,
@@ -528,7 +540,7 @@ function createPostsModule({ db, _, cloud, helpers }) {
       avatar: user.avatarUrl || '/images/avatar_default.png',
       content: data.content,
       likes: 0,
-      replyTo: data.replyTo || null,
+      replyTo: parentComment ? { commentId: parentCommentId, nickname: parentComment.nickname || '同学' } : null,
       status: 'active',
       createTime: db.serverDate()
     }
@@ -560,9 +572,7 @@ function createPostsModule({ db, _, cloud, helpers }) {
       page: `/pages/detail/detail?id=${data.postId}`
     })
 
-    if (data.replyTo && data.replyTo.commentId) {
-      const parentCommentRes = await db.collection('comments').doc(data.replyTo.commentId).get().catch(() => ({ data: null }))
-      const parentComment = parentCommentRes.data || {}
+    if (parentComment) {
       await addNotification({
         toOpenid: parentComment._openid,
         fromOpenid: openid,

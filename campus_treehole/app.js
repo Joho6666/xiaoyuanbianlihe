@@ -44,7 +44,6 @@ App({
   // 小程序初始化
   onLaunch(options) {
     console.log('校园便利盒小程序启动')
-    this.savePromoFromOptions(options)
     this._requestCache = new Map()
     this._requestInflight = new Map()
     this._tempUrlCache = new Map()
@@ -843,7 +842,7 @@ App({
 
   async addComment(postId, content, replyTo) {
     try {
-      const result = await this.callDB('addComment', { postId, content, replyTo })
+      const result = await this.callDB('addComment', { postId, content, parentCommentId: replyTo && replyTo.commentId })
       if (result && result.data && postId) {
         this.invalidateCacheByPrefix(`getPostById:${postId}`)
       }
@@ -868,7 +867,7 @@ App({
 
   async addMarketComment(goodsId, content, replyTo = null) {
     try {
-      const result = await this.callDB('addMarketComment', { goodsId, content, replyTo })
+      const result = await this.callDB('addMarketComment', { goodsId, content, parentCommentId: replyTo && replyTo.commentId })
       return result.data
     } catch (err) {
       wx.showToast({

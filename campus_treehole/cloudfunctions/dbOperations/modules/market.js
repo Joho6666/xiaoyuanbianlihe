@@ -108,7 +108,11 @@ function createMarketModule({ db, _, cloud, helpers }) {
   }
 
   // 3. 获取商品留言评论
-  async function getMarketComments(goodsId) {
+  async function getMarketComments(goodsId, openid) {
+    const parent = (await db.collection('market_goods').doc(goodsId).get()).data
+    if (!parent || parent.status !== 'active') return { code: -1, msg: '内容不存在或已下架' }
+    if (openid && await contentDetailBlocked(openid, parent._openid)) return { code: -1, msg: '无法访问该内容' }
+
     try {
       const res = await db.collection('market_comments').where({
         goodsId,
@@ -227,6 +231,10 @@ function createMarketModule({ db, _, cloud, helpers }) {
 
   // 6. 收藏/取消收藏商品
   async function toggleFavorGoods(openid, goodsId) {
+    const parent = (await db.collection('market_goods').doc(goodsId).get()).data
+    if (!parent || parent.status !== 'active') return { code: -1, msg: '内容不存在或已下架' }
+    if (openid && await contentDetailBlocked(openid, parent._openid)) return { code: -1, msg: '无法访问该内容' }
+
     const actor = await getUserForAction(openid, { requireActive: true })
     const existing = await db.collection('market_favors').where({
       _openid: openid, goodsId
@@ -267,6 +275,10 @@ function createMarketModule({ db, _, cloud, helpers }) {
 
   // 7. 我想要该商品
   async function wantMarketGoods(openid, goodsId) {
+    const parent = (await db.collection('market_goods').doc(goodsId).get()).data
+    if (!parent || parent.status !== 'active') return { code: -1, msg: '内容不存在或已下架' }
+    if (openid && await contentDetailBlocked(openid, parent._openid)) return { code: -1, msg: '无法访问该内容' }
+
     await getUserForAction(openid, { requireActive: true })
     const wantId = makeDeterministicId('want', openid, goodsId)
     const existingDoc = await db.collection('market_wants').doc(wantId).get().catch(() => ({ data: null }))
@@ -379,7 +391,15 @@ function createMarketModule({ db, _, cloud, helpers }) {
     const safety = await validateUserContent({ openid, text: content })
     if (!safety.pass) return { code: safety.code, msg: safety.reason }
 
-    const replyTo = data.replyTo || null
+    const parentCommentId = data.parentCommentId
+    let replyTo = null
+    if (parentCommentId) {
+      const parent = (await db.collection('market_comments').doc(parentCommentId).get()).data
+      if (!parent || parent.status !== 'active' || parent.goodsId !== goodsId || await contentDetailBlocked(openid, parent._openid)) {
+        return { code: -1, msg: '无法回复该留言' }
+      }
+      replyTo = { commentId: parentCommentId, openid: parent._openid, nickname: parent.nickname || '同学' }
+    }
     const newComment = {
       _openid: openid,
       goodsId,
@@ -389,7 +409,6 @@ function createMarketModule({ db, _, cloud, helpers }) {
       numericId: user.numericId || '',
       replyTo: replyTo ? {
         commentId: replyTo.commentId,
-        openid: replyTo.openid,
         nickname: replyTo.nickname || '同学'
       } : null,
       status: 'active',
