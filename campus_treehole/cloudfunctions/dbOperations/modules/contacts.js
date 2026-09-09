@@ -36,7 +36,14 @@ module.exports = function createContactsModule({ db, _, helpers }) {
       return !!post && ['open', 'in_progress'].includes(post.status)
     }
     if (grant.type === 'BUDDY') return !!(await read('buddy_posts', grant.sourceId))
-    if (grant.type === 'HEART') return !!(await read('heart_matches', grant.sourceId))
+    if (grant.type === 'HEART') {
+      if (!(await read('heart_matches', grant.sourceId))) return false
+      const [aProfile, bProfile] = await Promise.all([
+        read('heart_profiles', idOf(a)),
+        read('heart_profiles', idOf(b))
+      ])
+      return !!(aProfile && aProfile.enabled && bProfile && bProfile.enabled)
+    }
     if (grant.type === 'BRIDGE') {
       const validLanguage = user => user && user.languageProfile && Array.isArray(user.languageProfile.nativeLanguages) && user.languageProfile.nativeLanguages.length && Array.isArray(user.languageProfile.targetLanguages) && user.languageProfile.targetLanguages.length
       return validLanguage(a) && validLanguage(b)
