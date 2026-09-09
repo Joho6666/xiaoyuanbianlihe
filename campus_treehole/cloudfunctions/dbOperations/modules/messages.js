@@ -1,5 +1,6 @@
 // modules/messages.js - 消息、私信与互动通知业务模块
 // 负责一对一聊天、会话列表、未读统计与系统/订阅通知推送
+const { publicId } = require('../shared/public-data')
 
 function createMessagesModule({ db, _, cloud, helpers }) {
   const {
@@ -75,7 +76,7 @@ function createMessagesModule({ db, _, cloud, helpers }) {
       const msg = convMap[otherId]
       const user = userMap[otherId] || {}
       return {
-        targetOpenid: otherId,
+        targetUserId: user.internalUserId || publicId(otherId),
         targetNickName: user.nickName || '未知用户',
         targetAvatar: user.avatarUrl || '/images/avatar_default.png',
         lastMessage: formatConversationMessage(msg),
@@ -164,11 +165,6 @@ function createMessagesModule({ db, _, cloud, helpers }) {
       return { code: -1, msg: '无法与对方发送私信' }
     }
 
-    if (typeof helpers.authorizeHeartMessage === 'function') {
-      const allowed = await helpers.authorizeHeartMessage(user, targetRes.data[0])
-      if (!allowed) return { code: -1, msg: '双方感兴趣后才能发起心动私聊' }
-    }
-
     const type = typeof data.type === 'string' ? data.type : 'text'
     const allowedTypes = ['text', 'emoji', 'image', 'voice', 'post_share', 'goods_share']
     if (!allowedTypes.includes(type)) return { code: -1, msg: '不支持的消息类型' }
@@ -248,7 +244,9 @@ function createMessagesModule({ db, _, cloud, helpers }) {
           sceneType: 'dm',
           actorName,
           summary,
-          page: `/pages/chat/chat?openid=${openid}&nickname=${encodeURIComponent(actorName)}`
+          // OpenID is an internal transport identifier only. Notification routes
+          // must use the public user id and are resolved server-side on arrival.
+          page: `/pages/chat/chat?targetUserId=${encodeURIComponent(targetRes.data[0].internalUserId || publicId(targetOpenid))}`
         })
       }
     }

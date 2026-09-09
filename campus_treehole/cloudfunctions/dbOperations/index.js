@@ -268,7 +268,7 @@ function getMessagesModule() {
         checkBannedWords,
         wxTextCheck,
         wxImageCheck,
-        authorizeHeartMessage: (a,b) => getHeartModule().authorizeHeartMessage(a,b),
+        publicId,
         triggerSubscribeNotify,
         trimSnippet,
         conversationBlocked: (a, b) => getSafetyModule().conversationBlocked(a, b),
@@ -284,7 +284,7 @@ function getMessagesModule() {
 const createHeartModule = require('./modules/heart')
 let heartModuleInstance
 function getHeartModule() {
-  if (!heartModuleInstance) heartModuleInstance = createHeartModule({db, _, helpers: {
+  if (!heartModuleInstance) heartModuleInstance = createHeartModule({db, _, cloud, helpers: {
     getUserForAction, checkBannedWords, wxTextCheck, wxImageBatchCheck,
     findAuthorsHiddenByBlockRelation: (a,ids) => getSafetyModule().findAuthorsHiddenByBlockRelation(a,ids),
     conversationBlocked: (a,b) => getSafetyModule().conversationBlocked(a,b)

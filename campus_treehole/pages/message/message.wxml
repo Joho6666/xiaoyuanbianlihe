@@ -60,9 +60,9 @@
         <view
           class="conv-item {{item.isUnread ? 'conv-item-unread' : ''}}"
           wx:for="{{conversations}}"
-          wx:key="targetOpenid"
+          wx:key="targetUserId"
           bindtap="onChatTap"
-          data-openid="{{item.targetOpenid}}"
+          data-user-id="{{item.targetUserId}}"
           data-nickname="{{item.targetNickName}}"
         >
           <view class="conv-avatar {{item.isUnread ? 'conv-avatar-unread' : ''}}">

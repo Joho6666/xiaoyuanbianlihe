@@ -470,7 +470,7 @@ Page({
   onViewMyProfile() {
     const oid = app.globalData.openid
     if (!oid) return
-    wx.navigateTo({ url: `/pages/profile/profile?openid=${encodeURIComponent(oid)}` })
+    wx.navigateTo({ url: `/pages/profile/profile?userId=${encodeURIComponent(oid)}` })
   },
 
   onEditProfile() {

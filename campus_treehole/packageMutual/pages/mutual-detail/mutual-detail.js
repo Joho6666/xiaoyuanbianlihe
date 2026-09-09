@@ -111,7 +111,7 @@ Page({
   contactAuthor() {
     if (!this.data.post || !this.data.post.userId) return
     wx.navigateTo({
-      url: `/pages/chat/chat?targetOpenid=${this.data.post.userId}&title=${encodeURIComponent(this.data.post.author.nickName || '发布者')}`
+      url: `/pages/chat/chat?targetUserId=${encodeURIComponent(this.data.post.userId)}&title=${encodeURIComponent(this.data.post.author.nickName || '发布者')}`
     })
   }
 })

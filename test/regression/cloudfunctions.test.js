@@ -688,7 +688,8 @@ describe('Cloud Function Modules Regression Tests', () => {
     const convsRes = await messages.getConversations('user_mock_001')
     assert.strictEqual(convsRes.code, 0)
     assert.strictEqual(convsRes.data.length, 1)
-    assert.strictEqual(convsRes.data[0].targetOpenid, 'user_peer')
+    assert.match(convsRes.data[0].targetUserId, /^[0-9a-f-]{36}$/i)
+    assert.strictEqual(convsRes.data[0].targetOpenid, undefined, 'conversation response must not expose OpenID')
   })
 
   test('Posts Module: addPost and toggleLikePost', async () => {

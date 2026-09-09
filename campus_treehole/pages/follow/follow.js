@@ -201,10 +201,10 @@ Page({
         ? `&shareType=${encodeURIComponent(this.data.shareType)}&shareId=${encodeURIComponent(this.data.shareId)}&autoShare=${encodeURIComponent(this.data.autoShare || '')}`
         : ''
       wx.navigateTo({
-        url: `/pages/chat/chat?openid=${encodeURIComponent(openid)}&nickname=${encodeURIComponent(nickname)}${extra}`
+        url: `/pages/chat/chat?targetUserId=${encodeURIComponent(openid)}&nickname=${encodeURIComponent(nickname)}${extra}`
       })
     } else {
-      wx.navigateTo({ url: `/pages/profile/profile?openid=${encodeURIComponent(openid)}` })
+      wx.navigateTo({ url: `/pages/profile/profile?userId=${encodeURIComponent(openid)}` })
     }
   },
 
@@ -216,7 +216,7 @@ Page({
       ? `&shareType=${encodeURIComponent(this.data.shareType)}&shareId=${encodeURIComponent(this.data.shareId)}&autoShare=${encodeURIComponent(this.data.autoShare || '')}`
       : ''
     wx.navigateTo({
-      url: `/pages/chat/chat?openid=${encodeURIComponent(openid)}&nickname=${encodeURIComponent(nickname)}${extra}`
+      url: `/pages/chat/chat?targetUserId=${encodeURIComponent(openid)}&nickname=${encodeURIComponent(nickname)}${extra}`
     })
   },
 
@@ -276,7 +276,7 @@ Page({
       ? `&shareType=${encodeURIComponent(this.data.shareType)}&shareId=${encodeURIComponent(this.data.shareId)}&autoShare=${encodeURIComponent(this.data.autoShare || '')}`
       : ''
     wx.navigateTo({
-      url: `/pages/chat/chat?openid=${encodeURIComponent(openid)}&nickname=${encodeURIComponent(nickname)}${extra}`
+      url: `/pages/chat/chat?targetUserId=${encodeURIComponent(openid)}&nickname=${encodeURIComponent(nickname)}${extra}`
     })
   }
 })

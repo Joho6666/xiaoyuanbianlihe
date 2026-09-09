@@ -559,7 +559,7 @@ Page({
       }
       return
     }
-    wx.navigateTo({ url: `/pages/profile/profile?openid=${encodeURIComponent(openid)}` })
+    wx.navigateTo({ url: `/pages/profile/profile?userId=${encodeURIComponent(openid)}` })
   },
 
   onCommentFocus() {

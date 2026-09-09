@@ -184,7 +184,7 @@ Page({
 
   onSellerTap() {
     if (this.data.goods && this.data.goods.userId) {
-      wx.navigateTo({ url: `/pages/profile/profile?openid=${encodeURIComponent(this.data.goods.userId)}` })
+      wx.navigateTo({ url: `/pages/profile/profile?userId=${encodeURIComponent(this.data.goods.userId)}` })
     }
   },
 
@@ -229,7 +229,7 @@ Page({
     if (this.data.goods) {
       const g = this.data.goods
       wx.navigateTo({
-        url: `/pages/chat/chat?openid=${encodeURIComponent(g.userId)}&nickname=${encodeURIComponent(g.nickname || '卖家')}&shareType=${encodeURIComponent('goods')}&shareId=${encodeURIComponent(this.data.goodsId)}&autoShare=${encodeURIComponent('1')}`
+        url: `/pages/chat/chat?targetUserId=${encodeURIComponent(g.userId)}&nickname=${encodeURIComponent(g.nickname || '卖家')}&shareType=${encodeURIComponent('goods')}&shareId=${encodeURIComponent(this.data.goodsId)}&autoShare=${encodeURIComponent('1')}`
       })
     }
   },

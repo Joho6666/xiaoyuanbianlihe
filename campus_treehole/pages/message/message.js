@@ -31,7 +31,7 @@ function formatInteractionText(item) {
 
 function conversationsSignature(list) {
   return (list || []).map((c) => [
-    c._id || c.targetOpenid || '',
+    c._id || c.targetUserId || '',
     c.lastMessageId || '',
     c.lastTime || '',
     c.unreadCount || 0,
@@ -273,11 +273,11 @@ Page({
   },
 
   onChatTap(e) {
-    const openid = e.currentTarget.dataset.openid
-    if (!openid) return
+    const userId = e.currentTarget.dataset.userId
+    if (!userId) return
     const nickname = e.currentTarget.dataset.nickname || ''
     wx.navigateTo({
-      url: `/pages/chat/chat?openid=${encodeURIComponent(openid)}&nickname=${encodeURIComponent(nickname)}`
+      url: `/pages/chat/chat?targetUserId=${encodeURIComponent(userId)}&nickname=${encodeURIComponent(nickname)}`
     })
   },
 
@@ -285,7 +285,7 @@ Page({
     const { targetType, targetId, postId, goodsId, fromOpenid } = e.currentTarget.dataset
     if (!targetType) return
     if (targetType === 'user' && fromOpenid) {
-      wx.navigateTo({ url: `/pages/profile/profile?openid=${encodeURIComponent(fromOpenid)}` })
+      wx.navigateTo({ url: `/pages/profile/profile?userId=${encodeURIComponent(fromOpenid)}` })
       return
     }
     if (targetType === 'goods' && (goodsId || targetId)) {

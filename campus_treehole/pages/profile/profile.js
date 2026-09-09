@@ -289,7 +289,7 @@ Page({
     }
     const user = this.data.user
     wx.navigateTo({
-      url: `/pages/chat/chat?openid=${encodeURIComponent(this.data.targetOpenid)}&nickname=${encodeURIComponent(user.nickName || '')}`
+      url: `/pages/chat/chat?targetUserId=${encodeURIComponent(this.data.targetOpenid)}&nickname=${encodeURIComponent(user.nickName || '')}`
     })
   },
 

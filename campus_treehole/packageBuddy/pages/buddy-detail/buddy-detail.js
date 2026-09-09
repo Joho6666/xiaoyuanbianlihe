@@ -141,7 +141,7 @@ Page({
     if (!targetId) return
     const name = (this.data.post.author && this.data.post.author.nickName) || '发起人'
     wx.navigateTo({
-      url: `/pages/chat/chat?targetOpenid=${targetId}&targetUserId=${targetId}&title=${encodeURIComponent(name)}`
+      url: `/pages/chat/chat?targetUserId=${encodeURIComponent(targetId)}&title=${encodeURIComponent(name)}`
     })
   },
 
@@ -149,7 +149,7 @@ Page({
     const { id, name } = e.currentTarget.dataset
     if (!id) return
     wx.navigateTo({
-      url: `/pages/chat/chat?targetOpenid=${id}&targetUserId=${id}&title=${encodeURIComponent(name || '搭子成员')}`
+      url: `/pages/chat/chat?targetUserId=${encodeURIComponent(id)}&title=${encodeURIComponent(name || '搭子成员')}`
     })
   },
 

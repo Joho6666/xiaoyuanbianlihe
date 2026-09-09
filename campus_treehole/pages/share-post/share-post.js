@@ -169,7 +169,7 @@ Page({
       ? `&shareType=${encodeURIComponent(this.data.shareType)}&shareId=${encodeURIComponent(this.data.shareId)}&autoShare=${encodeURIComponent(this.data.autoShare || '')}`
       : ''
     wx.navigateTo({
-      url: `/pages/chat/chat?openid=${encodeURIComponent(openid)}&nickname=${encodeURIComponent(nickname)}${extra}`
+      url: `/pages/chat/chat?targetUserId=${encodeURIComponent(openid)}&nickname=${encodeURIComponent(nickname)}${extra}`
     })
   }
 })

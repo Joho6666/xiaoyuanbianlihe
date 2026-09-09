@@ -43,7 +43,7 @@ Page({
   onOpenProfile(e) {
     const openid = e.currentTarget.dataset.openid
     if (!openid) return
-    wx.navigateTo({ url: `/pages/profile/profile?openid=${encodeURIComponent(openid)}` })
+    wx.navigateTo({ url: `/pages/profile/profile?userId=${encodeURIComponent(openid)}` })
   },
 
   onUnblock(e) {

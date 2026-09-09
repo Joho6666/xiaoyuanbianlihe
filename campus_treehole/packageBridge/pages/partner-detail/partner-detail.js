@@ -43,7 +43,7 @@ Page({
     const targetId = this.data.partner.userId || this.data.partner.id || this.data.partner.openid
     if (!targetId) return
     wx.navigateTo({
-      url: `/pages/chat/chat?targetOpenid=${targetId}&targetUserId=${targetId}&title=${encodeURIComponent(this.data.partner.nickName || '语伴')}`
+      url: `/pages/chat/chat?targetUserId=${encodeURIComponent(targetId)}&title=${encodeURIComponent(this.data.partner.nickName || '语伴')}`
     })
   }
 })

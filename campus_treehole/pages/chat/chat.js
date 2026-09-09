@@ -1366,6 +1366,6 @@ Page({
   },
 
   onViewProfile() {
-    wx.navigateTo({ url: `/pages/profile/profile?openid=${encodeURIComponent(this.data.targetOpenid)}` })
+    wx.navigateTo({ url: `/pages/profile/profile?userId=${encodeURIComponent(this.data.targetOpenid)}` })
   }
 })
