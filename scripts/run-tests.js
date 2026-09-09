@@ -6,6 +6,13 @@ console.log('🚀 校园便利盒 · 统一底座自动化测试套件')
 console.log('====================================================')
 
 const testFiles = [
+  path.join(__dirname, '..', 'test', 'regression', 'heart-safety.test.js'),
+  path.join(__dirname, '..', 'test', 'regression', 'beta-access.test.js'),
+  path.join(__dirname, '..', 'test', 'regression', 'heart-profile.test.js'),
+  path.join(__dirname, '..', 'test', 'regression', 'heart-like.test.js'),
+  path.join(__dirname, '..', 'test', 'regression', 'fate-card.test.js'),
+  path.join(__dirname, '..', 'test', 'regression', 'heart-privacy.test.js'),
+
   path.join(__dirname, '..', 'test', 'regression', 'school-isolation.test.js'),
   path.join(__dirname, '..', 'test', 'regression', 'campus-now-and-expiry.test.js'),
   path.join(__dirname, '..', 'test', 'regression', 'public-data.test.js'),
@@ -22,7 +29,8 @@ let failed = 0
 
 for (const file of testFiles) {
   try {
-    require(file)
+    const result = require('child_process').spawnSync(process.execPath, [file], {stdio:'inherit'})
+    if (result.status !== 0) throw new Error('Test process failed: ' + file)
   } catch (err) {
     console.error(`\n[FATAL] 执行测试套件异常: ${file}`)
     console.error(err)

@@ -1,0 +1,8 @@
+const assert=require('assert');const {fixture}=require('../helpers/heart-fixture')
+;(async()=>{const f=await fixture(),a=await f.add('openid_secret_a','male'),b=await f.add('openid_secret_b');await f.add('foreign','female','glmu-lingui')
+let r=await f.heart.getHeartDiscover(a.id);assert.equal(r.data.rows.length,1);assert.equal(r.data.rows[0].userId,b.userId)
+const text=JSON.stringify(r);for(const forbidden of ['openid_secret','ownerDocId','interestedIn','gender','_openid','unionid','email'])assert(!text.includes(forbidden),forbidden)
+await f.heart.toggleFateCardOptIn(b.id,{allowFateCard:false});assert.equal((await f.heart.drawFateCard(a.id)).data.empty,true)
+await f.heart.updateHeartProfile(b.id,{...b.profile,interestedIn:['female']});assert.equal((await f.heart.getHeartDiscover(a.id)).data.rows.length,0)
+await f.heart.disableHeartProfile(b.id);assert.equal((await f.heart.getHeartDiscover(a.id)).data.rows.length,0)
+console.log('PASS Heart privacy: explicit whitelist, cross-school isolation, reciprocal preference, opt-out')})().catch(e=>{console.error(e);process.exitCode=1})

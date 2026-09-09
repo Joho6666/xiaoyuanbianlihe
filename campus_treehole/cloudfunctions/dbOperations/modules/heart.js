@@ -86,7 +86,8 @@ module.exports = function createHeartModule({ db, _, helpers, now = Date.now, ra
     if(!me||!me.enabled) throw Error('请先开启心动模式')
     const currentCampus=getCampusById(user.campusId)
     if(!currentCampus||currentCampus.schoolId!==me.schoolId) throw Error('学校已变更，请更新心动资料')
-    const rows=(await db.collection('heart_profiles').where({enabled:true,schoolId:me.schoolId}).orderBy('userId','asc').skip((page-1)*100).limit(100).get()).data||[]
+    const windowSize=fate?100:15
+    const rows=(await db.collection('heart_profiles').where({enabled:true,schoolId:me.schoolId}).orderBy('userId','asc').skip((page-1)*windowSize).limit(windowSize).get()).data||[]
     const eligibleRows=rows.filter(p=>eligible(me,p,fate))
     async function batch(collection,field,ids){
       const result=[]
@@ -109,7 +110,7 @@ module.exports = function createHeartModule({ db, _, helpers, now = Date.now, ra
       const recentBuddy=buddies.filter(b=>b.authorId===u._openid&&['OPEN','FULL'].includes(b.status)&&new Date(b.endAt||new Date(b.startAt).getTime()+7200000).getTime()>now()).sort((a,b)=>new Date(b.startAt)-new Date(a.startAt))[0]
       result.push({...sanitizeHeartProfile(p),...score(me,p,now()),...(recentBuddy?{recentBuddy:{postId:recentBuddy._id,title:recentBuddy.title,category:recentBuddy.category}}:{})})
     }
-    return {rows:result,hasMore:rows.length===100}
+    return {rows:result,hasMore:rows.length===windowSize}
   }
   async function getHeartDiscover(openid,data={}) {
     const user=await actor(openid),page=Math.max(1,Math.floor(Number(data.page)||1))

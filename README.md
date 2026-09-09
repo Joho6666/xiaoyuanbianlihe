@@ -152,3 +152,7 @@ npm run test:integration:memory
   必须由真实双微信号（测试学生 A 与 测试学生 B）跑通完整闭环：
   **扫码进桂航 → A 发羽毛球搭子 → B 浏览并申请 → A 事务审批通过 → B 点击私信发起人 → 双方私聊成功**。
   任何一步受阻，不得对外发布。
+
+## 同频 · 心动（开发中）
+
+新增自愿18+心动资料、同校双向喜欢、每日缘分卡（普通1张、开发Premium 3张），复用安全与私信。Payment: NOT IMPLEMENTED。实现说明见 [产品文档](docs/heart/HEART_PRODUCT_SPEC.md)、[规则](docs/heart/FATE_CARD_RULES.md)和[隐私与发布阻断项](docs/heart/HEART_PRIVACY.md)。自动CI与内存smoke通过不代表Beta Ready；真实CloudBase和双微信验收仍为NOT RUN。
