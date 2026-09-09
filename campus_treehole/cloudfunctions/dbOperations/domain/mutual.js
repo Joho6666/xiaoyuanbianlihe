@@ -32,7 +32,7 @@ const LOST_CATEGORIES = [
 function createMutualPostEntity({
   id,
   authorId,
-  schoolId = 'guit',
+  schoolId = 'guat',
   campusId = '',
   type = MUTUAL_TYPES.HELP,
   category = 'other',

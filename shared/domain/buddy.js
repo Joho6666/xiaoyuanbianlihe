@@ -58,7 +58,7 @@ function createBuddyPostEntity({
   return {
     id: id || `buddy_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
     authorId,
-    schoolId: schoolId || 'guit',
+    schoolId: schoolId || 'guat',
     campusId,
     category,
     title: String(title).trim(),

@@ -1,5 +1,5 @@
 const assert=require('assert');const {fixture}=require('../helpers/heart-fixture')
-;(async()=>{const f=await fixture(),a=await f.add('openid_secret_a','male'),b=await f.add('openid_secret_b');await f.add('foreign','female','glmu-lingui')
+;(async()=>{const f=await fixture(),a=await f.add('openid_secret_a','male'),b=await f.add('openid_secret_b');await assert.rejects(()=>f.add('foreign','female','glmu-lingui'),/该学校暂未开放心动模式/)
 let r=await f.heart.getHeartDiscover(a.id);assert.equal(r.data.rows.length,1);assert.equal(r.data.rows[0].userId,b.userId)
 const text=JSON.stringify(r);for(const forbidden of ['openid_secret','ownerDocId','interestedIn','gender','_openid','unionid','email'])assert(!text.includes(forbidden),forbidden)
 await f.heart.toggleFateCardOptIn(b.id,{allowFateCard:false});assert.equal((await f.heart.drawFateCard(a.id)).data.empty,true)
