@@ -20,6 +20,29 @@ module.exports = function createContactsModule({ db, _, helpers }) {
     const reverse = await db.collection('messages').where({ fromOpenid: b, toOpenid: a }).limit(1).get()
     return (reverse.data || []).length > 0
   }
+  async function grantsForPair(a, b) {
+    const userIds = [idOf(a), idOf(b)].sort()
+    return (await db.collection('contact_grants').where({ userIds: _.all(userIds) }).limit(50).get()).data || []
+  }
+  async function grantIsActive(grant, a, b) {
+    if (!grant || grant.active !== true) return false
+    if (grant.expiresAt && new Date(grant.expiresAt).getTime() <= Date.now()) return false
+    if (grant.type === 'MARKET') {
+      const goods = await read('market_goods', grant.sourceId)
+      return !!goods && goods.status === 'active' && [a._openid, b._openid].includes(goods._openid)
+    }
+    if (grant.type === 'MUTUAL') {
+      const post = await read('mutual_posts', grant.sourceId)
+      return !!post && ['open', 'in_progress'].includes(post.status)
+    }
+    if (grant.type === 'BUDDY') return !!(await read('buddy_posts', grant.sourceId))
+    if (grant.type === 'HEART') return !!(await read('heart_matches', grant.sourceId))
+    if (grant.type === 'BRIDGE') {
+      const validLanguage = user => user && user.languageProfile && Array.isArray(user.languageProfile.nativeLanguages) && user.languageProfile.nativeLanguages.length && Array.isArray(user.languageProfile.targetLanguages) && user.languageProfile.targetLanguages.length
+      return validLanguage(a) && validLanguage(b)
+    }
+    return true
+  }
   async function createGrant(actor, target, type, sourceId) {
     if (!actor || !target || actor._openid === target._openid) return fail('无效联系对象')
     if (await conversationBlocked(actor._openid, target._openid)) return fail('无法与该用户建立联系')
@@ -35,15 +58,9 @@ module.exports = function createContactsModule({ db, _, helpers }) {
     return createGrant(await userByOpenid(actorOpenid), await userByOpenid(targetOpenid), type, sourceId)
   }
   async function activeGrant(a, b) {
-    const userIds = [idOf(a), idOf(b)].sort()
-    const rows = (await db.collection('contact_grants').where({ userIds: _.all(userIds), active: true }).limit(20).get()).data || []
+    const rows = await grantsForPair(a, b)
     for (const grant of rows) {
-      if (grant.expiresAt && new Date(grant.expiresAt).getTime() <= Date.now()) continue
-      if (grant.type === 'MARKET') {
-        const goods = await read('market_goods', grant.sourceId)
-        if (!goods || goods.status !== 'active') continue
-      }
-      return true
+      if (await grantIsActive(grant, a, b)) return true
     }
     return false
   }
@@ -51,7 +68,14 @@ module.exports = function createContactsModule({ db, _, helpers }) {
     const actor = await getUserForAction(actorOpenid, { requireActive: true })
     const target = await userByOpenid(targetOpenid)
     if (!target || await conversationBlocked(actorOpenid, targetOpenid)) return false
-    return await hasHistory(actorOpenid, targetOpenid) || await activeGrant(actor, target)
+    const grants = await grantsForPair(actor, target)
+    const grantStates = await Promise.all(grants.map(grant => grantIsActive(grant, actor, target)))
+    if (grantStates.some(Boolean)) return true
+    // A source-bound grant must not become a permanent bypass after its source
+    // is closed (for example, a delisted Market item). Pure historical chats
+    // without a source grant remain continuable.
+    if (grants.some(grant => ['MARKET', 'MUTUAL', 'BUDDY', 'HEART', 'BRIDGE'].includes(grant.type))) return false
+    return hasHistory(actorOpenid, targetOpenid)
   }
   async function startExistingContact(openid, { targetOpenid }) {
     const actor = await getUserForAction(openid, { requireActive: true })

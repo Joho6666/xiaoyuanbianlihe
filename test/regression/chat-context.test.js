@@ -20,6 +20,7 @@ const createMessages = require('../../campus_treehole/cloudfunctions/dbOperation
   })
   assert.notEqual((await f.heart.startHeartChat(a.id, { targetUserId: b.userId })).code, 0, 'Heart source requires a match')
   assert.equal((await messages.sendMessage(a.id, { targetOpenid: b.id, content: 'no source', type: 'text' })).code, 403)
+  await f.db.collection('mutual_posts').doc('chat-context').set({ data: { _openid: b.id, status: 'open' } })
   await f.contacts.grantForOpenids(a.id, b.id, 'MUTUAL', 'chat-context')
   for (const content of ['market contact', 'buddy accepted contact', 'existing conversation']) {
     assert.equal((await messages.sendMessage(a.id, { targetOpenid: b.id, content, type: 'text' })).code, 0, content)
