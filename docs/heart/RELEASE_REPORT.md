@@ -6,7 +6,7 @@
 
 | 项目 | 结果 | 证据 |
 |---|---|---|
-| GitHub Actions Node 18/20 | PASS | 提交 `8ac294b` 的 [CI run](https://github.com/Joho6666/xiaoyuanbianlihe/actions/runs/34362464536)：Node 18.x 与 20.x 的 `npm ci`、验证、语法检查和统一测试均成功。后续提交必须重新核验对应 HEAD。 |
+| GitHub Actions Node 18/20 | PASS | 提交 `e9c754f` 的 [CI run](https://github.com/Joho6666/xiaoyuanbianlihe/actions/runs/34364451414)：Node 18.x 与 20.x 的 `npm ci`、验证、语法检查和统一测试均成功。后续提交必须重新核验对应 HEAD。 |
 | 本地统一 CI | PASS | `npm run ci`：学校、领域、配置、144 个 JS 语法文件和统一回归套件均通过；不替代远端 CI。 |
 | 内存集成 Smoke | PASS | `npm run test:integration:memory` 通过；这不是 CloudBase PASS。 |
 | Heart Chat Isolation | PASS（内存） | Market/Buddy/历史私信不要求 Heart Match；`startHeartChat` 仍要求 Match，Block 拒绝全部来源。 |
@@ -27,9 +27,10 @@
 |---|---|---|
 | Heart 集合 provisioning | NOT RUN | 尚未提供独立 `TCB_ENV_ID`，未执行 `--apply`。 |
 | CloudBase Real Smoke | NOT RUN | Missing Test Environment Credentials；未写入任何 CloudBase 环境。 |
+| Real Image Content Security API | NOT RUN | 独立 Smoke 使用既有 Mock 审核器；不将其写为微信图片安全接口通过。 |
 | 测试环境 `dbOperations` 部署/health | NOT RUN | 缺少明确的独立环境 ID 与临时会话凭证。 |
 | CloudBase 控制台索引 | MANUAL ACTION REQUIRED | 必须在独立环境按索引计划创建并留存核对结果。 |
-| 微信 DevTools build/preview | NOT RUN | 服务端口未启用，不能将 CLI 存在或退出码当作编译成功。 |
+| 微信 DevTools build/preview | NOT RUN | CLI 位于 `D:\微信web开发者工具\cli.bat` 且可调用，但 9420–9422 未发现监听服务端口；不能将 CLI 存在或退出码当作编译成功。 |
 | 双账号真机 A/B | NOT RUN | 尚未完成两台已登录测试设备闭环。 |
 
 Payment：**NOT IMPLEMENTED**。未修改 `main`、未部署生产云函数、未向生产数据库或 Storage 写入测试数据。
