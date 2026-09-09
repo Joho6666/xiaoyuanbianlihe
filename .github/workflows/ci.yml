@@ -27,6 +27,9 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
 
+      - name: Install root development dependencies
+        run: npm ci
+
       - name: Validate Mini Program Configuration & Routing
         run: node scripts/validate-config.js
 

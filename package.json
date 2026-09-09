@@ -27,5 +27,8 @@
     "unibridge"
   ],
   "author": "Joho",
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "wx-server-sdk": "~2.6.3"
+  }
 }

@@ -50,12 +50,16 @@ result = spawnSync(process.execPath, ['scripts/cloud-cli.js', 'fn', 'deploy', 'd
 assert.equal(result.status, 1)
 assert.match(output(result), /CLOUDBASE_ENV_ID is required/)
 
-result = spawnSync('powershell.exe', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', 'scripts/deploy-cloud-functions.ps1'], {
-  cwd: path.join(root, 'campus_treehole'),
-  encoding: 'utf8',
-  env: { ...process.env, CLOUDBASE_ENV_ID: '' }
-})
-assert.notEqual(result.status, 0)
-assert.match(output(result), /CLOUDBASE_ENV_ID is required/)
+if (process.platform === 'win32') {
+  result = spawnSync('powershell.exe', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', 'scripts/deploy-cloud-functions.ps1'], {
+    cwd: path.join(root, 'campus_treehole'),
+    encoding: 'utf8',
+    env: { ...process.env, CLOUDBASE_ENV_ID: '' }
+  })
+  assert.notEqual(result.status, 0)
+  assert.match(output(result), /CLOUDBASE_ENV_ID is required/)
+} else {
+  console.log('SKIP Windows PowerShell deployment wrapper on non-Windows')
+}
 
 console.log('PASS CloudBase safety: credential boundaries, production rejection, and explicit deployment target')
