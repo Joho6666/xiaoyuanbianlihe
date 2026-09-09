@@ -15,7 +15,8 @@ Page({
     keyword: ''
   },
 
-  onLoad() {
+  onLoad(options = {}) {
+    if (this.data.categories.some(c => c.id === options.category)) this.setData({currentCategory: options.category})
     this._shownCampus = app.getSelectedCampusId()
     this.loadPosts(true)
   },

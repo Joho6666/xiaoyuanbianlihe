@@ -46,7 +46,9 @@
       "pages": [
         "pages/buddy-square/buddy-square",
         "pages/buddy-detail/buddy-detail",
-        "pages/buddy-create/buddy-create"
+        "pages/buddy-create/buddy-create",
+        "pages/heart-home/heart-home",
+        "pages/heart-profile-edit/heart-profile-edit"
       ]
     },
     {

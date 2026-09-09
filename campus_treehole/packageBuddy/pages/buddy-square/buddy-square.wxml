@@ -1,5 +1,6 @@
 <!-- packageBuddy/pages/buddy-square/buddy-square.wxml - 同频搭子广场 -->
 <view class="square-container">
+  <view class="status-tabs"><text class="status-tab status-tab-active">找搭子</text><navigator class="status-tab" url="../heart-home/heart-home">心动 ❤️</navigator></view>
   <!-- 顶栏搜索 -->
   <view class="search-header">
     <view class="search-box">

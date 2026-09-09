@@ -30,8 +30,8 @@
           <view class="status-tag tag-active">热门组局</view>
         </view>
         <view class="card-body">
-          <text class="channel-name">同频搭子</text>
-          <text class="channel-desc">约运动 · 自习 · 逛街 · 组局</text>
+          <text class="channel-name">同频</text>
+          <text class="channel-desc">找搭子 · 遇见心动的人</text>
           <view class="channel-tags">
             <text class="mini-tag">羽毛球</text>
             <text class="mini-tag">自习</text>

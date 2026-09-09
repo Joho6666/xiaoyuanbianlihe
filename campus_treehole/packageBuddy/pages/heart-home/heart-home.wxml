@@ -1,0 +1,23 @@
+<view class="heart-page">
+  <view class="mode-tabs"><text bindtap="buddies">找搭子</text><text class="selected">心动 ❤️</text></view>
+  <view class="heading">认真认识一个同校的人</view><view class="muted">从共同兴趣开始，慢慢了解彼此。</view>
+  <view wx:if="{{error}}" class="notice">{{error}}<button bindtap="refresh" size="mini">重试</button></view>
+  <view wx:if="{{loading}}" class="empty">正在加载…</view>
+  <view wx:elif="{{!profile.enabled}}" class="card"><view class="title">开启心动模式</view><view class="muted">你的心动资料仅用于向符合条件的同校用户推荐。仅面向18岁及以上用户，双方感兴趣后才能发起心动聊天。</view><button class="primary" bindtap="edit">填写资料并选择开启</button></view>
+  <block wx:else>
+    <view class="tabs"><button size="mini" data-tab="discover" bindtap="switchTab">发现</button><button size="mini" data-tab="fate" bindtap="switchTab">今日缘分</button><button size="mini" data-tab="matches" bindtap="switchTab">已匹配</button></view>
+    <view wx:if="{{tab === 'fate'}}" class="card">
+      <view class="title">🎁 今日缘分</view><view class="muted">今日剩余 {{quota.remaining}} / {{quota.limit}}</view>
+      <block wx:if="{{!fate}}"><view class="muted">{{emptyFate ? '今天暂时没有新的同频同学。随着更多同学加入，会有新的缘分出现。' : quota.remaining > 0 ? '看看今天有没有与你兴趣相近的同学。' : '今天的缘分已经遇见啦，明天再来看看。'}}</view><button wx:if="{{quota.remaining > 0}}" bindtap="draw" disabled="{{busy}}" class="primary">发现今日缘分</button></block>
+      <block wx:elif="{{!revealed}}"><view class="title">一位可能和你同频的同校同学</view><view>匹配度 {{fate.matchScore}}%</view><view class="tags"><text wx:for="{{fate.sharedInterests}}" wx:key="*this">{{item}}</text></view><button bindtap="reveal" class="primary">揭开缘分卡</button></block>
+      <block wx:else><image class="photo" src="{{fate.photos[0]}}" mode="aspectFill" lazy-load/><view class="title">{{fate.nickname}} · {{fate.grade}}</view><view>{{fate.campusName}}</view><view>{{fate.bio}}</view><view class="muted">最近想做：{{fate.lookingFor}}</view><view class="tags"><text wx:for="{{fate.interestIds}}" wx:key="*this">{{item}}</text></view><view class="actions"><button data-id="{{fate.userId}}" data-action="pass" bindtap="react" disabled="{{busy}}">暂时没感觉</button><button data-id="{{fate.userId}}" data-action="like" bindtap="react" disabled="{{busy}}" class="primary">❤️ 感兴趣</button><button size="mini" data-id="{{fate.userId}}" bindtap="safety">⋯</button></view></block>
+    </view>
+    <block wx:else>
+      <view wx:for="{{cards}}" wx:key="userId" class="card"><button class="more" size="mini" data-id="{{item.userId}}" bindtap="safety">⋯</button><image class="photo" src="{{item.photos[0]}}" mode="aspectFill" lazy-load/><view class="title">{{item.nickname}} · {{item.grade}}</view><view class="muted">{{item.campusName}}</view><view>{{item.bio}}</view><view class="tags"><text wx:for="{{item.interestIds}}" wx:for-item="interest" wx:key="*this">{{interest}}</text></view><view>共同兴趣 {{item.sharedInterests.length}} 个</view><view class="muted">最近想做：{{item.lookingFor}}</view><view wx:if="{{item.recentBuddy}}" class="muted">TA 最近的公开搭子：{{item.recentBuddy.title}}<button size="mini" data-id="{{item.recentBuddy.postId}}" bindtap="viewBuddy">查看搭子</button></view><view wx:if="{{tab==='discover'}}" class="actions"><button data-id="{{item.userId}}" data-action="pass" bindtap="react" disabled="{{busy}}">暂时没感觉</button><button data-id="{{item.userId}}" data-action="like" bindtap="react" disabled="{{busy}}" class="primary">❤️ 感兴趣</button></view><button wx:else class="primary" data-id="{{item.userId}}" bindtap="chat">去聊天</button></view>
+      <view wx:if="{{!cards.length}}" class="empty">{{tab==='matches' ? '双方感兴趣后，你们会出现在这里。' : '今天暂时没有新的同频同学。随着更多同学加入，会有新的缘分出现。'}}<button bindtap="edit">完善兴趣</button><button bindtap="buddies">去找搭子</button></view><button wx:if="{{hasMore}}" bindtap="more" disabled="{{busy}}">继续发现</button>
+    </block>
+    <view wx:if="{{match}}" class="card"><view class="title">❤️ 你们同频了</view><view>你们有 {{match.sharedInterests.length}} 个共同兴趣</view><view class="tags"><text wx:for="{{match.sharedInterests}}" wx:key="*this">{{item}}</text></view><button bindtap="chat" class="primary">去聊天</button><button bindtap="buddies">看看可以一起做什么</button></view>
+    <view class="card muted">同频 Plus · 权益预览<view>测试权益：每日3张缘分卡（当前账号 {{quota.limit}} 张）</view><view>高级筛选、谁喜欢我：即将开放</view><view>暂不提供购买</view></view>
+    <button bindtap="edit">编辑心动资料与缘分卡授权</button><button bindtap="disable">退出心动模式</button>
+  </block>
+</view>
