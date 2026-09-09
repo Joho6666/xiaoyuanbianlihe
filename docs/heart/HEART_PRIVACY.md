@@ -6,7 +6,7 @@ Heart public card 使用明确字段白名单，仅public userId、昵称、校�
 
 ## 部署清单（必须先准备独立开发环境）
 
-集合：heart_profiles、heart_likes、heart_matches、fate_card_usage、fate_card_history、heart_events、heart_block_fences。全部客户端读写权限应为false，仅服务端云函数访问。user_blocks/reports/users/messages及buddy相关集合继续复用。
+集合：heart_profiles、heart_likes、heart_matches、fate_card_usage、fate_card_history、heart_events、heart_block_fences、contact_grants。全部客户端读写权限应为false，仅服务端云函数访问。contact_grants 仅保存排序后的公开 userIds、type、sourceId、active 与时间字段，不保存 OpenID；user_blocks/reports/users/messages及buddy相关集合继续复用。
 
 索引：heart_profiles(enabled,schoolId,userId)、heart_matches(userIds数组)、fate_card_history(userId,createdAt desc)，以及既有user_blocks双方查询索引。确定性_id用于其他查找。照片存储规则须核验仅本人可写，并验证对外可读策略符合用户授权；退出只停止新推荐，无法收回对方已保存照片。
 

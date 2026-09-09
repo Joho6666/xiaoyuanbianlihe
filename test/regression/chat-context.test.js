@@ -15,10 +15,12 @@ const createMessages = require('../../campus_treehole/cloudfunctions/dbOperation
       wxTextCheck: async () => ({ pass: true }), wxImageCheck: async () => ({ pass: true }),
       triggerSubscribeNotify: async payload => notifications.push(payload), trimSnippet: value => value,
       conversationBlocked: async (left, right) => f.blocked.has([left, right].sort().join(':')), safeUserBlocksQuery: async run => run(), USER_BLOCKS: 'user_blocks', checkAdmin: async () => false,
-      publicId: value => value
+      publicId: value => value, contactAllowed: f.contacts.ensureContact
     }
   })
   assert.notEqual((await f.heart.startHeartChat(a.id, { targetUserId: b.userId })).code, 0, 'Heart source requires a match')
+  assert.equal((await messages.sendMessage(a.id, { targetOpenid: b.id, content: 'no source', type: 'text' })).code, 403)
+  await f.contacts.grantForOpenids(a.id, b.id, 'MUTUAL', 'chat-context')
   for (const content of ['market contact', 'buddy accepted contact', 'existing conversation']) {
     assert.equal((await messages.sendMessage(a.id, { targetOpenid: b.id, content, type: 'text' })).code, 0, content)
   }

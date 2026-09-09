@@ -11,5 +11,6 @@ This plan is derived from `modules/heart.js`; it is not proof that an index has 
 | `fate_card_history` | `userId` | `createdAt DESC` | `userId ASC, createdAt DESC` | Thirty-day repeat exclusion |
 | `heart_events` | `userId` | `createdAt DESC` | `userId ASC, createdAt DESC` | Beta metric export |
 | `heart_block_fences` | deterministic `_id` | none | default `_id` | Block race fence |
+| `contact_grants` | `userIds` array membership, `active` | none | `userIds` array-membership + `active ASC` (manual validation) | Server-owned first-contact authorization; Market grants are revalidated against the source item. |
 
 Run `npm run provision:heart -- --env <test-env>` first. With `--apply`, collection creation is attempted only for a non-production environment; indexes remain a manual checklist unless the installed CloudBase CLI can provide a verified index-create result.

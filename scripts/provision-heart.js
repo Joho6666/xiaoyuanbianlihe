@@ -7,7 +7,7 @@ const args = process.argv.slice(2)
 const envIndex = args.indexOf('--env')
 const envId = envIndex >= 0 ? normalizeEnvId(args[envIndex + 1]) : ''
 const apply = args.includes('--apply')
-const collections = ['heart_profiles', 'heart_likes', 'heart_matches', 'fate_card_usage', 'fate_card_history', 'heart_events', 'heart_block_fences']
+const collections = ['heart_profiles', 'heart_likes', 'heart_matches', 'fate_card_usage', 'fate_card_history', 'heart_events', 'heart_block_fences', 'contact_grants']
 const indexes = [
   'heart_profiles: enabled ASC, schoolId ASC, userId ASC',
   'heart_matches: userIds (array membership)',

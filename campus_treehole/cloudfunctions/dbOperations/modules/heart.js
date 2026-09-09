@@ -298,6 +298,10 @@ module.exports = function createHeartModule({ db, _, cloud, helpers, now = Date.
     const user = await heartActor(openid)
     const pair = await pairValid(db, user, data.targetUserId)
     if (!pair || !await read(db, 'heart_matches', pairId(user.userId, data.targetUserId))) return fail('双方感兴趣后才能聊天')
+    if (typeof helpers.createContactGrant === 'function') {
+      const grant = await helpers.createContactGrant(user._openid, pair.bu._openid, 'HEART', pairId(user.userId, data.targetUserId))
+      if (grant.code !== 0) return grant
+    }
     await log('heart_chat_started', user.userId)
     return ok({ targetUserId: data.targetUserId })
   }

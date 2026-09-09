@@ -254,6 +254,19 @@ function getUsersModule() {
 }
 
 const createMessagesModule = require('./modules/messages')
+const createContactsModule = require('./modules/contacts')
+let contactsModuleInstance = null
+function getContactsModule() {
+  if (!contactsModuleInstance) contactsModuleInstance = createContactsModule({
+    db,
+    _,
+    helpers: {
+      getUserForAction,
+      conversationBlocked: (a, b) => getSafetyModule().conversationBlocked(a, b)
+    }
+  })
+  return contactsModuleInstance
+}
 let messagesModuleInstance = null
 function getMessagesModule() {
   if (!messagesModuleInstance) {
@@ -274,7 +287,8 @@ function getMessagesModule() {
         conversationBlocked: (a, b) => getSafetyModule().conversationBlocked(a, b),
         USER_BLOCKS: 'user_blocks',
         safeUserBlocksQuery: (run) => getSafetyModule().safeUserBlocksQuery(run),
-        checkAdmin
+        checkAdmin,
+        contactAllowed: (a, b) => getContactsModule().ensureContact(a, b)
       }
     })
   }
@@ -287,7 +301,8 @@ function getHeartModule() {
   if (!heartModuleInstance) heartModuleInstance = createHeartModule({db, _, cloud, helpers: {
     getUserForAction, checkBannedWords, wxTextCheck, wxImageBatchCheck,
     findAuthorsHiddenByBlockRelation: (a,ids) => getSafetyModule().findAuthorsHiddenByBlockRelation(a,ids),
-    conversationBlocked: (a,b) => getSafetyModule().conversationBlocked(a,b)
+    conversationBlocked: (a,b) => getSafetyModule().conversationBlocked(a,b),
+    createContactGrant: (a, b, type, sourceId) => getContactsModule().grantForOpenids(a, b, type, sourceId)
   }})
   return heartModuleInstance
 }
@@ -687,7 +702,7 @@ exports.main = async (event, context) => {
       ? getOpenidFromContext()
       : getOpenid(context)
 
-    const identityActions = new Set(['sendMessage','getMessages','getUserInfo','getBlockRelation','toggleUserBlock','toggleFollow','getUserPosts','getUserMarketGoods'])
+    const identityActions = new Set(['sendMessage','getMessages','getUserInfo','getBlockRelation','toggleUserBlock','toggleFollow','getUserPosts','getUserMarketGoods','startBridgeContact','startExistingContact','startBuddyContact'])
     if (identityActions.has(action)) {
       const identifier = data.targetUserId || data.userId || data.targetOpenid
       if (identifier) {
@@ -696,6 +711,7 @@ exports.main = async (event, context) => {
       }
     }
     if (["getHeartProfile", "updateHeartProfile", "disableHeartProfile", "getHeartDiscover", "likeHeartProfile", "passHeartProfile", "getHeartMatches", "drawFateCard", "getFateCardQuota", "toggleFateCardOptIn", "startHeartChat"].includes(action)) return await getHeartModule()[action](openid, data)
+    if (['startMarketContact', 'startBuddyContact', 'startMutualContact', 'startBridgeContact', 'startExistingContact'].includes(action)) return await getContactsModule()[action](openid, data)
     switch (action) {
       // ===== 帖子动态相关 (modules/posts.js) =====
       case 'getPosts':

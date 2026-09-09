@@ -18,6 +18,7 @@ const testFiles = [
   path.join(__dirname, '..', 'test', 'regression', 'heart-storage.test.js'),
   path.join(__dirname, '..', 'test', 'regression', 'heart-ban.test.js'),
   path.join(__dirname, '..', 'test', 'regression', 'cloudbase-safety.test.js'),
+  path.join(__dirname, '..', 'test', 'regression', 'contact-grants.test.js'),
 
   path.join(__dirname, '..', 'test', 'regression', 'school-isolation.test.js'),
   path.join(__dirname, '..', 'test', 'regression', 'campus-now-and-expiry.test.js'),

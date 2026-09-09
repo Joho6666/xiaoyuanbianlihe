@@ -15,7 +15,8 @@ function createMessagesModule({ db, _, cloud, helpers }) {
     conversationBlocked,
     USER_BLOCKS,
     safeUserBlocksQuery,
-    checkAdmin
+    checkAdmin,
+    contactAllowed = async () => true
   } = helpers
 
   function formatConversationMessage(msg) {
@@ -105,6 +106,7 @@ function createMessagesModule({ db, _, cloud, helpers }) {
   }
 
   async function getMessages(openid, targetOpenid, sinceTime) {
+    await getUserForAction(openid, { requireActive: true })
     const normalizedTarget = typeof targetOpenid === 'string' ? targetOpenid.trim() : ''
     if (!normalizedTarget) return { code: -1, msg: '缺少会话对象' }
     if (normalizedTarget === openid) return { code: -1, msg: '无效会话对象' }
@@ -112,6 +114,7 @@ function createMessagesModule({ db, _, cloud, helpers }) {
     if (await conversationBlocked(openid, normalizedTarget)) {
       return { code: -1, msg: '无法查看与该用户的私信' }
     }
+    if (!(await contactAllowed(openid, normalizedTarget))) return { code: 403, msg: '当前没有可用的联系权限' }
 
     const sinceTs = Number(sinceTime)
     const hasSinceTime = Number.isFinite(sinceTs) && sinceTs > 0
@@ -213,6 +216,7 @@ function createMessagesModule({ db, _, cloud, helpers }) {
       const wxImageRes = await wxImageCheck(openid, normalizedFileId)
       if (!wxImageRes.pass) return { code: -2, msg: '图片消息未通过安全审核' }
     }
+    if (!(await contactAllowed(openid, targetOpenid))) return { code: 403, msg: '当前没有可用的联系权限' }
 
     const msg = {
       _openid: openid,
