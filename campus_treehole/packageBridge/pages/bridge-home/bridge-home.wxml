@@ -1,5 +1,6 @@
 <!-- packageBridge/pages/bridge-home/bridge-home.wxml - 友桥语伴广场 -->
 <view class="bridge-container">
+  <campus-page-header title="友桥" subtitle="校园语言互助，从母语和目标语言开始" />
   <!-- 顶栏与中英切换 -->
   <view class="top-nav">
     <view class="nav-brand">

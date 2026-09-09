@@ -1,5 +1,6 @@
 <!-- packageBridge/pages/partner-detail/partner-detail.wxml - 语伴详细资料 -->
 <view class="partner-detail-container" wx:if="{{!loading && partner}}">
+  <campus-page-header title="语伴详情" subtitle="母语、目标语言与共同兴趣" />
   <!-- 顶部个人资料卡 -->
   <view class="profile-header-card">
     <image class="avatar" src="{{partner.avatarUrl || '/images/avatar_default.png'}}" mode="aspectFill" />

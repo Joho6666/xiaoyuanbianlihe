@@ -1,5 +1,6 @@
 <!-- packageBridge/pages/language-setup/language-setup.wxml - 友桥极简双语档案设置 -->
 <view class="setup-container">
+  <campus-page-header title="完善语言资料" subtitle="两步开启校园语伴匹配" />
   <!-- 引导头部 -->
   <view class="hero-header">
     <view class="hero-title">想找语言伙伴吗？</view>
