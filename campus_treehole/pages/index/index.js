@@ -4,10 +4,10 @@ const INDEX_CACHE_KEY = 'index_feed_cache_v1'
 const INDEX_CACHE_TTL = 5 * 60 * 1000
 
 /** 与 index.wxss 瀑布流一致：左右 padding 16rpx + 列间距 16rpx */
-const WF_COL_WIDTH_RPX = (750 - 16 * 2 - 16) / 2
+const WF_COL_WIDTH_RPX = (750 - 24 * 2 - 16) / 2
 /** 封面展示高度上下限（过长图居中裁剪，过扁图加高并裁两侧） */
 const COVER_HEIGHT_MIN_RPX = 220
-const COVER_HEIGHT_MAX_RPX = 900
+const COVER_HEIGHT_MAX_RPX = 540
 const COVER_HEIGHT_FALLBACK_RPX = 420
 const FIRST_PAINT_POSTS = 8
 /** 与 app.js getPosts pageSize 保持一致：不足一页就视为没有更多 */
@@ -790,6 +790,16 @@ Page({
     return null
   },
 
+  _patchPost(id, fields) {
+    const patch = {}
+    for (const collection of ['posts', 'leftCol', 'rightCol']) {
+      const index = this.data[collection].findIndex(post => post._id === id)
+      if (index < 0) continue
+      for (const [field, value] of Object.entries(fields)) patch[`${collection}[${index}].${field}`] = value
+    }
+    if (Object.keys(patch).length) this.setData(patch)
+  },
+
   async onFavorTap(e) {
     const id = e.currentTarget.dataset.id
     if (!id) return
@@ -800,22 +810,22 @@ Page({
     const loc = this._findCardPath(id)
     const snapshot = loc ? !!this.data[loc.col][loc.idx].isFavored : null
     if (loc) {
-      this.setData({ [`${loc.col}[${loc.idx}].isFavored`]: !snapshot })
+      this._patchPost(id, { isFavored: !snapshot })
     }
     this._favorBusyMap[id] = true
     try {
       const next = await app.toggleFavorPost(id)
       if (next === null) {
-        if (loc) this.setData({ [`${loc.col}[${loc.idx}].isFavored`]: snapshot })
+        if (loc) this._patchPost(id, { isFavored: snapshot })
         return
       }
       // 服务器结果与乐观一致就不重设，省一次 setData
       if (loc && next !== !snapshot) {
-        this.setData({ [`${loc.col}[${loc.idx}].isFavored`]: next })
+        this._patchPost(id, { isFavored: next })
       }
       wx.showToast({ title: next ? '已收藏' : '已取消收藏', icon: 'none' })
     } catch (err) {
-      if (loc) this.setData({ [`${loc.col}[${loc.idx}].isFavored`]: snapshot })
+      if (loc) this._patchPost(id, { isFavored: snapshot })
       wx.showToast({ title: '操作失败', icon: 'none' })
     } finally {
       delete this._favorBusyMap[id]
@@ -835,9 +845,9 @@ Page({
       : null
     if (loc && snapshot) {
       const optimisticLiked = !snapshot.isLiked
-      this.setData({
-        [`${loc.col}[${loc.idx}].isLiked`]: optimisticLiked,
-        [`${loc.col}[${loc.idx}].likes`]: Math.max(0, snapshot.likes + (optimisticLiked ? 1 : -1))
+      this._patchPost(id, {
+        isLiked: optimisticLiked,
+        likes: Math.max(0, snapshot.likes + (optimisticLiked ? 1 : -1))
       })
     }
     this._likeBusyMap[id] = true
@@ -845,9 +855,9 @@ Page({
       const result = await app.toggleLikePost(id)
       if (!result) {
         if (loc && snapshot) {
-          this.setData({
-            [`${loc.col}[${loc.idx}].isLiked`]: snapshot.isLiked,
-            [`${loc.col}[${loc.idx}].likes`]: snapshot.likes
+          this._patchPost(id, {
+            isLiked: snapshot.isLiked,
+            likes: snapshot.likes
           })
         }
         return
@@ -856,16 +866,16 @@ Page({
         let newLikes = snapshot.likes
         if (result.isLiked && !snapshot.isLiked) newLikes = snapshot.likes + 1
         else if (!result.isLiked && snapshot.isLiked) newLikes = Math.max(0, snapshot.likes - 1)
-        this.setData({
-          [`${loc.col}[${loc.idx}].isLiked`]: result.isLiked,
-          [`${loc.col}[${loc.idx}].likes`]: newLikes
+        this._patchPost(id, {
+          isLiked: result.isLiked,
+          likes: newLikes
         })
       }
     } catch (err) {
       if (loc && snapshot) {
-        this.setData({
-          [`${loc.col}[${loc.idx}].isLiked`]: snapshot.isLiked,
-          [`${loc.col}[${loc.idx}].likes`]: snapshot.likes
+        this._patchPost(id, {
+          isLiked: snapshot.isLiked,
+          likes: snapshot.likes
         })
       }
       wx.showToast({ title: '操作失败', icon: 'none' })

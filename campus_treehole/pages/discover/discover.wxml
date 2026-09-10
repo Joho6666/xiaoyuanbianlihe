@@ -1,15 +1,15 @@
 <view class="discover-container">
   <campus-page-header title="发现" subtitle="从正在发生的校园生活开始" campus="{{campusName || '当前校区'}}" bindcampus="onChangeCampus" />
-  <view class="discover-intro"><text class="discover-eyebrow">CAMPUS SERVICES</text><text class="discover-title">找一件现在就能做的事</text><text class="discover-subtitle">所有入口只展示当前已开放的校园服务</text></view>
+  
   <view class="service-grid">
-    <view class="discover-card buddy" bindtap="onOpenTongpin"><text class="card-icon">◉</text><text class="card-title">同频搭子</text><text class="card-desc">先看要做什么，再遇见同路人</text></view>
-    <view class="discover-card heart" wx:if="{{heartEnabled}}" bindtap="onOpenHeart"><text class="card-icon">♥</text><text class="card-title">Heart</text><text class="card-desc">看看新的同频同学</text></view>
-    <view class="discover-card market" bindtap="goToMarket"><text class="card-icon">□</text><text class="card-title">校园集市</text><text class="card-desc">把闲置留在校园里流转</text></view>
-    <view class="discover-card bridge" bindtap="onOpenUniBridge"><text class="card-icon">文</text><text class="card-title">友桥</text><text class="card-desc">母语、目标语言与共同兴趣</text></view>
-    <view class="discover-card mutual" bindtap="onOpenMutual"><text class="card-icon">+</text><text class="card-title">校园互助</text><text class="card-desc">发起或回应一份求助</text></view>
-    <view class="discover-card lost" bindtap="onOpenLost"><text class="card-icon">⌕</text><text class="card-title">失物招领</text><text class="card-desc">让物品尽快回到主人身边</text></view>
-    <view class="discover-card events" bindtap="goToEvents"><text class="card-icon">✦</text><text class="card-title">校园活动</text><text class="card-desc">查看正在报名的真实活动</text></view>
-    <view class="discover-card treehole" bindtap="goToTreehole"><text class="card-icon">…</text><text class="card-title">校园动态</text><text class="card-desc">回到帖子流看看大家在聊什么</text></view>
+    <view class="discover-card buddy" bindtap="onOpenTongpin"><image class="card-icon" src="/images/services/buddy.svg" mode="aspectFit" /><text class="card-title">同频搭子</text><text class="card-desc">先看要做什么，再遇见同路人</text></view>
+    <view class="discover-card heart" wx:if="{{heartEnabled}}" bindtap="onOpenHeart"><image class="card-icon" src="/images/services/heart.svg" mode="aspectFit" /><text class="card-title">Heart</text><text class="card-desc">看看新的同频同学</text></view>
+    <view class="discover-card market" bindtap="goToMarket"><image class="card-icon" src="/images/services/market.svg" mode="aspectFit" /><text class="card-title">校园集市</text><text class="card-desc">把闲置留在校园里流转</text></view>
+    <view class="discover-card bridge" bindtap="onOpenUniBridge"><image class="card-icon" src="/images/services/bridge.svg" mode="aspectFit" /><text class="card-title">友桥</text><text class="card-desc">母语、目标语言与共同兴趣</text></view>
+    <view class="discover-card mutual" bindtap="onOpenMutual"><image class="card-icon" src="/images/services/mutual.svg" mode="aspectFit" /><text class="card-title">校园互助</text><text class="card-desc">发起或回应一份求助</text></view>
+    <view class="discover-card lost" bindtap="onOpenLost"><image class="card-icon" src="/images/services/lost.svg" mode="aspectFit" /><text class="card-title">失物招领</text><text class="card-desc">让物品尽快回到主人身边</text></view>
+    <view class="discover-card events" bindtap="goToEvents"><image class="card-icon" src="/images/services/events.svg" mode="aspectFit" /><text class="card-title">校园活动</text><text class="card-desc">查看正在报名的真实活动</text></view>
+    <view class="discover-card treehole" bindtap="goToTreehole"><image class="card-icon" src="/images/services/more.svg" mode="aspectFit" /><text class="card-title">校园动态</text><text class="card-desc">回到帖子流看看大家在聊什么</text></view>
   </view>
   <view class="discover-footer">服务内容随学校开放范围而变化</view>
 </view>

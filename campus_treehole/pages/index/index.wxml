@@ -65,7 +65,6 @@
       <view class="brand-row">
         <view class="brand-lockup">
           <text class="brand-name">校园便利盒</text>
-          <text class="brand-subtitle">Campus Box</text>
         </view>
         <view class="nav-campus-row" bindtap="onOpenCampusPicker">
           <text class="nav-campus-name">{{selectedCampusName || '选择校区'}}</text>
@@ -97,8 +96,8 @@
   </view>
 
   <view class="campus-hero" bindtap="onOpenActivityZone">
+    <image class="hero-campus-image" src="/images/banner_library.png" mode="aspectFill" />
     <view class="hero-copy">
-      <text class="hero-eyebrow">CAMPUS SERVICE</text>
       <text class="hero-title">把校园生活放进一个盒子</text>
       <text class="hero-desc">动态、搭子、闲置与互助，都在当前校区发生</text>
       <text class="hero-link">查看校园活动 →</text>
@@ -109,14 +108,14 @@
   <view class="service-panel">
     <view class="service-panel-head"><text>校园服务</text><text>从正在发生的事开始</text></view>
     <view class="home-service-grid">
-      <view class="home-service-item tone-buddy" bindtap="onOpenBuddy"><text class="home-service-icon">◉</text><text>找搭子</text></view>
-      <view class="home-service-item tone-heart" wx:if="{{heartEnabled}}" bindtap="onOpenHeart"><text class="home-service-icon">♥</text><text>Heart</text></view>
-      <view class="home-service-item tone-market" bindtap="onOpenMarket"><text class="home-service-icon">□</text><text>二手</text></view>
-      <view class="home-service-item tone-bridge" bindtap="onOpenBridge"><text class="home-service-icon">文</text><text>友桥</text></view>
-      <view class="home-service-item tone-mutual" bindtap="onOpenMutual"><text class="home-service-icon">+</text><text>互助</text></view>
-      <view class="home-service-item tone-lost" bindtap="onOpenLost"><text class="home-service-icon">⌕</text><text>失物</text></view>
-      <view class="home-service-item tone-events" bindtap="onOpenActivityZone"><text class="home-service-icon">✦</text><text>活动</text></view>
-      <view class="home-service-item tone-more" bindtap="onOpenDiscover"><text class="home-service-icon">···</text><text>更多服务</text></view>
+      <view class="home-service-item tone-buddy" bindtap="onOpenBuddy"><image class="home-service-icon" src="/images/services/buddy.svg" mode="aspectFit" /><text>找搭子</text></view>
+      <view class="home-service-item tone-heart" wx:if="{{heartEnabled}}" bindtap="onOpenHeart"><image class="home-service-icon" src="/images/services/heart.svg" mode="aspectFit" /><text>Heart</text></view>
+      <view class="home-service-item tone-market" bindtap="onOpenMarket"><image class="home-service-icon" src="/images/services/market.svg" mode="aspectFit" /><text>二手</text></view>
+      <view class="home-service-item tone-bridge" bindtap="onOpenBridge"><image class="home-service-icon" src="/images/services/bridge.svg" mode="aspectFit" /><text>友桥</text></view>
+      <view class="home-service-item tone-mutual" bindtap="onOpenMutual"><image class="home-service-icon" src="/images/services/mutual.svg" mode="aspectFit" /><text>互助</text></view>
+      <view class="home-service-item tone-lost" bindtap="onOpenLost"><image class="home-service-icon" src="/images/services/lost.svg" mode="aspectFit" /><text>失物</text></view>
+      <view class="home-service-item tone-events" bindtap="onOpenActivityZone"><image class="home-service-icon" src="/images/services/events.svg" mode="aspectFit" /><text>活动</text></view>
+      <view class="home-service-item tone-more" bindtap="onOpenDiscover"><image class="home-service-icon" src="/images/services/more.svg" mode="aspectFit" /><text>更多服务</text></view>
     </view>
   </view>
 
@@ -187,6 +186,10 @@
     </scroll-view>
   </view>
 
+  <view class="nav-tabs feed-switch">
+    <text class="nav-tab {{feedType === 'discover' ? 'nav-tab-active' : ''}}" bindtap="onFeedSwitch" data-type="discover">发现</text>
+    <text class="nav-tab {{feedType === 'follow' ? 'nav-tab-active' : ''}}" bindtap="onFeedSwitch" data-type="follow">关注</text>
+  </view>
   <scroll-view class="category-scroll" scroll-x enable-flex show-scrollbar="{{false}}">
     <view class="category-track">
       <view

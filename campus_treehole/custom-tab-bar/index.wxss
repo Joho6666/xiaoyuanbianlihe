@@ -1,6 +1,6 @@
 /* 与 app.wxss page 令牌对齐（自定义组件内需显式声明） */
 .tab-bar {
-  --primary: #426089;
+  --primary: #2F76FF;
   --primary-dim: #35547d;
   --on-primary: #f8f8ff;
   --accent: #c94a62;
@@ -40,20 +40,19 @@
 }
 
 .tab-center {
-  justify-content: flex-start;
-  padding-top: 6rpx;
+  justify-content: center;
 }
 
 /* ===== 中间发布按钮：Campus Blue 主操作 ===== */
 .center-btn {
-  width: 108rpx;
-  height: 88rpx;
+  width: 52rpx;
+  height: 52rpx;
   border-radius: 22rpx;
   background: linear-gradient(180deg, #5f83b4 0%, var(--primary-dim) 100%);
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-top: -40rpx;
+  margin-top: 0;
   box-shadow: 0 10rpx 28rpx rgba(66, 96, 137, 0.28);
   position: relative;
 }
