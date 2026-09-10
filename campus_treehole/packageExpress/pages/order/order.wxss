@@ -70,3 +70,27 @@
 .migration-prompt { padding: 18rpx; margin-top: 16rpx; border-radius: 18rpx; color: #55708f; background: #eaf3ff; font-size: 23rpx; }
 .migration-sub { display: block; margin-top: 6rpx; color: #8a98ab; font-size: 21rpx; }
 .migration-action { display: inline-block; padding: 8rpx 0; margin-top: 8rpx; color: #2f76ff; font-weight: 600; }
+.screenshot-import-entry { display: flex; align-items: center; padding: 18rpx 20rpx; margin-top: 16rpx; border: 2rpx solid #dbe9ff; border-radius: 20rpx; background: linear-gradient(90deg, #f4f8ff, #fff); }
+.screenshot-import-icon { display: flex; width: 54rpx; height: 54rpx; align-items: center; justify-content: center; margin-right: 14rpx; border-radius: 16rpx; color: #2f76ff; background: #e7f0ff; font-size: 30rpx; }
+.screenshot-import-copy { flex: 1; min-width: 0; }
+.screenshot-import-title, .screenshot-import-desc { display: block; }
+.screenshot-import-title { color: #1f3556; font-size: 25rpx; font-weight: 700; }
+.screenshot-import-desc { margin-top: 5rpx; color: #8493a7; font-size: 21rpx; }
+.screenshot-import-arrow { color: #2f76ff; font-size: 34rpx; }
+.import-stage { display: block; padding: 12rpx 4rpx 0; color: #2f76ff; font-size: 21rpx; text-align: center; }
+.import-sheet { max-height: 88vh; overflow-y: auto; }
+.import-summary { display: block; padding: 12rpx 0 16rpx; color: #75849a; font-size: 22rpx; }
+.import-failed { padding: 16rpx; margin-bottom: 14rpx; border-radius: 18rpx; color: #a86a28; background: #fff6e8; font-size: 21rpx; }
+.import-failed .sheet-add { margin-top: 12rpx; border-color: #e9b86f; color: #a86a28; }
+.import-candidate { padding: 18rpx; margin-bottom: 14rpx; border-radius: 20rpx; background: #fff; }
+.import-candidate-head, .import-count { display: flex; align-items: center; justify-content: space-between; }
+.import-candidate-head { color: #75849a; font-size: 21rpx; }
+.import-status { padding: 5rpx 10rpx; border-radius: 999rpx; font-size: 19rpx; }
+.import-status.matched { color: #2a8b62; background: #e5f7ef; }
+.import-status.review { color: #a86a28; background: #fff1d9; }
+.import-remove { padding: 4rpx 0 4rpx 14rpx; color: #c37b86; }
+.import-point-picker { display: block; margin-top: 12rpx; }
+.import-point-picker > view { min-height: 64rpx; padding: 0 18rpx; line-height: 64rpx; border-radius: 16rpx; color: #40536e; background: #f5f8fd; font-size: 23rpx; }
+.import-count { padding-top: 14rpx; color: #76859a; font-size: 21rpx; }
+.import-warning { display: block; padding-top: 10rpx; color: #b97935; font-size: 20rpx; }
+.import-sheet > .sheet-add { margin-top: 10rpx; margin-bottom: 4rpx; }

@@ -11,7 +11,7 @@
     <text class="express-label">配送时间</text><input class="express-input" placeholder="例如 21:00-22:00" value="{{form.deliveryWindow}}" data-key="deliveryWindow" bindinput="onInput" />
     <text class="express-label">快递点配置（可增删、排序、停用）</text><textarea class="express-textarea config-editor" value="{{form.pickupJson}}" data-key="pickupJson" bindinput="onInput" />
     <text class="express-label">宿舍配置（可增删、排序、停用）</text><textarea class="express-textarea config-editor" value="{{form.deliveryJson}}" data-key="deliveryJson" bindinput="onInput" />
-    <text class="express-note">快递点字段：id、name、shortName、deliveryCampus、address、openingHours、enabled、sortOrder。宿舍字段：id、name、enabled、dormAreas、buildings。历史订单使用名称快照。</text>
+    <text class="express-note">快递点字段：id、name、shortName、aliases（截图识别别名）、deliveryCampus、address、openingHours、enabled、sortOrder。宿舍字段：id、name、enabled、dormAreas、buildings。历史订单使用名称快照。</text>
     <text class="express-label">公告</text><textarea class="express-textarea" value="{{form.notice}}" data-key="notice" bindinput="onInput" />
     <view class="express-button" bindtap="onSave">{{saving ? '保存中…' : '保存设置'}}</view>
   </view>

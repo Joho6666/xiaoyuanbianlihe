@@ -22,7 +22,9 @@ Page({
     areaOptions: [], buildingOptions: [], selectedCampusIndex: -1, selectedAreaIndex: -1, selectedBuildingIndex: -1,
     inlineErrors: {}, saveDeliveryProfile: false,
     quote: null, clientRequestId: requestId(), loadError: false, loadErrorMsg: '',
-    form: { note: '' }, submitting: false, quoting: false
+    form: { note: '' }, submitting: false, quoting: false,
+    importing: false, importStage: '', showImportSheet: false, importCandidates: [], importFailedImages: [],
+    importSummary: { imageCount: 0, successImageCount: 0, candidateCount: 0, duplicateCount: 0 }
   },
   onLoad() { this.loadSettings() },
   onUnload() { if (this.quoteTimer) clearTimeout(this.quoteTimer) },
@@ -127,6 +129,112 @@ Page({
       groups.push({ pickupPointId: point.id, pickupPointName: point.name, pointIndex: (this.data.settings.pickupPoints || []).findIndex((item) => item.id === point.id), items: [emptyPickupItem()] })
       this.setData({ pickupGroups: groups }, () => { this.scheduleQuote(); setTimeout(() => this.clearPickupFocus(), 600) })
     } })
+  },
+  async onImportScreenshots() {
+    if (this.data.importing) return
+    const userInfo = app.globalData && app.globalData.userInfo
+    const internalUserId = userInfo && userInfo.internalUserId
+    if (!internalUserId) return wx.showToast({ title: '登录信息未准备好，请稍后重试', icon: 'none' })
+    let media
+    try {
+      media = await new Promise((resolve, reject) => wx.chooseMedia({ count: 9, mediaType: ['image'], sourceType: ['album', 'camera'], success: resolve, fail: reject }))
+    } catch (error) {
+      if (!/cancel/i.test(String(error && (error.errMsg || error.message) || ''))) wx.showToast({ title: '未选择截图', icon: 'none' })
+      return
+    }
+    const files = (media.tempFiles || []).filter((item) => item && item.tempFilePath)
+    if (!files.length) return wx.showToast({ title: '请选择至少一张截图', icon: 'none' })
+    const importRequestId = `express_import_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`
+    const uploadedImageFileIds = []
+    let serverCleanupStarted = false
+    this.setData({ importing: true, importStage: `正在上传 0/${files.length} 张截图`, importError: '' })
+    try {
+      for (let index = 0; index < files.length; index += 1) {
+        const ext = String(files[index].tempFilePath).toLowerCase().match(/\.(png|jpeg|jpg)$/)
+        const suffix = ext ? ext[1] : 'jpg'
+        const objectId = `${Date.now().toString(16)}-${Math.random().toString(16).slice(2, 10)}`
+        const upload = await wx.cloud.uploadFile({ cloudPath: `tmp/express-import/${internalUserId}/${importRequestId}/${objectId}.${suffix}`, filePath: files[index].tempFilePath })
+        if (!upload || !upload.fileID) throw new Error('截图上传失败')
+        uploadedImageFileIds.push(upload.fileID)
+        this.setData({ importStage: `正在上传 ${index + 1}/${files.length} 张截图` })
+      }
+      this.setData({ importStage: '正在识别取件信息…' })
+      const res = await app.callDB('recognizeExpressScreenshots', {
+        requestId: importRequestId,
+        imageFileIds: uploadedImageFileIds,
+        deliveryCampus: (this.data.selectedProfile && this.data.selectedProfile.deliveryCampus) || this.data.deliveryForm.deliveryCampus
+      })
+      serverCleanupStarted = true
+      const points = this.data.settings.pickupPoints || []
+      const candidates = (res.data && res.data.candidates || []).map((item) => ({
+        ...item,
+        pointIndex: points.findIndex((point) => point.id === item.pickupPointId),
+        editable: true
+      }))
+      this.setData({ showImportSheet: true, importCandidates: candidates, importFailedImages: res.data.failedImages || [], importSummary: res.data.summary || { imageCount: files.length, successImageCount: 0, candidateCount: candidates.length, duplicateCount: 0 }, importStage: '' })
+      if (!candidates.length && (res.data.failedImages || []).length) wx.showToast({ title: '截图识别失败，请重试', icon: 'none' })
+    } catch (error) {
+      wx.showToast({ title: error.msg || error.message || '截图识别失败', icon: 'none' })
+    } finally {
+      if (!serverCleanupStarted && uploadedImageFileIds.length && wx.cloud && typeof wx.cloud.deleteFile === 'function') {
+        try { await wx.cloud.deleteFile({ fileList: uploadedImageFileIds }) } catch (_) {}
+      }
+      this.setData({ importing: false })
+    }
+  },
+  onImportPointChange(e) {
+    const index = Number(e.currentTarget.dataset.index)
+    const pointIndex = Number(e.detail.value)
+    const point = (this.data.settings.pickupPoints || [])[pointIndex]
+    if (!point) return
+    const candidates = this.data.importCandidates.map((item, itemIndex) => itemIndex === index ? { ...item, pickupPointId: point.id, pickupPointName: point.name, pointIndex, matchStatus: 'MATCHED', warnings: (item.warnings || []).filter((warning) => !/^pickupPoint/.test(warning)) } : item)
+    this.setData({ importCandidates: candidates })
+  },
+  onImportCandidateInput(e) {
+    const index = Number(e.currentTarget.dataset.index)
+    const key = e.currentTarget.dataset.key
+    const candidates = this.data.importCandidates.map((item, itemIndex) => itemIndex === index ? { ...item, [key]: e.detail.value, matchStatus: key === 'pickupCode' && item.pickupPointId ? 'MATCHED' : item.matchStatus } : item)
+    this.setData({ importCandidates: candidates })
+  },
+  onImportCountChange(e) {
+    const index = Number(e.currentTarget.dataset.index); const delta = Number(e.currentTarget.dataset.delta)
+    const candidates = this.data.importCandidates.map((item, itemIndex) => itemIndex === index ? { ...item, packageCount: Math.min(20, Math.max(1, Number(item.packageCount || 1) + delta)) } : item)
+    this.setData({ importCandidates: candidates })
+  },
+  removeImportCandidate(e) {
+    const index = Number(e.currentTarget.dataset.index)
+    this.setData({ importCandidates: this.data.importCandidates.filter((_, itemIndex) => itemIndex !== index) })
+  },
+  closeImportSheet() { this.setData({ showImportSheet: false, importCandidates: [], importFailedImages: [], importStage: '' }) },
+  retryImportScreenshots() { this.closeImportSheet(); this.onImportScreenshots() },
+  confirmImport() {
+    const candidates = this.data.importCandidates.filter((item) => item && item.pickupCode)
+    if (!candidates.length) return wx.showToast({ title: '没有可导入的识别结果', icon: 'none' })
+    if (candidates.some((item) => item.matchStatus !== 'MATCHED' || !item.pickupPointId)) return wx.showToast({ title: '请先为待确认结果选择快递点', icon: 'none' })
+    const existingItems = this.flattenPickupItems().filter((item) => item.pickupPointId && item.pickupCode)
+    const mergedItems = existingItems.slice(); let skipped = 0
+    candidates.forEach((candidate) => {
+      const duplicate = mergedItems.some((item) => item.pickupPointId === candidate.pickupPointId && String(item.pickupCode).trim().toUpperCase() === String(candidate.pickupCode).trim().toUpperCase())
+      if (duplicate) { skipped += 1; return }
+      mergedItems.push({ pickupPointId: candidate.pickupPointId, pickupCode: String(candidate.pickupCode).trim(), packageCount: Number(candidate.packageCount) || 1 })
+    })
+    if (mergedItems.length > 10) return wx.showToast({ title: '一个订单最多添加 10 个取件码', icon: 'none' })
+    const packageTotal = mergedItems.reduce((sum, item) => sum + (Number(item.packageCount) || 0), 0)
+    if (packageTotal > 30) return wx.showToast({ title: '一个订单最多 30 件包裹', icon: 'none' })
+    const groups = []
+    mergedItems.forEach((item) => {
+      let group = groups.find((entry) => entry.pickupPointId === item.pickupPointId)
+      if (!group) {
+        const pointIndex = (this.data.settings.pickupPoints || []).findIndex((point) => point.id === item.pickupPointId)
+        const point = (this.data.settings.pickupPoints || [])[pointIndex]
+        group = { pickupPointId: item.pickupPointId, pickupPointName: point ? point.name : '', pointIndex, items: [] }
+        groups.push(group)
+      }
+      group.items.push({ ...emptyPickupItem(group.items.length + 1), pickupCode: item.pickupCode, packageCount: item.packageCount, focus: false })
+    })
+    if (!groups.length) groups.push(emptyPickupGroup())
+    this.setData({ pickupGroups: groups, showImportSheet: false, importCandidates: [], importFailedImages: [], importStage: '' }, () => this.scheduleQuote())
+    if (skipped) wx.showToast({ title: `已导入，跳过 ${skipped} 条重复结果`, icon: 'none' })
   },
   onChooseProfile() { this.setData({ showProfileSheet: true }) },
   closeProfileSheet() { this.setData({ showProfileSheet: false }) },
