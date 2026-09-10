@@ -30,6 +30,7 @@
   "author": "Joho",
   "license": "MIT",
   "devDependencies": {
+    "exceljs": "^4.4.0",
     "wx-server-sdk": "~2.6.3"
   }
 }

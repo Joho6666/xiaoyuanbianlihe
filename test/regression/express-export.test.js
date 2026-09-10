@@ -1,5 +1,5 @@
 const assert = require('assert')
-const ExcelJS = require('../../campus_treehole/cloudfunctions/dbOperations/node_modules/exceljs')
+const ExcelJS = require('exceljs')
 const createStaffModule = require('../../campus_treehole/cloudfunctions/dbOperations/modules/staff')
 const createExpressModule = require('../../campus_treehole/cloudfunctions/dbOperations/modules/express')
 const { STAFF_PERMISSIONS } = require('../../shared/domain/staff')
