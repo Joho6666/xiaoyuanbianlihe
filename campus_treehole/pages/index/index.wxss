@@ -1313,6 +1313,11 @@
 .express-home-amount { margin-left: 2rpx; font-size: 58rpx; line-height: 1; font-weight: 800; letter-spacing: -1rpx; }
 .express-home-unit { margin-left: 5rpx; color: #59739b; font-size: 23rpx; font-weight: 600; }
 .express-home-note { display: block; margin-top: 8rpx; color: #59739b; font-size: 21rpx; line-height: 1.5; }
+.express-home-closed { display: block; position: relative; z-index: 2; margin-top: 20rpx; color: #71809a; font-size: 24rpx; font-weight: 600; }
+.express-active-order { display: flex; align-items: center; justify-content: space-between; margin: -6rpx 28rpx 18rpx; padding: 18rpx 22rpx; border-radius: 20rpx; background: #fff; box-shadow: 0 6rpx 18rpx rgba(23,32,51,.05); }
+.express-active-label { display: block; color: #172033; font-size: 24rpx; font-weight: 700; }
+.express-active-address { display: block; margin-top: 5rpx; color: #7d899d; font-size: 21rpx; }
+.express-active-status { color: #2f76ff; font-size: 23rpx; font-weight: 700; }
 .express-home-art { position: absolute; z-index: 1; top: 64rpx; right: 10rpx; width: 250rpx; height: 170rpx; transform: rotate(-5deg); }
 .parcel-shadow { position: absolute; left: 20rpx; right: 8rpx; bottom: 4rpx; height: 24rpx; border-radius: 50%; background: rgba(50,86,136,.18); filter: blur(10rpx); }
 .parcel-box { position: absolute; left: 42rpx; bottom: 22rpx; width: 174rpx; height: 112rpx; border-radius: 8rpx; background: linear-gradient(145deg, #eebc79 0%, #d99247 100%); box-shadow: inset -14rpx -10rpx 20rpx rgba(153,83,24,.18), 0 13rpx 20rpx rgba(54,92,139,.16); transform: skewY(-3deg); }

@@ -1,1 +1,5 @@
 @import "../../common.wxss";
+.pickup-mode-bar { display: flex; align-items: center; justify-content: space-between; gap: 14rpx; margin: 0 0 18rpx; padding: 14rpx 18rpx; border-radius: 18rpx; color: #71809a; background: #eef5ff; font-size: 22rpx; }
+.pickup-mode-bar .express-filter { flex: none; padding: 10rpx 14rpx; background: #fff; }
+.pickup-check { flex: none; margin: 0 14rpx; color: #2f76ff; font-size: 40rpx; font-weight: 700; }
+.pickup-check.selected { color: #17855a; }

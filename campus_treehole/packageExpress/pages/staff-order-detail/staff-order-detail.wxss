@@ -1,1 +1,4 @@
 @import "../../common.wxss";
+.staff-pickup-card { background: #eef6ff; }
+.staff-pickup-code { display: block; margin: 8rpx 0; color: #172d50; font-size: 64rpx; line-height: 1.1; font-weight: 800; letter-spacing: 4rpx; }
+.staff-pickup-point { display: block; color: #2f76ff; font-size: 28rpx; font-weight: 700; }

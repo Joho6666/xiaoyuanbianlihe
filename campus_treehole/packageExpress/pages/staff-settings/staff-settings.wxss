@@ -1,1 +1,2 @@
 @import "../../common.wxss";
+.config-editor { min-height: 300rpx; padding: 18rpx; font-family: monospace; font-size: 22rpx; line-height: 1.5; }

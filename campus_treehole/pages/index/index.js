@@ -148,7 +148,8 @@ Page({
     expressCard: {
       acceptingOrders: false,
       priceText: '',
-      cutoffText: '当前校区服务状态'
+      cutoffText: '当前校区服务状态',
+      activeOrder: null
     }
   },
 
@@ -285,17 +286,18 @@ Page({
 
   async loadExpressCard() {
     if (!app.hasSelectedCampusInStorage()) {
-      this.setData({ expressCard: { acceptingOrders: false, priceText: '', cutoffText: '请选择校区后查看服务' } })
+      this.setData({ expressCard: { acceptingOrders: false, priceText: '', cutoffText: '请选择校区后查看服务', activeOrder: null } })
       return
     }
     try {
-      const res = await app.callDB('getExpressServiceConfig', { campusId: app.getSelectedCampusId() })
+      const [res, ordersRes] = await Promise.all([app.callDB('getExpressServiceConfig', { campusId: app.getSelectedCampusId() }), app.callDB('getMyExpressOrders', { pageSize: 5 }).catch(() => ({ data: [] }))])
       const config = (res && res.data) || {}
       const priceText = Number(config.basePriceCents) > 0 ? (Number(config.basePriceCents) / 100).toFixed(0) : ''
       const cutoffText = config.cutoffTime ? `今天 ${config.cutoffTime} 截单` : (config.acceptingOrders ? '当前校区可下单' : '服务暂未开放')
-      this.setData({ expressCard: { acceptingOrders: config.acceptingOrders === true, priceText, cutoffText } })
+      const active = ((ordersRes && ordersRes.data) || []).find((order) => ['WAIT_PICKUP', 'DELIVERING'].includes(order.orderStatus))
+      this.setData({ expressCard: { acceptingOrders: config.acceptingOrders === true, priceText, cutoffText, activeOrder: active ? { orderId: active._id, statusLabel: active.orderStatus === 'DELIVERING' ? '配送中' : '待取件', address: `${active.dormAreaNameSnapshot || active.dormArea || ''}${active.dormBuildingNameSnapshot || active.dormBuilding || ''} ${active.roomNumber || ''}` } : null } })
     } catch (e) {
-      this.setData({ expressCard: { acceptingOrders: false, priceText: '', cutoffText: '服务暂未开放' } })
+      this.setData({ expressCard: { acceptingOrders: false, priceText: '', cutoffText: '服务暂未开放', activeOrder: null } })
     }
   },
 
@@ -717,6 +719,7 @@ Page({
   onOpenBuddy() { this._openService('/packageBuddy/pages/buddy-square/buddy-square') },
 
   onOpenExpress() { this._openService('/packageExpress/pages/order/order') },
+  onOpenExpressOrders() { this._openService('/packageExpress/pages/orders/orders') },
   onOpenHeart() { this._openService('/packageBuddy/pages/heart-home/heart-home') },
   onOpenMarket() { this._openService('/pages/market/market') },
   onOpenBridge() { this._openService('/packageBridge/pages/bridge-home/bridge-home') },

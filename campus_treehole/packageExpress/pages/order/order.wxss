@@ -1,1 +1,14 @@
 @import "../../common.wxss";
+
+.express-order-hero { display: flex; justify-content: space-between; align-items: center; background: linear-gradient(135deg, #e5f3ff, #f7fbff); }
+.order-hero-mark { width: 116rpx; height: 96rpx; display: flex; align-items: center; justify-content: center; border-radius: 28rpx; color: #c98a4b; background: #f6d7a4; font-size: 64rpx; transform: rotate(-8deg); }
+.order-section { padding-bottom: 18rpx; margin-bottom: 20rpx; border-bottom: 2rpx solid #eef3f9; }
+.order-section:last-of-type { border-bottom: 0; }
+.picker-arrow { float: right; color: #2f76ff; font-size: 36rpx; line-height: 40rpx; }
+.count-stepper { display: flex; align-items: center; justify-content: space-between; width: 220rpx; min-height: 72rpx; padding: 0 10rpx; border-radius: 18rpx; background: #f4f8fe; color: #172033; font-size: 30rpx; text-align: center; }
+.count-button { width: 58rpx; height: 58rpx; line-height: 54rpx; border-radius: 16rpx; background: #fff; color: #2f76ff; font-size: 38rpx; }
+.order-note-section { border: 0; }
+.order-submit-bar { display: flex; align-items: center; justify-content: space-between; gap: 18rpx; position: sticky; bottom: 0; padding: 18rpx 0 max(18rpx, env(safe-area-inset-bottom)); background: #fff; }
+.order-total-label { display: block; color: #7d899d; font-size: 22rpx; }
+.order-total { display: block; margin-top: 2rpx; color: #ff657a; font-size: 38rpx; font-weight: 800; }
+.order-submit { flex: 1; min-height: 78rpx; font-size: 26rpx; }
