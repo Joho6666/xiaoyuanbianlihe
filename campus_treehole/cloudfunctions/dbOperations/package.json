@@ -4,6 +4,7 @@
   "description": "数据库操作统一云函数",
   "main": "index.js",
   "dependencies": {
+    "exceljs": "^4.4.0",
     "wx-server-sdk": "~2.6.3"
   }
 }

@@ -255,6 +255,8 @@ function getUsersModule() {
 
 const createMessagesModule = require('./modules/messages')
 const createContactsModule = require('./modules/contacts')
+const createStaffModule = require('./modules/staff')
+const createExpressModule = require('./modules/express')
 let contactsModuleInstance = null
 function getContactsModule() {
   if (!contactsModuleInstance) contactsModuleInstance = createContactsModule({
@@ -266,6 +268,40 @@ function getContactsModule() {
     }
   })
   return contactsModuleInstance
+}
+let staffModuleInstance = null
+function getStaffModule() {
+  if (!staffModuleInstance) {
+    staffModuleInstance = createStaffModule({
+      db,
+      _,
+      helpers: {
+        getUserForAction,
+        checkAdmin,
+        makeDeterministicId,
+        isCollectionNotExistError
+      }
+    })
+  }
+  return staffModuleInstance
+}
+let expressModuleInstance = null
+function getExpressModule() {
+  if (!expressModuleInstance) {
+    expressModuleInstance = createExpressModule({
+      db,
+      _,
+      cloud,
+      helpers: {
+        staff: getStaffModule(),
+        getUserForAction,
+        resolveCampusIdForRead,
+        makeDeterministicId,
+        isCollectionNotExistError
+      }
+    })
+  }
+  return expressModuleInstance
 }
 let messagesModuleInstance = null
 function getMessagesModule() {
@@ -712,6 +748,9 @@ exports.main = async (event, context) => {
     }
     if (["getHeartProfile", "updateHeartProfile", "disableHeartProfile", "getHeartDiscover", "likeHeartProfile", "passHeartProfile", "getHeartMatches", "drawFateCard", "getFateCardQuota", "toggleFateCardOptIn", "startHeartChat"].includes(action)) return await getHeartModule()[action](openid, data)
     if (['startMarketContact', 'startBuddyContact', 'startMutualContact', 'startBridgeContact', 'startExistingContact'].includes(action)) return await getContactsModule()[action](openid, data)
+    if (action === 'getMyStaffCapabilities') return await getStaffModule().getMyStaffCapabilities(openid)
+    if (['ownerResolveExpressStaffCandidate', 'ownerAddExpressStaff', 'ownerDisableExpressStaff', 'ownerUpdateExpressStaffPermissions', 'ownerGetExpressStaff'].includes(action)) return await getStaffModule()[action](openid, data)
+    if (['getExpressServiceConfig', 'createExpressOrder', 'getMyExpressOrders', 'getMyExpressOrder', 'createExpressTestPayment', 'staffGetExpressDashboard', 'staffGetExpressOrders', 'staffGetExpressOrderDetail', 'staffUpdateExpressOrderStatus', 'staffBatchUpdateExpressOrderStatus', 'staffExportExpressOrders', 'ownerUpdateExpressSettings'].includes(action)) return await getExpressModule()[action](openid, data)
     switch (action) {
       // ===== 帖子动态相关 (modules/posts.js) =====
       case 'getPosts':
