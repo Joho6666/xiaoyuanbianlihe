@@ -75,6 +75,7 @@ function createExpressMock(initial = {}) {
   const db = {
     serverDate: () => new Date('2026-09-10T08:00:00.000Z'),
     collection,
+    runTransaction: async (handler) => handler({ collection }),
     command: {
       in: (value) => ({ operator: 'in', value }),
       gte: (value) => ({ operator: 'gte', value }),

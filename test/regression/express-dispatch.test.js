@@ -14,6 +14,9 @@ async function run() {
   const { express, staff } = createExpressFixture()
   assert.strictEqual(typeof express.getExpressServiceConfig, "function", "getExpressServiceConfig must be exported")
   assert.strictEqual(typeof express.getServiceConfig, "function", "getServiceConfig must be exported")
+  for (const action of require("../../campus_treehole/cloudfunctions/dbOperations/modules/express").ACTION_NAMES) {
+    assert.strictEqual(typeof express[action], "function", `${action} must be exported for the registered dispatcher action`)
+  }
   assert.strictEqual(typeof staff.ownerResolveExpressStaffCandidate, "function", "ownerResolveExpressStaffCandidate must be exported")
   assert.strictEqual(typeof staff.ownerResolveCandidate, "function", "ownerResolveCandidate must be exported")
 

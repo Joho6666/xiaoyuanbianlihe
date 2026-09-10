@@ -77,7 +77,7 @@ async function cleanup() {
     }
   }
   for (const userId of smokeUserIds) {
-    for (const [collection, field] of [['heart_events', 'userId'], ['fate_card_history', 'userId'], ['fate_card_usage', 'userId'], ['express_orders', 'userId']]) {
+    for (const [collection, field] of [['heart_events', 'userId'], ['fate_card_history', 'userId'], ['fate_card_usage', 'userId'], ['express_orders', 'userId'], ['express_delivery_profiles', 'ownerUserId']]) {
       try {
         const rows = (await db.collection(collection).where({ [field]: userId }).limit(100).get()).data || []
         for (const row of rows) await db.collection(collection).doc(row._id).remove()
@@ -86,7 +86,7 @@ async function cleanup() {
       }
     }
   }
-  for (const [collection, field] of [['express_orders', 'smokeRunId'], ['express_exports', 'smokeRunId'], ['express_settings', 'smokeRunId'], ['staff_accounts', 'smokeRunId']]) {
+  for (const [collection, field] of [['express_orders', 'smokeRunId'], ['express_exports', 'smokeRunId'], ['express_settings', 'smokeRunId'], ['staff_accounts', 'smokeRunId'], ['express_delivery_profiles', 'smokeRunId']]) {
     try {
       const rows = (await db.collection(collection).where({ [field]: runId }).limit(100).get()).data || []
       for (const row of rows) await db.collection(collection).doc(row._id).remove()
@@ -290,7 +290,7 @@ async function main() {
     if (originalIds === undefined) delete process.env.HEART_PREMIUM_TEST_USER_IDS; else process.env.HEART_PREMIUM_TEST_USER_IDS = originalIds
   }
 
-  step(8, 'Checking Express settings, order lifecycle, and private export')
+  step(8, 'Checking Express settings, delivery profiles, order lifecycle, and private export')
   process.env.EXPRESS_TEST_PAYMENT_ALLOWED = 'true'
   process.env.EXPRESS_TEST_PAYMENT_ENV_ID = envId
   const expressSettings = await express.ownerUpdateExpressSettings(owner._openid, {
@@ -304,18 +304,30 @@ async function main() {
   })
   assert.equal(expressSettings.code, 0)
   track('express_settings', 'guit-hangtian')
+  const deliveryProfile = await express.createExpressDeliveryProfile(f._openid, {
+    campusId: 'guit-hangtian',
+    label: 'Smoke Recipient',
+    isSelf: false,
+    recipientName: 'Smoke Recipient',
+    contactPhone: '13800001234',
+    deliveryCampus: 'south',
+    dormArea: 'tianheyuan',
+    dormBuildingId: 'south-6',
+    roomNumber: '613'
+  })
+  assert.equal(deliveryProfile.code, 0)
+  assert.equal(deliveryProfile.data.isDefault, true)
+  track('express_delivery_profiles', deliveryProfile.data._id)
   const expressOrder = await express.createExpressOrder(f._openid, {
     pickupPointId: 'south',
     pickupCode: 'smoke-2-3-4587',
     packageCount: 1,
-    deliveryCampus: 'south',
-    dormArea: 'tianheyuan',
-    dormBuildingId: 'south-6',
-    roomNumber: '613',
-    phone: '13800001234',
+    deliveryProfileId: deliveryProfile.data._id,
     smokeRunId: runId
   })
   assert.equal(expressOrder.code, 0)
+  assert.equal(expressOrder.data.recipientNameSnapshot, 'Smoke Recipient')
+  assert.equal(expressOrder.data.recipientPhoneSnapshot, '13800001234')
   track('express_orders', expressOrder.data._id)
   assert.notEqual((await express.staffUpdateExpressOrderStatus(staffUser._openid, { orderId: expressOrder.data._id, status: 'DELIVERING' })).code, 0)
   assert.equal((await express.createExpressTestPayment(f._openid, { orderId: expressOrder.data._id })).code, 0)
