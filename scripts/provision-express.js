@@ -13,6 +13,7 @@ const indexes = [
   'express_orders: userId ASC, createdAt DESC',
   'express_orders: deliveryCampus ASC, orderStatus ASC, createdAt DESC',
   'express_orders: paymentStatus ASC, orderStatus ASC',
+  'express_orders: deliveryProfileId ASC, createdAt DESC',
   'express_settings: campusId ASC',
   'staff_accounts: userId ASC, status ASC',
   'staff_audit_logs: actorUserId ASC, createdAt DESC',
@@ -37,7 +38,7 @@ if (!apply) {
   console.log('Re-run with --apply to create missing collections only.')
   console.log('\nManual Index and Permission Checklist')
   indexes.forEach((item) => console.log(`- ${item}`))
-  console.log('- Set all five collections to server-side access only; deny Mini Program client read/write.')
+  console.log('- Set all Express collections to server-side access only; deny Mini Program client read/write.')
   console.log('- Verify staff_accounts, staff_audit_logs, and express_exports do not expose OpenID or public URLs.')
   process.exit(0)
 }
@@ -57,6 +58,6 @@ for (const collection of collections) {
 }
 console.log('\nManual Index and Permission Checklist')
 indexes.forEach((item) => console.log(`- ${item}`))
-console.log('- Set all five collections to server-side access only; deny Mini Program client read/write.')
+console.log('- Set all Express collections to server-side access only; deny Mini Program client read/write.')
 console.log('- Index and permission creation is not claimed by this CLI run; verify in CloudBase Console.')
 if (failed) process.exitCode = 1

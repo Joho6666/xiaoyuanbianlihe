@@ -18,6 +18,8 @@
     "provision:heart": "node scripts/provision-heart.js",
     "provision:express": "node scripts/provision-express.js",
     "migrate:express:status": "node scripts/migrations/migrate-express-order-status.js",
+    "migrate:express:pickup-items": "node scripts/migrations/migrate-express-pickup-items.js",
+    "migrate:express:pickup-items": "node scripts/migrations/migrate-express-pickup-items.js",
     "cleanup:express:smoke": "node scripts/express-smoke-cleanup.js",
     "deploy:cloudbase:test:dboperations": "node scripts/cloudbase-smoke/deploy-test-dboperations.js"
   },
