@@ -1,0 +1,25 @@
+const assert = require('assert')
+const fs = require('fs')
+const path = require('path')
+const root = path.resolve(__dirname, '..', '..')
+const mini = path.join(root, 'campus_treehole')
+const app = JSON.parse(fs.readFileSync(path.join(mini, 'app.json'), 'utf8'))
+const express = app.subpackages.find((item) => item.root === 'packageExpress')
+assert.ok(express && express.pages.length === 9)
+for (const page of express.pages) {
+  const base = path.join(mini, 'packageExpress', page)
+  for (const ext of ['js', 'json', 'wxml', 'wxss']) assert.ok(fs.existsSync(`${base}.${ext}`), `${page}.${ext} exists`)
+  const json = JSON.parse(fs.readFileSync(`${base}.json`, 'utf8'))
+  assert.ok(json.usingComponents && json.usingComponents['campus-page-header'])
+}
+const mine = fs.readFileSync(path.join(mini, 'pages/mine/mine.wxml'), 'utf8')
+const index = fs.readFileSync(path.join(mini, 'pages/index/index.wxml'), 'utf8')
+assert.ok(mine.includes('staffCapabilities.isStaff') && mine.includes('staffCapabilities.isOwner'))
+assert.ok(index.includes('onOpenExpress') && index.includes('快递代拿'))
+assert.ok(!mine.includes('isStaff === true'), 'Mine does not trust a client-only staff flag')
+for (const page of express.pages.filter((page) => page.includes('/staff-'))) {
+  const js = fs.readFileSync(path.join(mini, 'packageExpress', `${page}.js`), 'utf8')
+  assert.ok(js.includes('getMyStaffCapabilities'), `${page} rechecks staff capabilities`)
+}
+assert.ok(!fs.readdirSync(path.join(mini, 'packageExpress'), { withFileTypes: true }).some((entry) => entry.isDirectory() && entry.name === 'legacy'))
+console.log('PASS Express UI: package routes, Mine capability-gated workbench, student home entry')

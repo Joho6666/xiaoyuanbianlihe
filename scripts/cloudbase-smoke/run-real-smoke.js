@@ -1,4 +1,4 @@
-// Real Heart smoke: independent CloudBase only, with run-scoped cleanup.
+// Real Campus smoke: independent CloudBase only, with run-scoped cleanup.
 const assert = require('assert')
 const crypto = require('crypto')
 const { isProductionEnv, normalizeEnvId } = require('../cloudbase-target')
@@ -29,9 +29,12 @@ const createHeart = require('../../campus_treehole/cloudfunctions/dbOperations/m
 const createMessages = require('../../campus_treehole/cloudfunctions/dbOperations/modules/messages')
 const createContacts = require('../../campus_treehole/cloudfunctions/dbOperations/modules/contacts')
 const createSafety = require('../../campus_treehole/cloudfunctions/dbOperations/modules/safety')
+const createStaff = require('../../campus_treehole/cloudfunctions/dbOperations/modules/staff')
+const createExpress = require('../../campus_treehole/cloudfunctions/dbOperations/modules/express')
 const { publicId } = require('../../campus_treehole/cloudfunctions/dbOperations/shared/public-data')
 const { makeDeterministicId } = require('../../campus_treehole/cloudfunctions/dbOperations/shared/id')
 const { pairId } = require('../../campus_treehole/cloudfunctions/dbOperations/shared/heart')
+const { STAFF_PERMISSIONS } = require('../../shared/domain/staff')
 
 // A valid, tiny JPEG. It is uploaded to exercise the real Storage namespace.
 const SMOKE_JPEG = Buffer.from('/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAP//////////////////////////////////////////////////////////////////////////////////////2wBDAf//////////////////////////////////////////////////////////////////////////////////////wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAf/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIQAxAAAAH/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/9oACAEBAAEFAqf/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oACAEDAQE/Aaf/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oACAECAQE/Aaf/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/9oACAEBAAY/Aqf/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/9oACAEBAAE/IV//2gAMAwEAAgADAAAAEP/EABQRAQAAAAAAAAAAAAAAAAAAABD/2gAIAQMBAT8QH//EABQRAQAAAAAAAAAAAAAAAAAAABD/2gAIAQIBAT8QH//EABQQAQAAAAAAAAAAAAAAAAAAABD/2gAIAQEAAT8QH//Z', 'base64')
@@ -39,12 +42,12 @@ const SMOKE_JPEG = Buffer.from('/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAP//////////////
 cloud.init({ env: envId, secretId, secretKey })
 const db = cloud.database()
 const _ = db.command
-const runId = `heart_smoke_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`
+const runId = `campus_smoke_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`
 const created = new Map()
 const smokeUserIds = []
 const uploadedFiles = new Set()
 function step(number, label) {
-  console.log(`[${number}/10] ${label}`)
+  console.log(`[${number}/11] ${label}`)
 }
 const track = (collection, id) => {
   if (!created.has(collection)) created.set(collection, new Set())
@@ -74,12 +77,30 @@ async function cleanup() {
     }
   }
   for (const userId of smokeUserIds) {
-    for (const [collection, field] of [['heart_events', 'userId'], ['fate_card_history', 'userId'], ['fate_card_usage', 'userId']]) {
+    for (const [collection, field] of [['heart_events', 'userId'], ['fate_card_history', 'userId'], ['fate_card_usage', 'userId'], ['express_orders', 'userId']]) {
       try {
         const rows = (await db.collection(collection).where({ [field]: userId }).limit(100).get()).data || []
         for (const row of rows) await db.collection(collection).doc(row._id).remove()
       } catch (error) {
         failures.push(`${collection}/${userId}: ${error.message || error}`)
+      }
+    }
+  }
+  for (const [collection, field] of [['express_orders', 'smokeRunId'], ['express_exports', 'smokeRunId'], ['express_settings', 'smokeRunId'], ['staff_accounts', 'smokeRunId']]) {
+    try {
+      const rows = (await db.collection(collection).where({ [field]: runId }).limit(100).get()).data || []
+      for (const row of rows) await db.collection(collection).doc(row._id).remove()
+    } catch (error) {
+      failures.push(`${collection}/${runId}: ${error.message || error}`)
+    }
+  }
+  for (const actorUserId of smokeUserIds) {
+    for (const [collection, field] of [['staff_audit_logs', 'actorUserId']]) {
+      try {
+        const rows = (await db.collection(collection).where({ [field]: actorUserId }).limit(100).get()).data || []
+        for (const row of rows) await db.collection(collection).doc(row._id).remove()
+      } catch (error) {
+        failures.push(`${collection}/${actorUserId}: ${error.message || error}`)
       }
     }
   }
@@ -100,7 +121,7 @@ async function main() {
   step(1, 'Creating run-scoped independent-environment identities')
   let clock = Date.UTC(2026, 8, 9, 4)
   const users = {}
-  const makeUser = async (name, gender) => {
+  const makeUser = async (name, gender, role = 'user') => {
     const openid = `${runId}_${name}`
     const userId = publicId(openid)
     const user = {
@@ -108,6 +129,7 @@ async function main() {
       _openid: openid,
       internalUserId: userId,
       nickName: `Smoke ${name}`,
+      role,
       status: 'active',
       // A valid configured campus is required to exercise the Heart feature flag.
       campusId: 'guit-hangtian',
@@ -125,7 +147,8 @@ async function main() {
     findAuthorsHiddenByBlockRelation: async () => new Set(),
     checkBannedWords: () => ({ pass: true }),
     wxTextCheck: async () => ({ pass: true }),
-    wxImageBatchCheck: async () => ({ pass: true })
+    wxImageBatchCheck: async () => ({ pass: true }),
+    checkAdmin: async (openid) => !!(users[openid] && users[openid].role === 'admin')
   }
   const contacts = createContacts({
     db,
@@ -159,6 +182,25 @@ async function main() {
       checkAdmin: async () => true
     }
   })
+  const staff = createStaff({
+    db, _,
+    helpers: {
+      getUserForAction: helpers.getUserForAction,
+      checkAdmin: helpers.checkAdmin,
+      makeDeterministicId,
+      isCollectionNotExistError: () => false
+    }
+  })
+  const express = createExpress({
+    db, _, cloud,
+    helpers: {
+      staff,
+      getUserForAction: helpers.getUserForAction,
+      resolveCampusIdForRead: value => value,
+      makeDeterministicId,
+      isCollectionNotExistError: () => false
+    }
+  })
   const profile = (user, photos) => ({
     enabled: true,
     adultDeclared: true,
@@ -173,6 +215,22 @@ async function main() {
     smokeRunId: runId
   })
   const usersToCreate = []
+  const owner = await makeUser('owner', 'other', 'admin')
+  const staffUser = await makeUser('staff', 'other', 'user')
+  const staffAccountId = makeDeterministicId('staff', staffUser.internalUserId)
+  await db.collection('staff_accounts').doc(staffAccountId).set({ data: {
+    _id: staffAccountId,
+    userId: staffUser.internalUserId,
+    status: 'active',
+    permissions: [STAFF_PERMISSIONS.EXPRESS_ORDER_READ, STAFF_PERMISSIONS.EXPRESS_ORDER_UPDATE, STAFF_PERMISSIONS.EXPRESS_ORDER_EXPORT],
+    campusIds: ['guit-hangtian'],
+    displayName: 'Smoke Staff',
+    createdBy: owner.internalUserId,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    smokeRunId: runId
+  } })
+  track('staff_accounts', staffAccountId)
   for (const [name, gender] of [['a', 'male'], ['b', 'female'], ['c', 'female'], ['d', 'female'], ['e', 'female'], ['f', 'female'], ['g', 'female']]) {
     usersToCreate.push(await makeUser(name, gender))
   }
@@ -232,7 +290,40 @@ async function main() {
     if (originalIds === undefined) delete process.env.HEART_PREMIUM_TEST_USER_IDS; else process.env.HEART_PREMIUM_TEST_USER_IDS = originalIds
   }
 
-  step(8, 'Checking block fences across Discover, Fate, Match, and Heart chat')
+  step(8, 'Checking Express settings, order lifecycle, and private export')
+  process.env.EXPRESS_TEST_PAYMENT_ALLOWED = 'true'
+  process.env.EXPRESS_TEST_PAYMENT_ENV_ID = envId
+  const expressSettings = await express.ownerUpdateExpressSettings(owner._openid, {
+    campusId: 'guit-hangtian',
+    acceptingOrders: true,
+    basePriceCents: 300,
+    pickupPoints: [{ id: 'south', name: '菜鸟驿站（南区）' }],
+    notice: 'Smoke-only independent environment',
+    smokeRunId: runId
+  })
+  assert.equal(expressSettings.code, 0)
+  track('express_settings', 'guit-hangtian')
+  const expressOrder = await express.createExpressOrder(f._openid, {
+    pickupPointId: 'south',
+    pickupCode: 'smoke-2-3-4587',
+    packageCount: 1,
+    dormBuilding: '南区6号楼',
+    roomNumber: '613',
+    phone: '13800001234',
+    smokeRunId: runId
+  })
+  assert.equal(expressOrder.code, 0)
+  track('express_orders', expressOrder.data._id)
+  assert.notEqual((await express.staffUpdateExpressOrderStatus(staffUser._openid, { orderId: expressOrder.data._id, status: 'DELIVERING' })).code, 0)
+  assert.equal((await express.createExpressTestPayment(f._openid, { orderId: expressOrder.data._id })).code, 0)
+  assert.equal((await express.staffUpdateExpressOrderStatus(staffUser._openid, { orderId: expressOrder.data._id, status: 'DELIVERING' })).code, 0)
+  assert.equal((await express.staffUpdateExpressOrderStatus(staffUser._openid, { orderId: expressOrder.data._id, status: 'COMPLETED' })).code, 0)
+  const exported = await express.staffExportExpressOrders(staffUser._openid, { campusId: 'guit-hangtian', smokeRunId: runId })
+  assert.equal(exported.code, 0)
+  track('express_exports', exported.data.fileId.replace(/^cloud:\/\//, '').split('/').pop().replace(/\.xlsx$/, ''))
+  uploadedFiles.add(exported.data.fileId)
+
+  step(9, 'Checking block fences across Discover, Fate, Match, and Heart chat')
   const gDiscover = await heart.getHeartDiscover(g._openid)
   const blockedTarget = gDiscover.data.rows[0]
   assert(blockedTarget, 'G has a candidate to block')
@@ -254,7 +345,7 @@ async function main() {
   assert.equal((await heart.getHeartMatches(a._openid)).data.length, 0)
   assert.notEqual((await heart.startHeartChat(a._openid, { targetUserId: b.internalUserId })).code, 0)
 
-  step(9, 'Checking disabled profiles stop Heart exposure')
+  step(10, 'Checking disabled profiles stop Heart exposure')
   assert.equal((await heart.disableHeartProfile(c._openid)).data.enabled, false)
   assert(!(await heart.getHeartDiscover(a._openid)).data.rows.some(row => row.userId === c.internalUserId), 'disabled profile is no longer exposed')
 }
@@ -267,7 +358,7 @@ async function main() {
     failure = error
   }
   try {
-    step(10, 'Removing only run-scoped database records and Storage objects')
+    step(11, 'Removing only run-scoped database records and Storage objects')
     await cleanup()
   } catch (error) {
     failure = failure || error
