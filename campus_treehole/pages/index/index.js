@@ -690,6 +690,8 @@ Page({
   },
 
   onOpenBuddy() { this._openService('/packageBuddy/pages/buddy-square/buddy-square') },
+
+  onOpenExpress() { this._openService('/packageExpress/pages/order/order') },
   onOpenHeart() { this._openService('/packageBuddy/pages/heart-home/heart-home') },
   onOpenMarket() { this._openService('/pages/market/market') },
   onOpenBridge() { this._openService('/packageBridge/pages/bridge-home/bridge-home') },

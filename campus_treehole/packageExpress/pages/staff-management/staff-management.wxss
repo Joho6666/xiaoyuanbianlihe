@@ -1,0 +1,2 @@
+@import "../../common.wxss";
+.small { min-height: 58rpx; padding: 0 18rpx; margin-left: 14rpx; font-size: 22rpx; }

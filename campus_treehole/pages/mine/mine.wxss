@@ -3,6 +3,22 @@
   background: #f6f6f6;
 }
 
+.express-workbench-card {
+  display: flex;
+  align-items: center;
+  margin: 18rpx 24rpx;
+  padding: 24rpx;
+  border-radius: 24rpx;
+  background: #ffffff;
+  box-shadow: 0 10rpx 28rpx rgba(55, 91, 145, .08);
+}
+.express-workbench-card.owner { border: 2rpx solid #dce9ff; }
+.express-workbench-icon { width: 66rpx; height: 66rpx; display: flex; align-items: center; justify-content: center; border-radius: 20rpx; background: #edf4ff; font-size: 34rpx; }
+.express-workbench-copy { flex: 1; margin-left: 18rpx; }
+.express-workbench-title { display: block; color: #172033; font-size: 29rpx; font-weight: 700; }
+.express-workbench-sub { display: block; margin-top: 6rpx; color: #71809a; font-size: 23rpx; }
+.express-workbench-arrow { color: #2f76ff; font-size: 38rpx; }
+
 .mine-cover-wrap {
   position: relative;
   overflow: hidden;

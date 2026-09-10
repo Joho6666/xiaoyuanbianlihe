@@ -1,0 +1,37 @@
+page { background: #f3f7fd; color: #172033; }
+.express-page { min-height: 100vh; padding: 24rpx 28rpx 48rpx; box-sizing: border-box; }
+.express-hero, .express-card, .express-empty, .express-toolbar { background: #fff; border-radius: 28rpx; box-shadow: 0 10rpx 30rpx rgba(55, 91, 145, .08); }
+.express-hero { padding: 30rpx; margin-bottom: 20rpx; background: linear-gradient(135deg, #edf5ff, #fff); }
+.express-title { display: block; font-size: 40rpx; font-weight: 700; letter-spacing: 1rpx; }
+.express-subtitle { display: block; margin-top: 8rpx; color: #71809a; font-size: 25rpx; }
+.express-card { padding: 26rpx; margin-bottom: 18rpx; }
+.express-section-title { display: block; margin-bottom: 18rpx; font-size: 30rpx; font-weight: 700; }
+.express-label { display: block; margin: 18rpx 0 10rpx; color: #63718a; font-size: 24rpx; }
+.express-input, .express-textarea, .express-picker { width: 100%; min-height: 78rpx; padding: 0 20rpx; border: 2rpx solid #e8eef8; border-radius: 18rpx; box-sizing: border-box; background: #fbfdff; font-size: 28rpx; line-height: 78rpx; }
+.express-textarea { padding-top: 18rpx; line-height: 1.5; }
+.express-button { display: flex; align-items: center; justify-content: center; min-height: 82rpx; border-radius: 22rpx; background: #2f76ff; color: #fff; font-size: 29rpx; font-weight: 600; }
+.express-button.muted { background: #eaf1ff; color: #2f76ff; }
+.express-button.danger { background: #fff0f1; color: #d34f62; }
+.express-button + .express-button { margin-top: 16rpx; }
+.express-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 18rpx; }
+.express-stat { padding: 24rpx; border-radius: 22rpx; background: #f7faff; }
+.express-stat-number { display: block; color: #2f76ff; font-size: 40rpx; font-weight: 700; }
+.express-stat-label { display: block; margin-top: 6rpx; color: #71809a; font-size: 23rpx; }
+.express-order-row { display: flex; align-items: center; justify-content: space-between; padding: 22rpx 0; border-bottom: 2rpx solid #f0f3f8; }
+.express-order-row:last-child { border-bottom: 0; }
+.express-order-main { flex: 1; min-width: 0; }
+.express-order-no { display: block; font-size: 27rpx; font-weight: 650; }
+.express-order-meta { display: block; margin-top: 8rpx; color: #7d899d; font-size: 23rpx; }
+.express-order-price { color: #ff657a; font-size: 28rpx; font-weight: 700; }
+.express-chip { display: inline-flex; padding: 6rpx 12rpx; margin-top: 8rpx; border-radius: 999rpx; color: #2f76ff; background: #edf4ff; font-size: 21rpx; }
+.express-chip.success { color: #17855a; background: #eaf9f1; }
+.express-chip.warn { color: #c77516; background: #fff5df; }
+.express-chip.danger { color: #d34f62; background: #fff0f1; }
+.express-empty { padding: 70rpx 30rpx; text-align: center; color: #7d899d; }
+.express-empty-title { display: block; color: #30405a; font-size: 29rpx; font-weight: 600; }
+.express-empty-desc { display: block; margin-top: 10rpx; font-size: 24rpx; }
+.express-toolbar { display: flex; gap: 12rpx; padding: 12rpx; margin-bottom: 18rpx; }
+.express-filter { flex: 1; padding: 14rpx 8rpx; border-radius: 16rpx; color: #71809a; text-align: center; font-size: 23rpx; }
+.express-filter.active { color: #fff; background: #2f76ff; }
+.express-note { display: block; padding: 18rpx; border-radius: 16rpx; color: #71809a; background: #f6f9ff; font-size: 23rpx; line-height: 1.6; }
+.express-footer-space { height: 70rpx; }

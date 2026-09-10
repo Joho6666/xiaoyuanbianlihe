@@ -60,7 +60,8 @@ Page({
     favoredPostsLoadingMore: false,
     loading: false,
     menuExpanded: false,
-    tabLoaded: [true, false, false, false]
+    tabLoaded: [true, false, false, false],
+    staffCapabilities: { isStaff: false, isOwner: false, permissions: [] }
   },
 
   _computeWaterfallPatch() {
@@ -213,9 +214,10 @@ Page({
 
     try {
       // 首屏优先：先拿“我的发布 + 用户信息”，减少低配机首屏并发压力
-      const [rawMyPosts, rawUserInfo] = await Promise.all([
+      const [rawMyPosts, rawUserInfo, staffCaps] = await Promise.all([
         app.getMyPosts(1, LIST_PAGE_SIZE),
-        app.getUserInfo(app.globalData.openid)
+        app.getUserInfo(app.globalData.openid),
+        app.callDB('getMyStaffCapabilities', {}).catch(() => ({ data: { isStaff: false, isOwner: false, permissions: [] } }))
       ])
 
       const userInfo = await app.resolveUserMedia(rawUserInfo || {})
@@ -249,6 +251,7 @@ Page({
         likedPostsHasMore: true,
         favoredPostsHasMore: true,
         userInfo,
+        staffCapabilities: (staffCaps && staffCaps.data) || { isStaff: false, isOwner: false, permissions: [] },
         loading: false,
         tabLoaded: [true, false, false, false],
         ...waterfall
@@ -612,7 +615,13 @@ Page({
       wx.navigateTo({ url: '/pages/contact/contact' })
     } else if (page === 'privacy') {
       wx.navigateTo({ url: '/pages/privacy/privacy' })
+    } else if (page === 'expressOrders') {
+      wx.navigateTo({ url: '/packageExpress/pages/orders/orders' })
     }
+  },
+
+  onStaffWorkbench() {
+    wx.navigateTo({ url: '/packageExpress/pages/staff-dashboard/staff-dashboard' })
   },
 
   onShareAppMessage() {

@@ -65,6 +65,27 @@
       <text class="quick-title">联系客服</text>
       <text class="quick-sub">提出建议与售后</text>
     </view>
+    <view class="quick-card" bindtap="onMenuTap" data-page="expressOrders">
+      <text class="quick-title">我的快递</text>
+      <text class="quick-sub">查看订单与配送状态</text>
+    </view>
+  </view>
+
+  <view class="express-workbench-card" wx:if="{{staffCapabilities.isStaff}}" bindtap="onStaffWorkbench">
+    <view class="express-workbench-icon">📦</view>
+    <view class="express-workbench-copy">
+      <text class="express-workbench-title">内部工作台</text>
+      <text class="express-workbench-sub">快递工作台 · 订单与取件清单</text>
+    </view>
+    <text class="express-workbench-arrow">›</text>
+  </view>
+  <view class="express-workbench-card owner" wx:if="{{staffCapabilities.isOwner}}" bindtap="onStaffWorkbench">
+    <view class="express-workbench-icon">⚙</view>
+    <view class="express-workbench-copy">
+      <text class="express-workbench-title">Owner 管理</text>
+      <text class="express-workbench-sub">工作人员与快递服务设置</text>
+    </view>
+    <text class="express-workbench-arrow">›</text>
   </view>
 
   <view class="tab-bar">

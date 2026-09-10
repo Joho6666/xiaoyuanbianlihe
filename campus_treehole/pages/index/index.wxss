@@ -1286,3 +1286,17 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.express-home-hero {
+  display: flex;
+  align-items: center;
+  margin: 20rpx 28rpx;
+  padding: 22rpx 24rpx;
+  border-radius: 24rpx;
+  background: #ffffff;
+  box-shadow: 0 10rpx 28rpx rgba(55, 91, 145, .08);
+}
+.express-home-icon { width: 64rpx; height: 64rpx; display: flex; align-items: center; justify-content: center; border-radius: 18rpx; color: #2f76ff; background: #edf4ff; font-size: 32rpx; }
+.express-home-copy { flex: 1; margin-left: 16rpx; }
+.express-home-title { display: block; color: #172033; font-size: 29rpx; font-weight: 700; }
+.express-home-desc { display: block; margin-top: 4rpx; color: #71809a; font-size: 23rpx; }
+.express-home-arrow { color: #2f76ff; font-size: 40rpx; }

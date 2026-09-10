@@ -1,0 +1,18 @@
+<campus-page-header title="快递代拿" subtitle="填写取件信息，工作人员会尽快处理" showBack="{{true}}" bindback="onBack" />
+<view class="express-page">
+  <view class="express-hero"><text class="express-title">今天也准时送到</text><text class="express-subtitle">{{settings.notice || '仅服务当前校区，订单状态全程可查'}}</text></view>
+  <view class="express-card" wx:if="{{settings.acceptingOrders}}">
+    <text class="express-section-title">填写取件信息</text>
+    <text class="express-label">快递点</text>
+    <picker class="express-picker" range="{{settings.pickupPoints}}" range-key="name" bindchange="onPointChange"><view>{{selectedPointName || '请选择快递点'}}　›</view></picker>
+    <text class="express-label">取件码</text><input class="express-input" placeholder="例如 2-3-4587" maxlength="40" data-key="pickupCode" bindinput="onInput" />
+    <text class="express-label">包裹数量</text><input class="express-input" type="number" value="{{form.packageCount}}" data-key="packageCount" bindinput="onInput" />
+    <text class="express-label">校区 / 宿舍楼</text><input class="express-input" placeholder="例如 南校区 6号楼" data-key="dormBuilding" bindinput="onInput" />
+    <text class="express-label">房间号</text><input class="express-input" placeholder="例如 613" data-key="roomNumber" bindinput="onInput" />
+    <text class="express-label">联系电话</text><input class="express-input" type="number" maxlength="11" placeholder="用于配送联系" data-key="phone" bindinput="onInput" />
+    <text class="express-label">备注（选填）</text><textarea class="express-textarea" maxlength="100" placeholder="补充取件或配送说明" data-key="note" bindinput="onInput" />
+    <text class="express-note">{{settings.deliveryWindow || '价格按包裹数量计算，提交后可在订单详情完成测试支付。'}}</text>
+    <view class="express-button" bindtap="onSubmit">{{submitting ? '提交中…' : '提交订单'}}</view>
+  </view>
+  <view class="express-empty" wx:else><text class="express-empty-title">当前校区暂未开放快递代拿</text><text class="express-empty-desc">服务开启后，你可以在这里提交取件信息</text></view>
+</view>

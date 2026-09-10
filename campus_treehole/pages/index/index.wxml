@@ -105,6 +105,12 @@
     <view class="hero-mark"><text>✦</text></view>
   </view>
 
+  <view class="express-home-hero" bindtap="onOpenExpress">
+    <view class="express-home-icon">📦</view>
+    <view class="express-home-copy"><text class="express-home-title">快递代拿</text><text class="express-home-desc">一键提交取件信息，订单状态随时可查</text></view>
+    <text class="express-home-arrow">›</text>
+  </view>
+
   <view class="service-panel">
     <view class="service-panel-head"><text>校园服务</text><text>从正在发生的事开始</text></view>
     <view class="home-service-grid">
