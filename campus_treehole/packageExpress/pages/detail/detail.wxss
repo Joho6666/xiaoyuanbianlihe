@@ -1,1 +1,10 @@
 @import "../../common.wxss";
+.detail-section-head { display: flex; align-items: center; justify-content: space-between; }
+.detail-section-head .express-section-title { margin-bottom: 0; }
+.detail-summary { color: #8a98ab; font-size: 21rpx; }
+.detail-pickup-group { padding: 16rpx 18rpx; margin-top: 12rpx; border-radius: 18rpx; background: #f7faff; }
+.detail-pickup-point { color: #55708f; font-size: 23rpx; font-weight: 650; }
+.detail-pickup-row { display: flex; align-items: center; justify-content: space-between; padding-top: 8rpx; }
+.detail-pickup-label { margin-right: 12rpx; color: #8a98ab; font-size: 21rpx; }
+.detail-pickup-code { color: #172033; font-size: 29rpx; font-weight: 800; letter-spacing: 1rpx; }
+.detail-pickup-count { color: #71809a; font-size: 22rpx; }

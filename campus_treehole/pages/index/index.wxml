@@ -107,7 +107,7 @@
     <view class="express-home-cta" wx:if="{{expressCard.acceptingOrders}}">立即下单</view>
   </view>
   <view class="express-active-order" wx:if="{{expressCard.activeOrder}}" bindtap="onOpenExpressOrders">
-    <view><text class="express-active-label">我的代拿</text><text class="express-active-address">{{expressCard.activeOrder.address}}</text></view>
+    <view><text class="express-active-label">我的代拿</text><text class="express-active-address">{{expressCard.activeOrder.summary}}</text><text class="express-active-address">送至：{{expressCard.activeOrder.address}}</text></view>
     <view class="express-active-status">{{expressCard.activeOrder.statusLabel}}　›</view>
   </view>
 

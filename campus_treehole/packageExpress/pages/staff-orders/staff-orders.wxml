@@ -1,20 +1,18 @@
-<campus-page-header title="订单管理" subtitle="只显示当前授权校区" showBack="{{true}}" bindback="onBack" />
+<campus-page-header title="订单管理" subtitle="取件按快递点，配送按宿舍" showBack="{{true}}" bindback="onBack" />
 <view class="express-page">
   <input class="express-input" placeholder="搜索订单号、取件码、手机号或房间" value="{{keyword}}" bindinput="onKeywordInput" bindconfirm="onKeywordConfirm" />
-  <view class="express-toolbar">
-    <view class="express-filter {{activeStatus === '' ? 'active' : ''}}" data-status="" bindtap="onFilter">全部</view>
-    <view class="express-filter {{activeStatus === 'WAIT_PICKUP' ? 'active' : ''}}" data-status="WAIT_PICKUP" bindtap="onFilter">待取件</view>
-    <view class="express-filter {{activeStatus === 'DELIVERING' ? 'active' : ''}}" data-status="DELIVERING" bindtap="onFilter">配送中</view>
-    <view class="express-filter {{activeStatus === 'COMPLETED' ? 'active' : ''}}" data-status="COMPLETED" bindtap="onFilter">已完成</view>
-  </view>
-  <view class="pickup-mode-bar"><text>{{pickupMode ? '取件模式：点击订单勾选已拿到的包裹' : '按快递点查看订单'}}</text><view class="express-filter {{pickupMode ? 'active' : ''}}" bindtap="togglePickupMode">{{pickupMode ? '退出取件模式' : '取件模式'}}</view></view>
-  <view class="express-card" wx:if="{{orders.length}}">
-    <view class="express-order-row" wx:for="{{orders}}" wx:key="_id" bindtap="onTapOrder" data-id="{{item._id}}">
-      <view class="express-order-main"><text class="express-order-no">{{item.pickupPointName}} · {{item.pickupCode}}</text><text class="express-order-meta">{{item.packageCount}} 件 · {{item.deliveryCampusNameSnapshot || item.deliveryCampus}} · {{item.dormAreaNameSnapshot || item.dormArea}} · {{item.dormBuilding}} {{item.roomNumber}}</text><text class="express-order-meta">送给 {{item.recipientNameSnapshot || '未填写'}} · {{item.recipientPhoneSnapshot || item.phone}}</text><text class="express-chip {{item.tone}}">{{item.statusLabel}}</text></view>
-      <text wx:if="{{pickupMode}}" class="pickup-check {{item.selected ? 'selected' : ''}}" catchtap="onSelectOrder" data-id="{{item._id}}">{{item.selected ? '✓' : '□'}}</text>
-      <text class="express-order-price">{{item.orderNo}}</text>
+  <view class="work-mode-tabs"><view class="work-mode-tab {{workMode === 'pickup' ? 'active' : ''}}" data-mode="pickup" bindtap="onModeChange">取件模式</view><view class="work-mode-tab {{workMode === 'delivery' ? 'active' : ''}}" data-mode="delivery" bindtap="onModeChange">配送模式</view></view>
+  <view class="express-toolbar"><view class="express-filter {{activeStatus === '' ? 'active' : ''}}" data-status="" bindtap="onFilter">全部</view><view class="express-filter {{activeStatus === 'WAIT_PICKUP' ? 'active' : ''}}" data-status="WAIT_PICKUP" bindtap="onFilter">待取件</view><view class="express-filter {{activeStatus === 'DELIVERING' ? 'active' : ''}}" data-status="DELIVERING" bindtap="onFilter">配送中</view><view class="express-filter {{activeStatus === 'COMPLETED' ? 'active' : ''}}" data-status="COMPLETED" bindtap="onFilter">已完成</view></view>
+  <view wx:if="{{workMode === 'pickup'}}">
+    <view class="pickup-board-group" wx:for="{{pickupGroups}}" wx:key="pickupPointId">
+      <view class="pickup-board-head"><view><text class="pickup-board-title">{{item.pickupPointName}}</text><text class="pickup-board-count">{{item.totalPackages}} 件 · {{item.items.length}} 个取件码</text></view></view>
+      <view class="pickup-board-item" wx:for="{{item.items}}" wx:key="keyId" wx:for-item="pickupItem" catchtap="onSelectPickupItem" data-key-id="{{pickupItem.keyId}}"><text class="pickup-check {{pickupItem.selected ? 'selected' : ''}}">{{pickupItem.selected ? '✓' : '□'}}</text><view class="pickup-board-main"><text class="pickup-code-large">{{pickupItem.pickupCode}}</text><text class="pickup-board-meta">{{pickupItem.packageCount}} 件 · {{pickupItem.recipientName}} · {{pickupItem.progressLabel}}</text><text class="pickup-board-destination">→ {{pickupItem.destination}}</text></view><text class="pickup-board-order">{{pickupItem.orderNo}}</text></view>
     </view>
+    <view class="express-button" wx:if="{{selectedPickupItemIds.length}}" bindtap="startSelectedDelivery">全部取齐后开始配送（{{selectedPickupItemIds.length}}）</view>
+    <view class="express-empty" wx:if="{{!pickupGroups.length}}"><text class="express-empty-title">暂无待取件 Item</text><text class="express-empty-desc">已支付订单会按快递点出现在这里</text></view>
   </view>
-  <view class="express-button" wx:if="{{pickupMode && selectedIds.length}}" bindtap="startSelectedDelivery">选中的订单开始配送（{{selectedIds.length}}）</view>
-  <view class="express-empty" wx:else><text class="express-empty-title">暂无待处理订单</text><text class="express-empty-desc">切换筛选或稍后刷新</text></view>
+  <view wx:else>
+    <view class="delivery-board-group" wx:for="{{deliveryGroups}}" wx:key="key"><view class="delivery-board-head"><text class="delivery-board-address">{{item.address}}</text><text class="delivery-board-count">{{item.orders.length}} 单</text></view><view class="delivery-board-order" wx:for="{{item.orders}}" wx:key="_id"><view class="delivery-order-main"><text class="express-order-no">送给 {{item.recipientNameSnapshot || '未填写'}}</text><text class="express-order-meta">{{item.totalPackageCount || item.packageCount}} 件 · {{item.pickupSummary}}</text><text class="express-order-meta">联系电话 {{item.recipientPhoneSnapshot || item.phone}}</text></view><view class="delivery-complete" bindtap="completeDelivery" data-order-id="{{item._id}}">标记完成</view></view></view>
+    <view class="express-empty" wx:if="{{!deliveryGroups.length}}"><text class="express-empty-title">暂无配送中订单</text><text class="express-empty-desc">待取件订单全部取齐后会进入配送模式</text></view>
+  </view>
 </view>

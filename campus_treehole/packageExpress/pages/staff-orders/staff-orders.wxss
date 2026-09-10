@@ -3,3 +3,21 @@
 .pickup-mode-bar .express-filter { flex: none; padding: 10rpx 14rpx; background: #fff; }
 .pickup-check { flex: none; margin: 0 14rpx; color: #2f76ff; font-size: 40rpx; font-weight: 700; }
 .pickup-check.selected { color: #17855a; }
+.work-mode-tabs { display: flex; gap: 8rpx; padding: 8rpx; margin: 18rpx 0; border-radius: 20rpx; background: #e8f0fb; }
+.work-mode-tab { flex: 1; padding: 15rpx; border-radius: 15rpx; color: #71809a; text-align: center; font-size: 24rpx; }
+.work-mode-tab.active { color: #fff; background: #2f76ff; }
+.pickup-board-group, .delivery-board-group { padding: 22rpx; margin-bottom: 16rpx; border-radius: 24rpx; background: #fff; box-shadow: 0 10rpx 30rpx rgba(55,91,145,.07); }
+.pickup-board-head, .delivery-board-head { display: flex; align-items: center; justify-content: space-between; padding-bottom: 14rpx; border-bottom: 2rpx solid #f0f3f8; }
+.pickup-board-title { display: block; color: #172033; font-size: 28rpx; font-weight: 700; }
+.pickup-board-count, .delivery-board-count { display: block; margin-top: 5rpx; color: #8594a9; font-size: 21rpx; }
+.pickup-board-item { display: flex; align-items: center; padding: 18rpx 0; border-bottom: 2rpx solid #f4f6fa; }
+.pickup-board-item:last-child, .delivery-board-order:last-child { border-bottom: 0; }
+.pickup-board-main { flex: 1; min-width: 0; }
+.pickup-code-large { display: block; color: #1e3b68; font-size: 31rpx; font-weight: 800; letter-spacing: 1rpx; }
+.pickup-board-meta, .pickup-board-destination { display: block; margin-top: 6rpx; color: #65758d; font-size: 21rpx; }
+.pickup-board-destination { color: #8897aa; }
+.pickup-board-order { margin-left: 10rpx; color: #9aa7b8; font-size: 20rpx; }
+.delivery-board-address { flex: 1; color: #172033; font-size: 26rpx; font-weight: 700; }
+.delivery-board-order { display: flex; align-items: center; justify-content: space-between; padding: 18rpx 0; border-bottom: 2rpx solid #f4f6fa; }
+.delivery-order-main { flex: 1; min-width: 0; }
+.delivery-complete { padding: 12rpx 14rpx; border-radius: 14rpx; color: #2f76ff; background: #eaf3ff; font-size: 21rpx; }
