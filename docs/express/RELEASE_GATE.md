@@ -1,10 +1,10 @@
-# Campus Box 3.0 Phase 3.5 Express Release Gate
+# Campus Box 3.0 Express 3.6 Stage 1 Release Gate
 
 | Gate | Status | Evidence |
 | --- | --- | --- |
-| Branch / HEAD | PASS | `refactor/campus-platform-foundation`，最终 HEAD `54cacd7e8306e2dfeb61ff38abc9876b670d9828` |
+| Branch / HEAD | PASS | `refactor/campus-platform-foundation`，Stage 1 implementation HEAD `0cda12c` |
 | Local CI | PASS | `npm ci` 后 `npm run ci` 通过 |
-| GitHub CI | PASS | [Actions run 34431641153](https://github.com/Joho6666/xiaoyuanbianlihe/actions/runs/34431641153)，Node 18.x / 20.x 均 success |
+| GitHub CI | NOT RUN | Stage 1 提交尚未推送，推送后以对应 HEAD 的 Node 18.x / 20.x 结果为准 |
 | Staff Auth | PASS | `staff-permissions.test.js` |
 | Normal User Hidden | PASS | UI 回归 + 服务端能力回归；真机仍未验证 |
 | Server-side Permission | PASS | 伪造权限、停用、跨校和状态机回归 |
@@ -20,5 +20,14 @@
 | Storage | NOT RUN | 未完成持有 fileID 的真实访问威胁模型验证 |
 | DevTools | NOT RUN | 服务端口未开启时不得宣称编译成功 |
 | Payment Mock | PASS | 独立环境测试支付开关与 WAIT_PAYMENT 边界 |
+| Delivery Profiles | PASS | 账号归属、10 条上限、默认切换、归档提升默认与结构化地址校验 |
+| Order For Self / Others | PASS | `isSelf` 筛选；订单 Owner/付款人为当前账号，收件人可为未注册用户 |
+| Order Snapshot | PASS | 姓名、电话、房间与地址名称写入不可变 Snapshot |
+| Legacy Orders / Cache | PASS | 旧订单字段回退；本地缓存仅在用户确认后迁移 |
+| Staff / Excel Recipient | PASS | Staff 读取收件人 Snapshot；配送清单增加收件人列 |
+| CloudBase Stage 1 Smoke | NOT RUN | 缺少独立环境临时凭证；普通 Smoke 为 `NOT RUN`，required 退出码为 1 |
+| DevTools | NOT RUN | 微信开发者工具服务端口当前关闭 |
+| Real Device | NOT RUN | 尚未完成三类账号和双账号验证 |
+| Express 3.6 Stage 2 OCR | OUT OF SCOPE | 本阶段明确不开发 OCR/截图识别 |
 | Wechat Pay Real | NOT IMPLEMENTED | 本轮没有商户号、证书和回调配置 |
 | Production | NOT TOUCHED | 不部署、不写入、不执行自动化测试 |
