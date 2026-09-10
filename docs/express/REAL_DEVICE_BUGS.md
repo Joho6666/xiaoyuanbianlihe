@@ -44,8 +44,8 @@ modules/express-import.js
 ### 1.6 验证状态
 - **本地单元与契约测试**：`LOCAL PASS`
 - **CI 自动化门禁**：`CI PASS`
-- **开发者工具验证**：`DEVTOOLS PASS`
-- **真实 CloudBase 生产部署**：`PENDING_DEPLOY`（需在微信开发者工具中按清单右键上传云函数并安装依赖）
+- **开发者工具验证**：`NOT RUN`（服务端口未开启）
+- **真实 CloudBase 部署**：`NOT RUN`（生产环境禁止自动部署，独立测试环境尚未提供）
 - **真机端到端 OCR 验证**：`NOT RUN`（依赖云函数部署与腾讯云 API 密钥配置）
 
 ---
@@ -98,4 +98,4 @@ modules/express-import.js
 ### 2.5 验证状态
 - **本地回归测试**：`LOCAL PASS`（`test/regression/express-input-stability.test.js`）
 - **CI 自动化流水线**：`CI PASS`
-- **真机手动验证**：`LOCAL PASS`（连续字符输入流畅，无闪烁、不丢字符）
+- **真机手动验证**：`NOT RUN`（当前仅完成静态契约和本地回归）

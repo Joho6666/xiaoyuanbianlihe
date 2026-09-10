@@ -18,7 +18,7 @@ function decorateProfile(profile) {
 Page({
   data: {
     settings: { acceptingOrders: false, configured: false, serviceStatus: 'LOADING', pickupPoints: [], deliveryCampuses: [], pricingMode: 'PER_PACKAGE', parcelSizePricing: {} },
-    parcelSizeOptions: [{ value: 'SMALL', label: '小件', priceText: '¥1' }, { value: 'MEDIUM', label: '中件', priceText: '¥3' }, { value: 'LARGE', label: '大件', priceText: '¥6' }],
+    parcelSizeOptions: [{ value: 'SMALL', label: '小件', priceText: '' }, { value: 'MEDIUM', label: '中件', priceText: '' }, { value: 'LARGE', label: '大件', priceText: '' }],
     pickupGroups: [emptyPickupGroup()],
     profiles: [], visibleProfiles: [], profileFilter: 'self', selectedProfile: null, showProfileSheet: false, inlineDelivery: true,
     deliveryMode: 'self', deliveryForm: { label: '我的宿舍', recipientName: '', contactPhone: '', deliveryCampus: '', deliveryCampusName: '', dormArea: '', dormAreaName: '', dormBuildingId: '', dormBuildingName: '', roomNumber: '' },
@@ -40,13 +40,13 @@ Page({
       const points = settings.pickupPoints || []
       const savedPoint = points.find((item) => item.id === cached.pickupPointId) || points.find((item) => item.enabled !== false)
       const sizePricing = settings.parcelSizePricing || {}
-      const parcelSizeOptions = ['SMALL', 'MEDIUM', 'LARGE'].map((value) => ({ value, label: sizePricing[value] && sizePricing[value].label ? sizePricing[value].label : ({ SMALL: '小件', MEDIUM: '中件', LARGE: '大件' }[value]), priceText: `¥${((sizePricing[value] && sizePricing[value].priceCents != null ? sizePricing[value].priceCents : ({ SMALL: 100, MEDIUM: 300, LARGE: 600 }[value])) / 100).toFixed(0)}` }))
+      const parcelSizeOptions = ['SMALL', 'MEDIUM', 'LARGE'].map((value) => ({ value, label: sizePricing[value] && sizePricing[value].label ? sizePricing[value].label : ({ SMALL: '小件', MEDIUM: '中件', LARGE: '大件' }[value]), priceText: sizePricing[value] && sizePricing[value].priceCents != null ? `¥${(sizePricing[value].priceCents / 100).toFixed(0)}` : '未配置' }))
       this.setData({ settings, parcelSizeOptions, loadError: false, loadErrorMsg: '', pickupGroups: [{ groupKey: `pickup_group_${++pickupGroupSequence}`, pickupPointId: savedPoint ? savedPoint.id : '', pickupPointName: savedPoint ? savedPoint.name : '', pointIndex: savedPoint ? points.findIndex((item) => item.id === savedPoint.id) : -1, items: [emptyPickupItem()] }] })
       await this.loadProfiles(cached)
       this.scheduleQuote()
     } catch (e) {
       console.error('[loadSettings] 加载配置失败:', e)
-      const errorMsg = (e && (e.msg || e.errMsg || e.message)) || '请检查网络后重试，暂未创建订单'
+      const errorMsg = (e && e.code === -401) ? '请先登录后再使用快递代拿' : '服务暂时不可用，请稍后重试'
       this.setData({ loadError: true, loadErrorMsg: errorMsg, settings: { acceptingOrders: false, configured: false, serviceStatus: 'ERROR', pickupPoints: [], deliveryCampuses: [] } })
     }
   },

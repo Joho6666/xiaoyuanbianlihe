@@ -35,7 +35,7 @@ express-import.js (expressImport.recognizeExpressScreenshots)
 ### 2.1 目标云函数与目录
 - **云函数名称**：`dbOperations`
 - **本地源码绝对目录**：`campus_treehole/cloudfunctions/dbOperations`
-- **目标环境 ID**：`xyblh-5gb26qrnf9d30feb`（必须与 `campus_treehole/config/cloud-env.js` 一致，禁止误部署到生产环境）
+- **目标环境 ID**：`<独立测试环境 ID>`（生产 `xyblh-5gb26qrnf9d30feb` 永远拒绝部署）
 
 ### 2.2 云端依赖（package.json）
 部署时必须保证云端已安装以下 npm 依赖（使用微信开发者工具「上传并运行：云端安装依赖」或本地 `npm install` 后整包上传）：
@@ -72,9 +72,9 @@ cloudfunctions/dbOperations/
 
 ### 2.4 云函数环境变量配置
 若需使用腾讯云 OCR 真实服务识别快递截图，需在 CloudBase 控制台为 `dbOperations` 函数配置以下环境变量：
-- `EXPRESS_OCR_SECRET_ID`: 腾讯云 API 密钥 SecretId
-- `EXPRESS_OCR_SECRET_KEY`: 腾讯云 API 密钥 SecretKey
-- `EXPRESS_OCR_REGION`: 地域（默认 `ap-guangzhou`）
+- `TENCENT_OCR_SECRET_ID`: 腾讯云 API 密钥 SecretId
+- `TENCENT_OCR_SECRET_KEY`: 腾讯云 API 密钥 SecretKey
+- `TENCENT_OCR_REGION`: 地域（默认 `ap-guangzhou`）
 
 若未配置上述环境变量，系统会安全降级返回 `OCR_NOT_CONFIGURED` 错误码，而不是崩溃或返回未知操作。
 

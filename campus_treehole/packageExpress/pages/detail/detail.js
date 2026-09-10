@@ -5,7 +5,8 @@ const decorate = (row) => {
   if (!row) return row
   const decoratedItems = (row.pickupItems || []).map((item) => ({
     ...item,
-    parcelSizeLabel: PARCEL_SIZE_LABELS[item.parcelSize] || '旧订单/未分类'
+    parcelSizeLabel: item.parcelSizeLabelSnapshot || PARCEL_SIZE_LABELS[item.parcelSize] || '旧订单/未分类',
+    parcelPriceText: Number.isFinite(Number(item.parcelPriceCents)) ? (Number(item.parcelPriceCents) / 100).toFixed(2) : ''
   }))
   return {
     ...row,

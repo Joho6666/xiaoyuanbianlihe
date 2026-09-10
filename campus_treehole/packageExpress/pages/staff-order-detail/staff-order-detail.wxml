@@ -4,9 +4,9 @@
   <view class="express-card staff-pickup-card">
     <text class="express-section-title">取件清单</text>
     <text class="staff-pickup-code">{{order.pickupCode}}</text>
-    <text class="staff-pickup-point">{{order.pickupPointNameSnapshot || order.pickupPointName}} · {{order.packageCount}} 件 · {{order.parcelSizeLabel}}</text>
+    <text class="staff-pickup-point">{{order.pickupPointNameSnapshot || order.pickupPointName}} · {{order.totalPackageCount || order.packageCount}} 件 · {{order.parcelSizeLabel}}</text>
     <view class="mismatch-tag-box" wx:if="{{order.parcelSizeMismatch}}">
-      <text class="mismatch-badge">⚠️ 规格不符已记录</text>
+       <text class="mismatch-badge">规格不符已记录</text>
       <text class="mismatch-text">下单选择: {{order.expectedParcelSizeLabel}} → 实际规格: {{order.actualParcelSizeLabel}}</text>
     </view>
     <view class="staff-pickup-items-list" wx:if="{{order.pickupItems && order.pickupItems.length}}">

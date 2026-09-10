@@ -62,7 +62,6 @@ Page({
           const resCall = await app.callDB('staffRecordExpressParcelMismatch', {
             orderId: this.orderId,
             actualParcelSize: selected.size,
-            expectedParcelSize: (this.data.order && this.data.order.pickupItems && this.data.order.pickupItems[0] && this.data.order.pickupItems[0].parcelSize) || 'SMALL',
             note: `工作人员现场核验标记为${selected.label}`
           })
           this.setData({ order: decorate(resCall.data) })
