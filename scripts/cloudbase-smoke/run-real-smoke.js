@@ -318,6 +318,23 @@ async function main() {
   assert.equal(deliveryProfile.code, 0)
   assert.equal(deliveryProfile.data.isDefault, true)
   track('express_delivery_profiles', deliveryProfile.data._id)
+  const secondProfile = await express.createExpressDeliveryProfile(f._openid, {
+    campusId: 'guit-hangtian',
+    label: 'Smoke Archive',
+    isSelf: false,
+    recipientName: 'Smoke Archive',
+    contactPhone: '13700001234',
+    deliveryCampus: 'south',
+    dormArea: 'tianheyuan',
+    dormBuildingId: 'south-6',
+    roomNumber: '614'
+  })
+  assert.equal(secondProfile.code, 0)
+  track('express_delivery_profiles', secondProfile.data._id)
+  const profileList = await express.getMyExpressDeliveryProfiles(f._openid)
+  assert.equal(profileList.data.length, 2)
+  assert.equal((await express.updateExpressDeliveryProfile(f._openid, { profileId: deliveryProfile.data._id, roomNumber: '615' })).code, 0)
+  assert.equal((await express.archiveExpressDeliveryProfile(f._openid, { profileId: secondProfile.data._id })).code, 0)
   const expressOrder = await express.createExpressOrder(f._openid, {
     pickupPointId: 'south',
     pickupCode: 'smoke-2-3-4587',
@@ -328,6 +345,7 @@ async function main() {
   assert.equal(expressOrder.code, 0)
   assert.equal(expressOrder.data.recipientNameSnapshot, 'Smoke Recipient')
   assert.equal(expressOrder.data.recipientPhoneSnapshot, '13800001234')
+  assert.equal(expressOrder.data.roomNumberSnapshot, '615')
   track('express_orders', expressOrder.data._id)
   assert.notEqual((await express.staffUpdateExpressOrderStatus(staffUser._openid, { orderId: expressOrder.data._id, status: 'DELIVERING' })).code, 0)
   assert.equal((await express.createExpressTestPayment(f._openid, { orderId: expressOrder.data._id })).code, 0)
