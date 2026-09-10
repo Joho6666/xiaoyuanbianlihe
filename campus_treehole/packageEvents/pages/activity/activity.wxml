@@ -54,78 +54,7 @@
 
   <view class="activity-feed">
     <view class="activity-modern"><content-card wx:for="{{posts}}" wx:key="_id" item="{{item}}" bindtap="onActivityCardTap" /></view>
-  <view class="legacy-waterfall" wx:if="{{false}}">
-    <view class="wf-col">
-      <view class="wf-card wf-card-enter" wx:for="{{leftCol}}" wx:key="_id" bindtap="goToDetail" data-id="{{item._id}}">
-        <view class="wf-activity-tag">活动</view>
-        <view wx:if="{{item._coverSrc}}" class="wf-cover-wrap {{mediaLoadedMap[item._id] ? 'wf-cover-wrap-ready' : ''}}" style="{{coverHeightsMap[item._id] ? 'height:' + coverHeightsMap[item._id] + 'rpx;' : ''}}">
-          <view class="wf-media-skeleton {{mediaLoadedMap[item._id] ? 'wf-media-skeleton-hidden' : ''}}"></view>
-          <image class="wf-cover {{mediaLoadedMap[item._id] ? 'wf-cover-ready' : ''}}" src="{{item._coverSrc}}" mode="aspectFill" lazy-load bindload="onMediaLoad" binderror="onMediaLoad" data-key="{{item._id}}" />
-        </view>
-        <view wx:elif="{{item.videos && item.videos.length > 0}}" class="wf-video-wrap">
-          <view class="wf-media-skeleton {{mediaLoadedMap[item._id] ? 'wf-media-skeleton-hidden' : ''}}"></view>
-          <video class="wf-video-el" src="{{item.videos[0]}}" object-fit="cover" show-center-play-btn="{{false}}" show-play-btn="{{false}}" controls="{{false}}" muted="{{true}}" bindloadedmetadata="onMediaLoad" binderror="onMediaLoad" data-key="{{item._id}}"></video>
-          <view class="video-badge"><text>视频</text></view>
-        </view>
-        <view wx:else class="wf-text-card">
-          <text class="wf-text-only">{{item.content}}</text>
-        </view>
-        <view class="wf-info">
-          <text class="wf-title">{{item.title || item.content}}</text>
-          <view class="wf-footer">
-            <view class="wf-author">
-              <image class="wf-avatar" src="{{item.avatar || '/images/avatar_default.png'}}" lazy-load />
-              <text class="wf-name">{{item.nickname || '匿名'}}</text>
-            </view>
-            <view class="wf-actions">
-              <view class="wf-favor {{item.isFavored ? 'favored' : ''}}" catchtap="onFavorTap" data-id="{{item._id}}">
-                <text class="favor-icon">{{item.isFavored ? '★' : '☆'}}</text>
-              </view>
-              <view class="wf-like {{item.isLiked ? 'liked' : ''}}" catchtap="onLikeTap" data-id="{{item._id}}">
-                <text class="like-icon">{{item.isLiked ? '❤️' : '🤍'}}</text>
-                <text class="like-num">{{item.likes || 0}}</text>
-              </view>
-            </view>
-          </view>
-        </view>
-      </view>
-    </view>
-    <view class="wf-col">
-      <view class="wf-card wf-card-enter" wx:for="{{rightCol}}" wx:key="_id" bindtap="goToDetail" data-id="{{item._id}}">
-        <view class="wf-activity-tag">活动</view>
-        <view wx:if="{{item._coverSrc}}" class="wf-cover-wrap {{mediaLoadedMap[item._id] ? 'wf-cover-wrap-ready' : ''}}" style="{{coverHeightsMap[item._id] ? 'height:' + coverHeightsMap[item._id] + 'rpx;' : ''}}">
-          <view class="wf-media-skeleton {{mediaLoadedMap[item._id] ? 'wf-media-skeleton-hidden' : ''}}"></view>
-          <image class="wf-cover {{mediaLoadedMap[item._id] ? 'wf-cover-ready' : ''}}" src="{{item._coverSrc}}" mode="aspectFill" lazy-load bindload="onMediaLoad" binderror="onMediaLoad" data-key="{{item._id}}" />
-        </view>
-        <view wx:elif="{{item.videos && item.videos.length > 0}}" class="wf-video-wrap">
-          <view class="wf-media-skeleton {{mediaLoadedMap[item._id] ? 'wf-media-skeleton-hidden' : ''}}"></view>
-          <video class="wf-video-el" src="{{item.videos[0]}}" object-fit="cover" show-center-play-btn="{{false}}" show-play-btn="{{false}}" controls="{{false}}" muted="{{true}}" bindloadedmetadata="onMediaLoad" binderror="onMediaLoad" data-key="{{item._id}}"></video>
-          <view class="video-badge"><text>视频</text></view>
-        </view>
-        <view wx:else class="wf-text-card">
-          <text class="wf-text-only">{{item.content}}</text>
-        </view>
-        <view class="wf-info">
-          <text class="wf-title">{{item.title || item.content}}</text>
-          <view class="wf-footer">
-            <view class="wf-author">
-              <image class="wf-avatar" src="{{item.avatar || '/images/avatar_default.png'}}" lazy-load />
-              <text class="wf-name">{{item.nickname || '匿名'}}</text>
-            </view>
-            <view class="wf-actions">
-              <view class="wf-favor {{item.isFavored ? 'favored' : ''}}" catchtap="onFavorTap" data-id="{{item._id}}">
-                <text class="favor-icon">{{item.isFavored ? '★' : '☆'}}</text>
-              </view>
-              <view class="wf-like {{item.isLiked ? 'liked' : ''}}" catchtap="onLikeTap" data-id="{{item._id}}">
-                <text class="like-icon">{{item.isLiked ? '❤️' : '🤍'}}</text>
-                <text class="like-num">{{item.likes || 0}}</text>
-              </view>
-            </view>
-          </view>
-        </view>
-      </view>
-    </view>
-  </view>
+  
 
   </view>
   <view class="load-status" wx:if="{{loading || searchLoading}}">

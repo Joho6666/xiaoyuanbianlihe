@@ -6,7 +6,7 @@
 .mine-cover-wrap {
   position: relative;
   overflow: hidden;
-  min-height: 500rpx;
+  min-height: 0;
   background: linear-gradient(135deg, #2b2f35 0%, #45525f 45%, #6a7a8a 100%);
 }
 
@@ -118,7 +118,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 46rpx;
+  font-size: 34rpx;
   line-height: 1.15;
   font-weight: 800;
   color: #ffffff;
@@ -480,5 +480,5 @@
 /* Campus Box profile: the content remains the same; the cover becomes a calm service card. */
 .mine-page { background:#f3f7fd; min-height:100vh; }
 .mine-cover-wrap { margin:24rpx; border-radius:32rpx; overflow:hidden; background:#fff; box-shadow:0 12rpx 32rpx rgba(23,32,51,.06); }
-.mine-cover-overlay { background:linear-gradient(135deg,#e8f1ff,#fff); min-height:180rpx; }
-.profile-section { margin-top:-110rpx; padding:0 28rpx 28rpx; }.profile-avatar { border:8rpx solid #fff; box-shadow:0 8rpx 20rpx rgba(23,32,51,.1); }.profile-name { color:#172033; }.profile-uid,.profile-ip { color:#7b8aa3; }.page-container { padding:0 24rpx 160rpx; }.stats-inline,.quick-grid,.tab-bar,.menu-section { border-radius:28rpx; background:#fff; box-shadow:0 8rpx 24rpx rgba(23,32,51,.05); }.quick-grid { padding:16rpx; }.quick-card { border-radius:20rpx; background:#f3f7fd; }.tab-bar { margin-top:24rpx; }.menu-section { padding:8rpx 20rpx; }
+.profile-section { padding:0 28rpx 16rpx; }.profile-avatar { border:4rpx solid #e6efff; }.profile-name { color:#172033; }.profile-edit,.top-action-ico { color:#2f76ff; }.profile-uid,.profile-ip { color:#7b8aa3; }.page-container { padding:0 24rpx 160rpx; }.stats-inline,.quick-grid,.tab-bar,.menu-section { border-radius:24rpx; background:#fff; }.quick-grid { padding:16rpx; }.quick-card { border-radius:20rpx; background:#f3f7fd; }.tab-bar { margin-top:24rpx; }.menu-section { padding:8rpx 20rpx; }
+.profile-tools { display:flex; justify-content:flex-end; gap:16rpx; padding:0 28rpx 24rpx; color:#2f76ff; font-size:22rpx; }.profile-tools text { padding:8rpx 16rpx; background:#edf4ff; border-radius:16rpx; }

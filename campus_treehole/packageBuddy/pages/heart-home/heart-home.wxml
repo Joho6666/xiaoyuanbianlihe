@@ -191,7 +191,7 @@
     <!-- TAB 2: 今日缘分卡 (Fate Card) -->
     <view wx:if="{{tab === 'fate'}}" class="tab-content">
       <view class="fate-modern" wx:if="{{!fate}}"><view class="fate-modern-quota">今日缘分 · 剩余 {{quota.remaining}} / {{quota.limit}} 次</view><empty-state icon="✦" title="今天会遇见谁？" description="同频指数仅用于推荐排序" action-text="遇见今日缘分" bindaction="draw" /></view>
-      <fate-card wx:else item="{{fate}}" revealed="{{revealed}}" bindreveal="reveal" bindlike="onHeartLike" bindpass="onHeartPass" />
+      <fate-card wx:else item="{{fate}}" revealed="{{revealed}}" bindsafety="onCardSafety" bindbuddy="onCardBuddy" bindreveal="reveal" bindlike="onHeartLike" bindpass="onHeartPass" />
       <view class="fate-card-container">
         <!-- 额度信息提示条 -->
         <view class="quota-badge-row">

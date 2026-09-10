@@ -1,1 +1,8 @@
-<view class="fate-card {{revealed ? 'fate-card-revealed' : ''}}"><block wx:if="{{!revealed}}"><view class="fate-mark">✦</view><view class="fate-title">今日缘分</view><view class="fate-sub">翻开一张校园同频卡</view><button bindtap="onReveal">揭开</button></block><block wx:else><view class="fate-title">今日缘分</view><view class="fate-score" wx:if="{{item.score != null}}">同频指数 {{item.score}}</view><view class="fate-interests" wx:if="{{item.interests}}">共同兴趣：{{item.interests}}</view><view class="fate-actions"><button bindtap="onPass">暂时没感觉</button><button class="fate-like" bindtap="onLike">喜欢</button></view></block></view>
+<view class="fate-card {{revealed ? 'fate-card-revealed' : ''}}">
+  <view class="fate-title">今日缘分</view>
+  <view class="fate-score" wx:if="{{item.matchScore != null}}">同频指数 {{item.matchScore}}</view>
+  <view class="fate-sub">仅用于推荐排序</view>
+  <view class="fate-interests"><text wx:for="{{item.sharedInterests}}" wx:key="*this">{{item}} </text></view>
+  <button wx:if="{{!revealed}}" bindtap="onReveal">揭开</button>
+  <heart-card wx:else item="{{item}}" bindlike="onLike" bindpass="onPass" bindsafety="onSafety" bindbuddy="onBuddy" />
+</view>

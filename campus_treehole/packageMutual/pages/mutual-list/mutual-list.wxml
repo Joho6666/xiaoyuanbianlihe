@@ -57,77 +57,7 @@
   <!-- 条目列表 -->
   <view class="post-list">
     <view class="modern-post-list"><content-card wx:for="{{posts}}" wx:key="_id" item="{{item}}" bindtap="onMutualCardTap" /></view>
-    <view class="legacy-post-list" wx:if="{{false}}">
-    <!-- 互助卡片 -->
-    <block wx:if="{{activeTab === 'help'}}">
-      <view
-        wx:for="{{posts}}"
-        wx:key="_id"
-        class="help-card"
-        data-id="{{item._id}}"
-        bindtap="goToDetail"
-      >
-        <view class="card-header">
-          <view class="header-tags">
-            <text class="help-type-tag">互助求助</text>
-            <text class="reward-tag" wx:if="{{item.reward}}">赏：{{item.reward}}</text>
-          </view>
-          <text class="status-badge status-{{item.status}}">
-            <text wx:if="{{item.status === 'open'}}">待解决</text>
-            <text wx:elif="{{item.status === 'in_progress'}}">进行中</text>
-            <text wx:else>已解决</text>
-          </text>
-        </view>
-
-        <view class="card-title">{{item.title}}</view>
-        <view class="card-content">{{item.content}}</view>
-
-        <view class="card-meta" wx:if="{{item.location}}">
-          <text class="meta-icon">📍</text>
-          <text class="meta-location">{{item.location}}</text>
-        </view>
-
-        <view class="card-footer">
-          <view class="user-box">
-            <image class="avatar" src="{{item.author.avatarUrl || '/images/avatar_default.png'}}" mode="aspectFill" />
-            <text class="username">{{item.author.nickName || '同学'}}</text>
-          </view>
-          <view class="time-text">{{item.timeDisplay}}</view>
-        </view>
-      </view>
-    </block>
-
-    <!-- 失物招领卡片 -->
-    <block wx:else>
-      <view
-        wx:for="{{posts}}"
-        wx:key="_id"
-        class="lost-card"
-        data-id="{{item._id}}"
-        bindtap="goToDetail"
-      >
-        <image class="lost-thumb" wx:if="{{item.images && item.images.length > 0}}" src="{{item.images[0]}}" mode="aspectFill" />
-        <view class="lost-body">
-          <view class="card-header">
-            <text class="lost-type-tag type-{{item.type}}">{{item.type === 'lost' ? '寻物启事' : '失物招领'}}</text>
-            <text class="status-badge status-{{item.status}}">
-              <text wx:if="{{item.status === 'open'}}">待认领/寻找</text>
-              <text wx:else>已寻回/归还</text>
-            </text>
-          </view>
-          <view class="card-title">{{item.title}}</view>
-          <view class="card-meta" wx:if="{{item.location}}">
-            <text class="meta-location">地点：{{item.location}}</text>
-          </view>
-          <view class="card-footer">
-            <text class="username">{{item.author.nickName || '同学'}}</text>
-            <text class="time-text">{{item.timeDisplay}}</text>
-          </view>
-        </view>
-      </view>
-    </block>
-
-    </view>
+    
     <!-- 空状态 -->
     <empty-state wx:if="{{!loading && posts.length === 0}}" icon="🤝" title="暂时没有求助" description="有需要就发一条校园服务信息" action-text="发布第一条信息" bindaction="goToCreate" />
 

@@ -1,6 +1,5 @@
 <view class="mine-page">
   <view class="mine-cover-wrap">
-    <view class="mine-cover-overlay"></view>
 
     <view class="top-action-row">
       <view class="top-action-right">
@@ -16,7 +15,7 @@
             <image src="{{userInfo.avatarUrl}}" mode="aspectFill"></image>
           </view>
         </view>
-        <view class="profile-meta" bindtap="onChangeCover">
+        <view class="profile-meta">
           <view class="name-row">
             <text class="profile-name" catchtap="onEditNickname">{{userInfo.nickName || '未设置昵称'}}</text>
             <text class="profile-edit" catchtap="onEditNickname">✎</text>
@@ -30,6 +29,7 @@
         <view class="tag-chip" wx:for="{{userInfo.tags}}" wx:key="*this">{{item}}</view>
       </view>
     </view>
+    <view class="profile-tools"><text bindtap="onEditProfile">编辑资料</text><text bindtap="onChangeCover">更换个人封面</text></view>
   </view>
 
   <view class="page-container">

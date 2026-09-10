@@ -8,7 +8,7 @@
     <text class="detail-empty-sub">{{loadError}}</text>
     <view class="detail-empty-actions">
       <view class="detail-empty-btn" bindtap="onRetryLoad">重新加载</view>
-      <view class="detail-empty-btn detail-empty-btn-ghost" bindtap="onShareTap" wx:if="{{false}}"></view>
+      
     </view>
   </view>
 

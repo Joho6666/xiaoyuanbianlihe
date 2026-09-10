@@ -2,7 +2,7 @@
   <campus-page-header title="消息" subtitle="把具体的事情聊清楚" />
   <view class="msg-header">
     <view class="msg-header-main">
-      <text class="msg-title" wx:if="{{false}}">消息</text>
+      
       <text class="msg-subtitle" wx:if="{{currentTab === 'chat'}}">{{totalUnread > 0 ? ('你有 ' + totalUnread + ' 条未读私信') : '下拉可以刷新最新会话'}}</text>
       <text class="msg-subtitle" wx:else>{{interactionUnread > 0 ? ('你有 ' + interactionUnread + ' 条未读互动') : '点赞、评论、私信、收藏和关注会在这里提醒（与微信服务通知一致）'}}</text>
     </view>
@@ -59,34 +59,7 @@
 
       <view class="conv-list" wx:elif="{{conversations.length > 0}}">
         <view class="modern-conv-list"><user-row wx:for="{{conversations}}" wx:key="targetUserId" item="{{item}}" avatar="{{item.targetAvatar}}" name="{{item.targetNickName}}" meta="{{item.lastMessage || '开始一段对话'}}" badge="{{item.unreadCount > 0 ? item.unreadCount : ''}}" bindtap="onModernChatTap" /></view>
-        <view class="legacy-conv-list" wx:if="{{false}}">
-        <view
-          class="conv-item {{item.isUnread ? 'conv-item-unread' : ''}}"
-          wx:for="{{conversations}}"
-          wx:key="targetUserId"
-          bindtap="onChatTap"
-          data-user-id="{{item.targetUserId}}"
-          data-nickname="{{item.targetNickName}}"
-        >
-          <view class="conv-avatar {{item.isUnread ? 'conv-avatar-unread' : ''}}">
-            <image src="{{item.targetAvatar}}" mode="aspectFill"></image>
-          </view>
-          <view class="conv-info">
-            <view class="conv-top">
-              <view class="conv-name-wrap">
-                <text class="conv-name {{item.isUnread ? 'conv-name-unread' : ''}}">{{item.targetNickName}}</text>
-                <text class="conv-latest-tag" wx:if="{{item.isLatest && !item.isUnread}}">最近联系</text>
-                <text class="conv-unread-tag" wx:if="{{item.isUnread}}">未读</text>
-              </view>
-              <text class="conv-time {{item.isUnread ? 'conv-time-unread' : ''}}">{{item.timeStr}}</text>
-            </view>
-            <view class="conv-bottom">
-              <text class="conv-last {{item.isUnread ? 'conv-last-unread' : ''}}">{{item.lastMessage || '暂无消息'}}</text>
-              <view class="conv-badge" wx:if="{{item.unreadCount > 0}}">{{item.unreadCount > 99 ? '99+' : item.unreadCount}}</view>
-            </view>
-          </view>
-        </view>
-        </view>
+        
       </view>
     </block>
 

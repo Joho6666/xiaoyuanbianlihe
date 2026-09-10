@@ -49,63 +49,7 @@
     <view class="product-grid"><product-card wx:for="{{goods}}" wx:key="_id" item="{{item}}" bindtap="onProductCardTap" /></view>
   </view>
 
-  <view class="legacy-waterfall" wx:if="{{false}}">
-    <view class="wf-col">
-      <view class="goods-card goods-card-enter" wx:for="{{leftCol}}" wx:key="_id" bindtap="goToDetail" data-id="{{item._id}}" style="animation-delay: {{index * 40}}ms;">
-        <view wx:if="{{item.images && item.images.length > 0}}" class="goods-cover-wrap">
-          <view class="goods-media-skeleton {{mediaLoadedMap[item._id] ? 'goods-skeleton-hidden' : ''}}"></view>
-          <image class="goods-cover {{mediaLoadedMap[item._id] ? 'goods-cover-ready' : ''}}" src="{{item.images[0]}}" mode="aspectFill" lazy-load bindload="onGoodsImageLoad" binderror="onGoodsImageLoad" data-id="{{item._id}}" />
-        </view>
-        <view wx:else class="goods-cover-empty"><text>暂无图片</text></view>
-        <view class="goods-info">
-          <text class="goods-title">{{item.title}}</text>
-          <view class="goods-price-row">
-            <text class="goods-price">¥{{item.price}}</text>
-            <text class="goods-original" wx:if="{{item.originalPrice}}">¥{{item.originalPrice}}</text>
-          </view>
-          <view class="goods-footer">
-            <view class="goods-author">
-              <image class="goods-avatar" src="{{item.avatar || '/images/avatar_default.png'}}" />
-              <text class="goods-name">{{item.nickname || '匿名'}}</text>
-            </view>
-            <text class="goods-want" wx:if="{{item.wantCount}}">{{item.wantCount}}人想要</text>
-          </view>
-          <view class="goods-tags">
-            <text class="goods-tag" wx:if="{{item.condition}}">{{item.condition}}</text>
-            <text class="goods-tag trade-tag" wx:if="{{item.tradeMethod}}">{{item.tradeMethod}}</text>
-          </view>
-        </view>
-      </view>
-    </view>
-
-    <view class="wf-col">
-      <view class="goods-card goods-card-enter" wx:for="{{rightCol}}" wx:key="_id" bindtap="goToDetail" data-id="{{item._id}}" style="animation-delay: {{index * 40 + 20}}ms;">
-        <view wx:if="{{item.images && item.images.length > 0}}" class="goods-cover-wrap">
-          <view class="goods-media-skeleton {{mediaLoadedMap[item._id] ? 'goods-skeleton-hidden' : ''}}"></view>
-          <image class="goods-cover {{mediaLoadedMap[item._id] ? 'goods-cover-ready' : ''}}" src="{{item.images[0]}}" mode="aspectFill" lazy-load bindload="onGoodsImageLoad" binderror="onGoodsImageLoad" data-id="{{item._id}}" />
-        </view>
-        <view wx:else class="goods-cover-empty"><text>暂无图片</text></view>
-        <view class="goods-info">
-          <text class="goods-title">{{item.title}}</text>
-          <view class="goods-price-row">
-            <text class="goods-price">¥{{item.price}}</text>
-            <text class="goods-original" wx:if="{{item.originalPrice}}">¥{{item.originalPrice}}</text>
-          </view>
-          <view class="goods-footer">
-            <view class="goods-author">
-              <image class="goods-avatar" src="{{item.avatar || '/images/avatar_default.png'}}" />
-              <text class="goods-name">{{item.nickname || '匿名'}}</text>
-            </view>
-            <text class="goods-want" wx:if="{{item.wantCount}}">{{item.wantCount}}人想要</text>
-          </view>
-          <view class="goods-tags">
-            <text class="goods-tag" wx:if="{{item.condition}}">{{item.condition}}</text>
-            <text class="goods-tag trade-tag" wx:if="{{item.tradeMethod}}">{{item.tradeMethod}}</text>
-          </view>
-        </view>
-      </view>
-    </view>
-  </view>
+  
 
   <view class="load-status" wx:if="{{loading || searchLoading}}">
     <text class="load-text">加载中...</text>

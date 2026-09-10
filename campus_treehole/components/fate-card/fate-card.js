@@ -1,1 +1,1 @@
-Component({properties:{item:{type:Object,value:{}},revealed:Boolean},methods:{onReveal(){this.triggerEvent('reveal')},onLike(){this.triggerEvent('like',{item:this.data.item})},onPass(){this.triggerEvent('pass',{item:this.data.item})}}})
+Component({properties:{item:{type:Object,value:{}},revealed:Boolean},methods:{onReveal(){this.triggerEvent('reveal')},onLike(){this.triggerEvent('like',{item:this.data.item})},onPass(){this.triggerEvent('pass',{item:this.data.item})},onSafety(e){this.triggerEvent('safety',e.detail)},onBuddy(e){this.triggerEvent('buddy',e.detail)}}})
