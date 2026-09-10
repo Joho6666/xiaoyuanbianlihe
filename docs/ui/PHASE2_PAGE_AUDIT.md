@@ -4,8 +4,8 @@
 
 | Page | 功能 | 当前样式 | 目标样式 | 是否修改业务 | 状态 |
 | --- | --- | --- | --- | --- | --- |
-| `pages/index/index` | 首页精选 / Campus Feed | 首页私有卡片与分区样式 | 单列精选、统一头部与内容卡 | 否 | 已迁移：content-card；静态验证通过 |
-| `pages/discover/discover` | 发现与服务入口 | 服务矩阵私有样式 | 统一页面头部、服务卡和区块标题 | 否 | 已迁移：service-card；静态验证通过 |
+| `pages/index/index` | 首页 / Campus Feed | 混合旧导航与单列卡 | 浅蓝服务首页、服务宫格、真实双列帖子瀑布流 | 否 | 已实现；DevTools 截图验收待执行 |
+| `pages/discover/discover` | 发现与服务入口 | 假动态与隐藏旧频道矩阵 | 两列真实服务入口，随学校功能开关变化 | 否 | 已实现；DevTools 截图验收待执行 |
 | `pages/detail/detail` | 动态详情 | 详情页私有媒体与内容卡 | 统一内容卡、作者行和状态标签 | 否 | 已接入统一头部；详情媒体卡待截图核对 |
 | `pages/market/market` | 集市列表 | 搜索、分类、商品卡私有样式 | 图片优先商品卡与稳定列表 | 否 | 已迁移：product-card、filter-tabs |
 | `packageMarket/pages/market-detail/market-detail` | 商品详情 | 价格、描述、卖家区块私有样式 | 大图、价格突出、卖家弱化 | 否 | 已迁移：price-text、user-row |
@@ -31,3 +31,11 @@
 - Heart 使用珊瑚红局部强调，不出现“恋爱成功率 / 成功率 %”。
 - 空状态使用具体业务文案，不使用单一“暂无数据”。
 - 组件只负责展示和事件转发；成熟业务请求、授权、配额和内容安全逻辑保持原样。
+- 首页帖子保留现有排序、分页、刷新、点赞、收藏、图片高度计算与视频渲染；左右列只是同一 `posts` 数据的展示分栏。
+- 本文档的“已实现”不等于视觉验收通过：微信开发者工具服务端口尚未在本次代码修改后验证时，应保持 `NOT RUN`。
+
+## 本轮验证边界
+
+- `PASS`：`npm run ci` 与 `npm run test:integration:memory` 已在本轮 UI 修改后通过。
+- `NOT RUN`：微信开发者工具 CLI 存在，但调用 `build-npm --project ... --port 9420` 返回“IDE service port disabled”。因此没有将代码静态检查误记为页面编译、截图或视觉验收通过。
+- `NOT TOUCHED`：CloudBase 生产环境、数据库结构与云函数均未修改。

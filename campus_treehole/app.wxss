@@ -4,9 +4,9 @@
 /* ========== CSS 变量 / 设计令牌 ========== */
 page {
   /* 主色 */
-  --primary: #426089;
-  --primary-dim: #35547d;
-  --primary-container: #afcefd;
+  --primary: #2f76ff;
+  --primary-dim: #1f5bd0;
+  --primary-container: #dce9ff;
   --on-primary: #f8f8ff;
   --on-primary-container: #25456c;
 
@@ -21,7 +21,7 @@ page {
   --on-tertiary-container: #4b416a;
 
   /* 表面色层级 */
-  --surface: #f7f9fc;
+  --surface: #f3f7fd;
   --surface-container-lowest: #ffffff;
   --surface-container-low: #f0f4f8;
   --surface-container: #e9eef3;
@@ -29,7 +29,7 @@ page {
   --surface-container-highest: #dce3e9;
 
   /* 文字色 */
-  --on-surface: #2c3338;
+  --on-surface: #172033;
   --on-surface-variant: #596065;
   --outline: #747c81;
   --outline-variant: #abb3b9;
@@ -46,8 +46,8 @@ page {
   --on-info-container: #1e40af;
 
   /* 互补强调色：价格、点赞、少量 CTA，与学院蓝形成清晰层次（主流「品牌色 + 一点暖色」） */
-  --accent: #c94a62;
-  --accent-soft: rgba(201, 74, 98, 0.12);
+  --accent: #ff657a;
+  --accent-soft: rgba(255, 101, 122, 0.12);
 
   /* 字号阶梯（主流 App：标题略大、正文易读、辅助信息克制） */
   --text-xs: 22rpx;

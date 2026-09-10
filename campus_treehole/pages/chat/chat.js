@@ -75,6 +75,7 @@ Page({
     myAvatarUrl: '/images/avatar_default.png',
     chatBlocked: false,
     chatBlockedTip: '',
+    businessContext: '',
     emojis: ['😀', '😄', '😆', '😉', '🥹', '😍', '🤔', '😭', '😡', '🥳', '👍', '👏', '🙏', '❤️', '💔', '🎉']
   },
 
@@ -246,8 +247,10 @@ Page({
       app.waitForLogin(() => resolve())
     })
 
+    // Context is optional UI metadata from an existing entry; historical chats do not invent one.
+    const businessContext = ['Heart', 'Buddy', 'Market', 'Bridge'].includes(options.context) ? options.context : ''
     // 客户端保留公开 userId，身份映射由云函数完成。
-    this.setData({ targetOpenid })
+    this.setData({ targetOpenid, businessContext })
 
     const rel = await app.getBlockRelation(targetOpenid)
     let chatBlocked = false

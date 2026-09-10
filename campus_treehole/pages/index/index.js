@@ -140,7 +140,8 @@ Page({
     showSubscribeGuideModal: false,
     subscribeGuideSubmitting: false,
     subscribeGuideStep: 1,
-    campusNowItems: []
+    campusNowItems: [],
+    heartEnabled: false
   },
 
 
@@ -209,14 +210,18 @@ Page({
     if (!app.hasSelectedCampusInStorage()) {
       this.setData({
         selectedCampusId: '',
-        selectedCampusName: ''
+        selectedCampusName: '',
+        heartEnabled: false
       })
       return
     }
+    const campus = campuses.getCampusById(app.getCommittedCampusId())
+    const school = campus && campuses.getSchoolById(campus.schoolId)
     this.setData({
       selectedCampusId: app.getCommittedCampusId(),
       selectedCampusName: app.getSelectedCampusName(),
-      showCampusPicker: false
+      showCampusPicker: false,
+      heartEnabled: !!(school && school.features && school.features.heart)
     })
   },
 
@@ -264,6 +269,7 @@ Page({
       page: 1,
       hasMore: true
     })
+    this._syncCampusUiFromApp()
     this.loadLatestAnnouncement()
     this.loadPosts()
   },
@@ -670,6 +676,26 @@ Page({
     }
     wx.navigateTo({ url: '/packageEvents/pages/activity/activity' })
   },
+
+  _openService(url) {
+    if (!app.globalData.isLoggedIn) {
+      wx.showToast({ title: '请先登录', icon: 'none' })
+      return
+    }
+    if (!app.hasSelectedCampusInStorage()) {
+      this.onOpenCampusPicker()
+      return
+    }
+    wx.navigateTo({ url })
+  },
+
+  onOpenBuddy() { this._openService('/packageBuddy/pages/buddy-square/buddy-square') },
+  onOpenHeart() { this._openService('/packageBuddy/pages/heart-home/heart-home') },
+  onOpenMarket() { this._openService('/pages/market/market') },
+  onOpenBridge() { this._openService('/packageBridge/pages/bridge-home/bridge-home') },
+  onOpenMutual() { this._openService('/packageMutual/pages/mutual-list/mutual-list?type=help') },
+  onOpenLost() { this._openService('/packageMutual/pages/mutual-list/mutual-list?type=lost') },
+  onOpenDiscover() { wx.switchTab({ url: '/pages/discover/discover' }) },
 
   onFeedSwitch(e) {
     const type = e.currentTarget.dataset.type

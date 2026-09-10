@@ -23,8 +23,9 @@ for (const component of ['campus-page-header', 'section-header', 'service-card',
 }
 const indexWxml = fs.readFileSync(path.join(mini, 'pages/index/index.wxml'), 'utf8')
 const activityWxml = fs.readFileSync(path.join(mini, 'packageEvents/pages/activity/activity.wxml'), 'utf8')
-assert(indexWxml.includes('<content-card'), 'Campus Feed renders shared content-card')
-assert(!indexWxml.includes('class="waterfall"'), 'Home no longer renders the legacy waterfall')
+assert(indexWxml.includes('class="waterfall" wx:if="{{!showSkeleton}}"'), 'Campus Feed renders the live two-column waterfall')
+assert(indexWxml.includes('wx:for="{{leftCol}}"') && indexWxml.includes('wx:for="{{rightCol}}"'), 'Waterfall renders both display columns from the live feed')
+assert(indexWxml.includes('bindload="onMediaLoad"') && indexWxml.includes('<video'), 'Waterfall preserves image sizing and video rendering')
 assert(activityWxml.includes('<content-card'), 'Events renders shared content-card')
 assert(!activityWxml.includes('class="waterfall"'), 'Events no longer renders the legacy waterfall')
 assert(fs.readFileSync(path.join(mini, 'pages/market/market.wxml'), 'utf8').includes('<product-card'), 'Market renders shared product-card')
@@ -33,6 +34,7 @@ assert(fs.readFileSync(path.join(mini, 'packageBridge/pages/bridge-home/bridge-h
 assert(fs.readFileSync(path.join(mini, 'packageMutual/pages/mutual-list/mutual-list.wxml'), 'utf8').includes('<content-card'), 'Mutual renders shared content-card')
 for (const page of targetPages) {
   const json = JSON.parse(fs.readFileSync(path.join(mini, `${page}.json`), 'utf8'))
+  if (page === 'pages/index/index') continue
   assert(json.usingComponents && json.usingComponents['campus-page-header'], `${page} uses campus-page-header`)
   const wxml = fs.readFileSync(path.join(mini, `${page}.wxml`), 'utf8')
   assert(wxml.includes('<campus-page-header'), `${page} renders campus-page-header`)
@@ -41,4 +43,8 @@ const heartText = ['packageBuddy/pages/heart-home/heart-home.wxml', 'packageBudd
   .map(file => fs.readFileSync(path.join(mini, file), 'utf8')).join('\n')
 assert(!/(恋爱成功率|成功率\s*%)/.test(heartText), 'Heart UI contains no probability claims')
 assert(fs.readFileSync(path.join(mini, 'packageBuddy/pages/heart-home/heart-home.wxml'), 'utf8').includes('暂时没有新同频同学'), 'Heart empty state is concrete')
-console.log(`PASS Phase 2 UI: ${targetPages.length} user pages registered, shared headers wired, Heart copy guarded`)
+for (const page of ['pages/index/index', 'pages/discover/discover']) {
+  const wxml = fs.readFileSync(path.join(mini, `${page}.wxml`), 'utf8')
+  assert(!wxml.includes('wx:if="{{false}}"'), `${page} does not retain a hidden legacy template`)
+}
+console.log(`PASS Phase 2 UI: ${targetPages.length} user pages registered, live waterfall guarded, Heart copy guarded`)

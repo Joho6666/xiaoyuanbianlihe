@@ -1,7 +1,6 @@
 <view class="mine-page">
   <view class="mine-cover-wrap">
-    <image wx:if="{{userInfo.coverImage}}" class="mine-cover-bg" src="{{userInfo.coverImage}}" mode="aspectFill" bindtap="onChangeCover"></image>
-    <view class="mine-cover-overlay" bindtap="onChangeCover"></view>
+    <view class="mine-cover-overlay"></view>
 
     <view class="top-action-row">
       <view class="top-action-right">
@@ -23,7 +22,7 @@
             <text class="profile-edit" catchtap="onEditNickname">✎</text>
           </view>
           <text class="profile-uid profile-uid-copy" catchtap="onCopyUserId">ID：{{userInfo.numericId || '未分配'}}</text>
-          <text class="profile-ip">IP：{{userInfo.college || '未设置校区'}}</text>
+          <text class="profile-ip">{{userInfo.college || '完善你的校园资料'}}</text>
         </view>
       </view>
       <text class="profile-bio" wx:if="{{userInfo.bio}}">{{userInfo.bio}}</text>
@@ -55,8 +54,8 @@
       <text class="quick-sub">完善主页信息</text>
     </view>
     <view class="quick-card" bindtap="onMenuTap" data-page="searchUser">
-      <text class="quick-title">群聊</text>
-      <text class="quick-sub">查看并搜索用户</text>
+      <text class="quick-title">关注与用户</text>
+      <text class="quick-sub">查看已关注的同学</text>
     </view>
     <view class="quick-card" bindtap="onMenuTap" data-page="blockedUsers">
       <text class="quick-title">黑名单</text>

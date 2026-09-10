@@ -1,6 +1,7 @@
 // pages/discover/discover.js - 发现全域频道主页
 const app = getApp()
 const { CAMPUSES } = require('../../utils/campuses.js')
+const { getCampusById, getSchoolById } = require('../../config/schools.js')
 const i18n = require('../../utils/i18n.js')
 
 Page({
@@ -9,7 +10,8 @@ Page({
     campusId: 'guit-hangtian',
     showModal: false,
     modalData: {},
-    currentLang: 'zh-CN'
+    currentLang: 'zh-CN',
+    heartEnabled: false
   },
 
   onLoad() {
@@ -33,9 +35,12 @@ Page({
 
   refreshCampusInfo() {
     const selectedCampusId = app.getSelectedCampusId()
+    const campus = getCampusById(selectedCampusId)
+    const school = campus && getSchoolById(campus.schoolId)
     this.setData({
       campusId: selectedCampusId,
-      campusName: app.getSelectedCampusName()
+      campusName: app.getSelectedCampusName(),
+      heartEnabled: !!(school && school.features && school.features.heart)
     })
   },
 
@@ -108,6 +113,10 @@ Page({
       }
     })
   },
+
+  onOpenHeart() { wx.navigateTo({ url: '/packageBuddy/pages/heart-home/heart-home' }) },
+  onOpenMutual() { wx.navigateTo({ url: '/packageMutual/pages/mutual-list/mutual-list?type=help' }) },
+  onOpenLost() { wx.navigateTo({ url: '/packageMutual/pages/mutual-list/mutual-list?type=lost' }) },
 
   toggleTabBar(visible) {
     const tabBar = typeof this.getTabBar === 'function' ? this.getTabBar() : null

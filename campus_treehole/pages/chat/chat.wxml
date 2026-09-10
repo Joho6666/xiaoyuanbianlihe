@@ -5,7 +5,7 @@
     <text class="chat-user-name">{{targetUser.nickName || '对方'}}</text>
     <text class="chat-user-tip">查看主页</text>
   </view>
-  <view class="chat-context"><text class="chat-context-label">校园联系</text><text class="chat-context-copy">围绕具体事情，礼貌沟通</text></view>
+  <view class="chat-context" wx:if="{{businessContext}}"><text class="chat-context-label">{{businessContext}}</text><text class="chat-context-copy">围绕具体事情，礼貌沟通</text></view>
 
   <view class="chat-status-bar" wx:if="{{composerStatus}}">
     <text>{{composerStatus}}</text>

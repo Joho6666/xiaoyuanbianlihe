@@ -477,3 +477,8 @@
 .bottom-placeholder {
   height: calc(180rpx + env(safe-area-inset-bottom));
 }
+/* Campus Box profile: the content remains the same; the cover becomes a calm service card. */
+.mine-page { background:#f3f7fd; min-height:100vh; }
+.mine-cover-wrap { margin:24rpx; border-radius:32rpx; overflow:hidden; background:#fff; box-shadow:0 12rpx 32rpx rgba(23,32,51,.06); }
+.mine-cover-overlay { background:linear-gradient(135deg,#e8f1ff,#fff); min-height:180rpx; }
+.profile-section { margin-top:-110rpx; padding:0 28rpx 28rpx; }.profile-avatar { border:8rpx solid #fff; box-shadow:0 8rpx 20rpx rgba(23,32,51,.1); }.profile-name { color:#172033; }.profile-uid,.profile-ip { color:#7b8aa3; }.page-container { padding:0 24rpx 160rpx; }.stats-inline,.quick-grid,.tab-bar,.menu-section { border-radius:28rpx; background:#fff; box-shadow:0 8rpx 24rpx rgba(23,32,51,.05); }.quick-grid { padding:16rpx; }.quick-card { border-radius:20rpx; background:#f3f7fd; }.tab-bar { margin-top:24rpx; }.menu-section { padding:8rpx 20rpx; }

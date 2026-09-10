@@ -11,7 +11,6 @@
 </view>
 
 <view class="page">
-  <campus-page-header title="校园便利盒" subtitle="让校园生活更简单" />
   <view class="subscribe-guide-mask" wx:if="{{showSubscribeGuideModal}}" bindtap="onCloseSubscribeGuideModal">
     <view class="subscribe-guide-modal" catchtap="">
       <text class="subscribe-guide-step">第{{subscribeGuideStep}}步 / 2</text>
@@ -63,10 +62,15 @@
   </view>
   <view class="nav-bar" style="padding-top: {{statusBarHeight}}px;">
     <view class="nav-content">
-      <view class="nav-tabs">
-        <text class="nav-tab {{feedType === 'follow' ? 'nav-tab-active' : ''}}" bindtap="onFeedSwitch" data-type="follow">关注</text>
-        <text class="nav-tab {{feedType === 'discover' ? 'nav-tab-active' : ''}}" bindtap="onFeedSwitch" data-type="discover">发现</text>
-        <text class="nav-tab" bindtap="onOpenActivityZone" hover-class="nav-tab-tap" hover-stay-time="80">活动</text>
+      <view class="brand-row">
+        <view class="brand-lockup">
+          <text class="brand-name">校园便利盒</text>
+          <text class="brand-subtitle">Campus Box</text>
+        </view>
+        <view class="nav-campus-row" bindtap="onOpenCampusPicker">
+          <text class="nav-campus-name">{{selectedCampusName || '选择校区'}}</text>
+          <text class="nav-campus-arrow">⌄</text>
+        </view>
       </view>
       <view class="nav-search" bindtap="onSearchFocus">
         <view class="nav-search-ico" aria-hidden="true"></view>
@@ -81,11 +85,6 @@
         />
         <view class="nav-search-clear" wx:if="{{searchKeyword}}" catchtap="onClearSearch">清除</view>
       </view>
-      <view class="nav-campus-row" bindtap="onOpenCampusPicker">
-        <text class="nav-campus-tag">校区</text>
-        <text class="nav-campus-name">{{selectedCampusName || '请选择校区'}}</text>
-        <text class="nav-campus-arrow">›</text>
-      </view>
     </view>
   </view>
 
@@ -95,6 +94,30 @@
     <text class="announcement-badge">公告</text>
     <text class="announcement-title">{{latestAnnouncement.title}}</text>
     <text class="announcement-arrow">›</text>
+  </view>
+
+  <view class="campus-hero" bindtap="onOpenActivityZone">
+    <view class="hero-copy">
+      <text class="hero-eyebrow">CAMPUS SERVICE</text>
+      <text class="hero-title">把校园生活放进一个盒子</text>
+      <text class="hero-desc">动态、搭子、闲置与互助，都在当前校区发生</text>
+      <text class="hero-link">查看校园活动 →</text>
+    </view>
+    <view class="hero-mark"><text>✦</text></view>
+  </view>
+
+  <view class="service-panel">
+    <view class="service-panel-head"><text>校园服务</text><text>从正在发生的事开始</text></view>
+    <view class="home-service-grid">
+      <view class="home-service-item tone-buddy" bindtap="onOpenBuddy"><text class="home-service-icon">◉</text><text>找搭子</text></view>
+      <view class="home-service-item tone-heart" wx:if="{{heartEnabled}}" bindtap="onOpenHeart"><text class="home-service-icon">♥</text><text>Heart</text></view>
+      <view class="home-service-item tone-market" bindtap="onOpenMarket"><text class="home-service-icon">□</text><text>二手</text></view>
+      <view class="home-service-item tone-bridge" bindtap="onOpenBridge"><text class="home-service-icon">文</text><text>友桥</text></view>
+      <view class="home-service-item tone-mutual" bindtap="onOpenMutual"><text class="home-service-icon">+</text><text>互助</text></view>
+      <view class="home-service-item tone-lost" bindtap="onOpenLost"><text class="home-service-icon">⌕</text><text>失物</text></view>
+      <view class="home-service-item tone-events" bindtap="onOpenActivityZone"><text class="home-service-icon">✦</text><text>活动</text></view>
+      <view class="home-service-item tone-more" bindtap="onOpenDiscover"><text class="home-service-icon">···</text><text>更多服务</text></view>
+    </view>
   </view>
 
   <view class="campus-mask" wx:if="{{showCampusPicker}}" catchtouchmove="preventCampusMove">
@@ -192,11 +215,7 @@
     <text>{{searchKeyword ? '正在按关键词筛选内容' : '下拉刷新获取最新动态'}}</text>
   </view>
 
-  <view class="content-feed" wx:if="{{!showSkeleton}}">
-    <content-card wx:for="{{posts}}" wx:key="_id" item="{{item}}" bindtap="onContentCardTap" bindlike="onContentCardLike" bindfavorite="onContentCardFavorite" />
-  </view>
-
-  <view class="legacy-waterfall" wx:if="{{false}}">
+  <view class="waterfall" wx:if="{{!showSkeleton}}">
     <view class="wf-col">
       <view class="wf-card wf-card-enter" wx:for="{{leftCol}}" wx:key="_id" bindtap="goToDetail" data-id="{{item._id}}" style="animation-delay: {{index * 40}}ms;">
         <view class="wf-activity-tag" wx:if="{{item.inActivityZone}}">活动</view>
