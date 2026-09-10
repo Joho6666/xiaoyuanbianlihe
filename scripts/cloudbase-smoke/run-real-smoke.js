@@ -297,56 +297,32 @@ async function main() {
     campusId: 'guit-hangtian',
     acceptingOrders: true,
     basePriceCents: 300,
-    pickupPoints: [{ id: 'south', name: '菜鸟驿站（南区）' }],
+    pickupPoints: [{ id: 'south', name: '菜鸟驿站（南区）', deliveryCampus: 'south' }, { id: 'sf', name: '顺丰服务点', deliveryCampus: 'south' }],
     deliveryCampuses: [{ id: 'south', name: '南校区', enabled: true, dormAreas: [{ id: 'tianheyuan', name: '天和苑', enabled: true, buildings: [{ id: 'south-6', name: '6号楼', enabled: true }] }] }],
     notice: 'Smoke-only independent environment',
     smokeRunId: runId
   })
   assert.equal(expressSettings.code, 0)
   track('express_settings', 'guit-hangtian')
-  const deliveryProfile = await express.createExpressDeliveryProfile(f._openid, {
-    campusId: 'guit-hangtian',
-    label: 'Smoke Recipient',
-    isSelf: false,
-    recipientName: 'Smoke Recipient',
-    contactPhone: '13800001234',
-    deliveryCampus: 'south',
-    dormArea: 'tianheyuan',
-    dormBuildingId: 'south-6',
-    roomNumber: '613'
-  })
-  assert.equal(deliveryProfile.code, 0)
-  assert.equal(deliveryProfile.data.isDefault, true)
-  track('express_delivery_profiles', deliveryProfile.data._id)
-  const secondProfile = await express.createExpressDeliveryProfile(f._openid, {
-    campusId: 'guit-hangtian',
-    label: 'Smoke Archive',
-    isSelf: false,
-    recipientName: 'Smoke Archive',
-    contactPhone: '13700001234',
-    deliveryCampus: 'south',
-    dormArea: 'tianheyuan',
-    dormBuildingId: 'south-6',
-    roomNumber: '614'
-  })
-  assert.equal(secondProfile.code, 0)
-  track('express_delivery_profiles', secondProfile.data._id)
-  const profileList = await express.getMyExpressDeliveryProfiles(f._openid)
-  assert.equal(profileList.data.length, 2)
-  assert.equal((await express.updateExpressDeliveryProfile(f._openid, { profileId: deliveryProfile.data._id, roomNumber: '615' })).code, 0)
-  assert.equal((await express.archiveExpressDeliveryProfile(f._openid, { profileId: secondProfile.data._id })).code, 0)
+  const profileListBefore = await express.getMyExpressDeliveryProfiles(f._openid)
+  assert.equal(profileListBefore.data.length, 0)
   const expressOrder = await express.createExpressOrder(f._openid, {
-    pickupPointId: 'south',
-    pickupCode: 'smoke-2-3-4587',
-    packageCount: 1,
-    deliveryProfileId: deliveryProfile.data._id,
+    pickupItems: [{ pickupPointId: 'south', pickupCode: 'smoke-2-3-4587', packageCount: 1 }, { pickupPointId: 'south', pickupCode: 'smoke-4-1-6532', packageCount: 1 }, { pickupPointId: 'sf', pickupCode: 'SF2831', packageCount: 1 }],
+    deliveryData: { isSelf: true, label: 'Smoke Recipient', recipientName: 'Smoke Recipient', contactPhone: '13800001234', deliveryCampus: 'south', dormArea: 'tianheyuan', dormBuildingId: 'south-6', roomNumber: '613' },
+    saveDeliveryProfile: false,
     smokeRunId: runId
   })
   assert.equal(expressOrder.code, 0)
+  assert.equal(expressOrder.profileCreated, true)
   assert.equal(expressOrder.data.recipientNameSnapshot, 'Smoke Recipient')
   assert.equal(expressOrder.data.recipientPhoneSnapshot, '13800001234')
-  assert.equal(expressOrder.data.roomNumberSnapshot, '615')
+  assert.equal(expressOrder.data.roomNumberSnapshot, '613')
+  assert.equal(expressOrder.data.totalPackageCount, 3)
+  assert.equal(expressOrder.data.pickupPointCount, 2)
   track('express_orders', expressOrder.data._id)
+  const profileList = await express.getMyExpressDeliveryProfiles(f._openid)
+  assert.equal(profileList.data.length, 1)
+  profileList.data.forEach((row) => track('express_delivery_profiles', row._id))
   assert.notEqual((await express.staffUpdateExpressOrderStatus(staffUser._openid, { orderId: expressOrder.data._id, status: 'DELIVERING' })).code, 0)
   assert.equal((await express.createExpressTestPayment(f._openid, { orderId: expressOrder.data._id })).code, 0)
   assert.equal((await express.staffUpdateExpressOrderStatus(staffUser._openid, { orderId: expressOrder.data._id, status: 'DELIVERING' })).code, 0)

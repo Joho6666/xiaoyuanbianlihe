@@ -24,7 +24,7 @@ const orderJs = fs.readFileSync(path.join(mini, 'packageExpress/pages/order/orde
 assert.ok(order.includes('服务尚未配置') && order.includes('服务配置加载失败') && order.includes('selectedProfile') && orderJs.includes('clientRequestId'), 'Order form distinguishes service configuration states')
 assert.ok(order.includes('selected-profile') && orderJs.includes('deliveryProfileId'), 'Order form selects an account-level delivery profile')
 assert.ok(!orderJs.includes('createExpressOrder\', { ...this.data.form'), 'New order submission does not trust client address fields')
-assert.ok(orderJs.includes('showCacheMigration') && orderJs.includes('onMigrateCache'), 'Legacy address cache requires explicit migration confirmation')
+assert.ok(orderJs.includes('prefillCachedDelivery') && orderJs.includes('deliveryData'), 'Legacy address cache is used only as an inline fallback')
 assert.ok(mine.includes('常用配送信息') && mine.includes('data-page="expressProfiles"'), 'Mine exposes account-level delivery profile management')
 const profileList = fs.readFileSync(path.join(mini, 'packageExpress/pages/delivery-profiles/delivery-profiles.wxml'), 'utf8')
 const profileEdit = fs.readFileSync(path.join(mini, 'packageExpress/pages/delivery-profile-edit/delivery-profile-edit.wxml'), 'utf8')
