@@ -1,0 +1,46 @@
+const EXPRESS_DEFAULT_SCHOOL_ID = 'guat'
+const EXPRESS_DEFAULT_CAMPUS_ID = 'guit-hangtian'
+
+const EXPRESS_ORDER_STATUS = Object.freeze({
+  WAIT_PICKUP: 'WAIT_PICKUP',
+  DELIVERING: 'DELIVERING',
+  COMPLETED: 'COMPLETED',
+  CANCELLED: 'CANCELLED'
+})
+
+const EXPRESS_PAYMENT_STATUS = Object.freeze({
+  UNPAID: 'UNPAID',
+  PAID: 'PAID'
+})
+
+const EXPRESS_STATUS_TRANSITIONS = Object.freeze({
+  WAIT_PICKUP: [EXPRESS_ORDER_STATUS.DELIVERING, EXPRESS_ORDER_STATUS.CANCELLED],
+  DELIVERING: [EXPRESS_ORDER_STATUS.COMPLETED, EXPRESS_ORDER_STATUS.CANCELLED],
+  COMPLETED: [],
+  CANCELLED: []
+})
+
+function canTransitionExpressOrder(from, to, { owner = false } = {}) {
+  if (!from || !to || from === to) return false
+  if (to === EXPRESS_ORDER_STATUS.CANCELLED) return !!owner && from !== EXPRESS_ORDER_STATUS.COMPLETED
+  return (EXPRESS_STATUS_TRANSITIONS[from] || []).includes(to) && to !== EXPRESS_ORDER_STATUS.CANCELLED
+}
+
+function normalizeExpressOrderStatus(value) {
+  return Object.values(EXPRESS_ORDER_STATUS).includes(value) ? value : null
+}
+
+function normalizeExpressPaymentStatus(value) {
+  return Object.values(EXPRESS_PAYMENT_STATUS).includes(value) ? value : null
+}
+
+module.exports = {
+  EXPRESS_DEFAULT_SCHOOL_ID,
+  EXPRESS_DEFAULT_CAMPUS_ID,
+  EXPRESS_ORDER_STATUS,
+  EXPRESS_PAYMENT_STATUS,
+  EXPRESS_STATUS_TRANSITIONS,
+  canTransitionExpressOrder,
+  normalizeExpressOrderStatus,
+  normalizeExpressPaymentStatus
+}
