@@ -19,6 +19,19 @@ async function run() {
     deliveryCampuses: [{ id: 'south', name: '南校区', dormAreas: [{ id: 'tianheyuan', name: '天和苑', buildings: [{ id: 'south-6', name: '6号楼' }] }] }]
   })
 
+  // Individual parcel size pricing assertions
+  const quoteSmall = await express.getExpressQuote('oid-student', { campusId: 'guit-hangtian', deliveryCampus: 'south', pickupItems: [{ pickupPointId: 'cainiao', pickupCode: 's-1', parcelSize: 'SMALL', packageCount: 1 }] })
+  assert.strictEqual(quoteSmall.code, 0)
+  assert.strictEqual(quoteSmall.data.totalPriceCents, 100, 'SMALL 1x must be 100 cents (¥1)')
+
+  const quoteMedium = await express.getExpressQuote('oid-student', { campusId: 'guit-hangtian', deliveryCampus: 'south', pickupItems: [{ pickupPointId: 'cainiao', pickupCode: 'm-1', parcelSize: 'MEDIUM', packageCount: 1 }] })
+  assert.strictEqual(quoteMedium.code, 0)
+  assert.strictEqual(quoteMedium.data.totalPriceCents, 300, 'MEDIUM 1x must be 300 cents (¥3)')
+
+  const quoteLarge = await express.getExpressQuote('oid-student', { campusId: 'guit-hangtian', deliveryCampus: 'south', pickupItems: [{ pickupPointId: 'cainiao', pickupCode: 'l-1', parcelSize: 'LARGE', packageCount: 1 }] })
+  assert.strictEqual(quoteLarge.code, 0)
+  assert.strictEqual(quoteLarge.data.totalPriceCents, 600, 'LARGE 1x must be 600 cents (¥6)')
+
   const pickupItems = [
     { pickupPointId: 'cainiao', pickupCode: 'small-1', parcelSize: 'SMALL', packageCount: 2 },
     { pickupPointId: 'cainiao', pickupCode: 'medium-1', parcelSize: 'MEDIUM', packageCount: 1 },
@@ -26,7 +39,7 @@ async function run() {
   ]
   const quote = await express.getExpressQuote('oid-student', { campusId: 'guit-hangtian', deliveryCampus: 'south', pickupItems })
   assert.strictEqual(quote.code, 0)
-  assert.strictEqual(quote.data.totalPriceCents, 1100)
+  assert.strictEqual(quote.data.totalPriceCents, 1100, 'SMALLx2 + MEDIUMx1 + LARGEx1 must be 1100 cents (¥11)')
   assert.deepStrictEqual(quote.data.sizeBreakdown.SMALL, { count: 2, unitPriceCents: 100, subtotalCents: 200 })
   assert.deepStrictEqual(quote.data.sizeBreakdown.MEDIUM, { count: 1, unitPriceCents: 300, subtotalCents: 300 })
   assert.deepStrictEqual(quote.data.sizeBreakdown.LARGE, { count: 1, unitPriceCents: 600, subtotalCents: 600 })
@@ -37,6 +50,35 @@ async function run() {
   assert.strictEqual(order.code, 0)
   assert.strictEqual(order.data.amountCents, 1100)
   assert.strictEqual(order.data.pickupItems[0].parcelSize, 'SMALL')
+
+  // Staff verification: Staff can see parcelSize and record mismatch
+  await express.createExpressTestPayment('oid-student', { orderId: order.data._id })
+  const staffDetail = await express.staffGetExpressOrderDetail('oid-staff', { orderId: order.data._id })
+  assert.strictEqual(staffDetail.code, 0)
+  assert.strictEqual(staffDetail.data.pickupItems[0].parcelSize, 'SMALL')
+  assert.strictEqual(staffDetail.data.pickupItems[1].parcelSize, 'MEDIUM')
+  assert.strictEqual(staffDetail.data.pickupItems[2].parcelSize, 'LARGE')
+
+  const mismatchRes = await express.staffRecordExpressParcelMismatch('oid-staff', {
+    orderId: order.data._id,
+    expectedParcelSize: 'SMALL',
+    actualParcelSize: 'LARGE',
+    note: '实际为整箱饮料'
+  })
+  assert.strictEqual(mismatchRes.code, 0)
+  assert.strictEqual(mismatchRes.data.parcelSizeMismatch, true)
+  assert.strictEqual(mismatchRes.data.actualParcelSize, 'LARGE')
+  assert.strictEqual(mismatchRes.data.expectedParcelSize, 'SMALL')
+
+  // Student view reflects mismatch
+  const ownOrder = await express.getMyExpressOrder('oid-student', { orderId: order.data._id })
+  assert.strictEqual(ownOrder.data.parcelSizeMismatch, true)
+  assert.strictEqual(ownOrder.data.actualParcelSize, 'LARGE')
+
+  // Audit log was written
+  const mismatchAudit = (fixture.store.staff_audit_logs || []).find((a) => a.action === 'EXPRESS_PARCEL_SIZE_MISMATCH_RECORDED')
+  assert.ok(mismatchAudit, 'Staff mismatch audit log must be recorded')
+  assert.strictEqual(mismatchAudit.resourceId, order.data._id)
 
   const invalid = await express.createExpressOrder('oid-student', { campusId: 'guit-hangtian', deliveryProfileId: profile._id, pickupItems: [{ pickupPointId: 'cainiao', pickupCode: 'invalid', parcelSize: 'HUGE', packageCount: 1 }], clientRequestId: 'parcel-invalid' })
   assert.notStrictEqual(invalid.code, 0)

@@ -2,3 +2,11 @@
 .staff-pickup-card { background: #eef6ff; }
 .staff-pickup-code { display: block; margin: 8rpx 0; color: #172d50; font-size: 64rpx; line-height: 1.1; font-weight: 800; letter-spacing: 4rpx; }
 .staff-pickup-point { display: block; color: #2f76ff; font-size: 28rpx; font-weight: 700; }
+.mismatch-tag-box { padding: 12rpx 16rpx; margin: 12rpx 0; border-radius: 14rpx; background: #fef2f2; }
+.mismatch-badge { display: block; color: #b91c1c; font-size: 23rpx; font-weight: 700; }
+.mismatch-text { display: block; margin-top: 4rpx; color: #991b1b; font-size: 21rpx; }
+.staff-pickup-items-list { margin: 14rpx 0; border-top: 2rpx solid #e0ecfd; padding-top: 10rpx; }
+.staff-pickup-item-row { display: flex; justify-content: space-between; align-items: center; padding: 8rpx 0; }
+.item-code { color: #172d50; font-size: 27rpx; font-weight: 700; }
+.item-meta { color: #61748d; font-size: 22rpx; }
+

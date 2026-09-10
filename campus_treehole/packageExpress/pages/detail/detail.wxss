@@ -8,3 +8,8 @@
 .detail-pickup-label { margin-right: 12rpx; color: #8a98ab; font-size: 21rpx; }
 .detail-pickup-code { color: #172033; font-size: 29rpx; font-weight: 800; letter-spacing: 1rpx; }
 .detail-pickup-count { color: #71809a; font-size: 22rpx; }
+.mismatch-alert-card { border: 2rpx solid #fecaca; background: #fef2f2; }
+.mismatch-alert-title { display: flex; align-items: center; gap: 8rpx; color: #b91c1c; font-size: 26rpx; font-weight: 700; }
+.mismatch-icon { font-size: 28rpx; }
+.mismatch-alert-desc { display: block; margin-top: 8rpx; color: #991b1b; font-size: 23rpx; line-height: 1.45; }
+

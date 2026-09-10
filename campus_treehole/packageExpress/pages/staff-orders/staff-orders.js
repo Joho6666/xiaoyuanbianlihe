@@ -37,7 +37,23 @@ Page({
         const key = item.pickupPointId
         if (!groups.has(key)) groups.set(key, { pickupPointId: key, pickupPointName: item.pickupPointNameSnapshot || item.pickupPointId, totalPackages: 0, items: [] })
         const group = groups.get(key); const keyId = itemKey(order._id, item.id); group.totalPackages += item.packageCount
-        group.items.push({ ...item, keyId, orderId: order._id, orderNo: order.orderNo, recipientName: order.recipientNameSnapshot || '未填写', destination: `${order.deliveryCampusNameSnapshot || order.deliveryCampus} · ${order.dormAreaNameSnapshot || order.dormArea} · ${order.dormBuildingNameSnapshot || order.dormBuilding} · ${order.roomNumberSnapshot || order.roomNumber}`, progressLabel, selected: this.data.selectedPickupItemIds.includes(keyId) })
+        const PARCEL_SIZE_LABELS = { SMALL: '小件', MEDIUM: '中件', LARGE: '大件' }
+        const PARCEL_SIZE_PRICES = { SMALL: '¥1', MEDIUM: '¥3', LARGE: '¥6' }
+        const parcelSizeLabel = PARCEL_SIZE_LABELS[item.parcelSize] || '旧订单/未分类'
+        const priceEstimateText = PARCEL_SIZE_PRICES[item.parcelSize] || ''
+        group.items.push({
+          ...item,
+          keyId,
+          orderId: order._id,
+          orderNo: order.orderNo,
+          recipientName: order.recipientNameSnapshot || '未填写',
+          destination: `${order.deliveryCampusNameSnapshot || order.deliveryCampus} · ${order.dormAreaNameSnapshot || order.dormArea} · ${order.dormBuildingNameSnapshot || order.dormBuilding} · ${order.roomNumberSnapshot || order.roomNumber}`,
+          progressLabel,
+          parcelSizeLabel,
+          priceEstimateText,
+          parcelSizeMismatch: order.parcelSizeMismatch === true,
+          selected: this.data.selectedPickupItemIds.includes(keyId)
+        })
       })
     })
     return Array.from(groups.values())

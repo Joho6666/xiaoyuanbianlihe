@@ -1,3 +1,59 @@
 const app = getApp()
-const decorate = (row) => ({ ...row, priceText: (Number(row.amountCents || 0) / 100).toFixed(2), statusLabel: ({ WAIT_PAYMENT: '待支付', WAIT_PICKUP: '待取件', DELIVERING: '配送中', COMPLETED: '已完成', CANCELLED: '已取消' }[row.orderStatus] || row.orderStatus), paymentLabel: row.paymentStatus === 'PAID' ? '已支付' : row.paymentStatus === 'REFUNDED' ? '已退款' : '待支付', tone: row.orderStatus === 'COMPLETED' ? 'success' : row.orderStatus === 'CANCELLED' ? 'danger' : 'warn' })
-Page({ data: { order: null, settings: {}, paying: false, cancelling: false }, onLoad(options) { this.orderId = options.orderId; this.load() }, onBack() { wx.navigateBack() }, async load() { try { const [order, settings] = await Promise.all([app.callDB('getMyExpressOrder', { orderId: this.orderId }), app.callDB('getExpressServiceConfig', {})]); this.setData({ order: decorate(order.data), settings: settings.data || {} }) } catch (e) { wx.showToast({ title: e.msg || '订单加载失败', icon: 'none' }) } }, async onTestPay() { if (this.data.paying) return; this.setData({ paying: true }); try { const res = await app.callDB('createExpressTestPayment', { orderId: this.orderId }); this.setData({ order: decorate(res.data) }); wx.showToast({ title: '测试支付成功', icon: 'success' }) } catch (e) { wx.showToast({ title: e.msg || '支付失败', icon: 'none' }) } this.setData({ paying: false }) }, async onCancel() { if (this.data.cancelling) return; this.setData({ cancelling: true }); try { const res = await app.callDB('cancelMyExpressOrder', { orderId: this.orderId }); this.setData({ order: decorate(res.data) }); wx.showToast({ title: '订单已取消', icon: 'success' }) } catch (e) { wx.showToast({ title: e.msg || '取消失败', icon: 'none' }) } this.setData({ cancelling: false }) } })
+const PARCEL_SIZE_LABELS = { SMALL: '小件', MEDIUM: '中件', LARGE: '大件' }
+
+const decorate = (row) => {
+  if (!row) return row
+  const decoratedItems = (row.pickupItems || []).map((item) => ({
+    ...item,
+    parcelSizeLabel: PARCEL_SIZE_LABELS[item.parcelSize] || '旧订单/未分类'
+  }))
+  return {
+    ...row,
+    pickupItems: decoratedItems,
+    priceText: (Number(row.amountCents || 0) / 100).toFixed(2),
+    statusLabel: ({ WAIT_PAYMENT: '待支付', WAIT_PICKUP: '待取件', DELIVERING: '配送中', COMPLETED: '已完成', CANCELLED: '已取消' }[row.orderStatus] || row.orderStatus),
+    paymentLabel: row.paymentStatus === 'PAID' ? '已支付' : row.paymentStatus === 'REFUNDED' ? '已退款' : '待支付',
+    tone: row.orderStatus === 'COMPLETED' ? 'success' : row.orderStatus === 'CANCELLED' ? 'danger' : 'warn'
+  }
+}
+
+Page({
+  data: { order: null, settings: {}, paying: false, cancelling: false },
+  onLoad(options) { this.orderId = options.orderId; this.load() },
+  onBack() { wx.navigateBack() },
+  async load() {
+    try {
+      const [order, settings] = await Promise.all([
+        app.callDB('getMyExpressOrder', { orderId: this.orderId }),
+        app.callDB('getExpressServiceConfig', {})
+      ])
+      this.setData({ order: decorate(order.data), settings: settings.data || {} })
+    } catch (e) {
+      wx.showToast({ title: e.msg || '订单加载失败', icon: 'none' })
+    }
+  },
+  async onTestPay() {
+    if (this.data.paying) return
+    this.setData({ paying: true })
+    try {
+      const res = await app.callDB('createExpressTestPayment', { orderId: this.orderId })
+      this.setData({ order: decorate(res.data) })
+      wx.showToast({ title: '测试支付成功', icon: 'success' })
+    } catch (e) {
+      wx.showToast({ title: e.msg || '支付失败', icon: 'none' })
+    }
+    this.setData({ paying: false })
+  },
+  async onCancel() {
+    if (this.data.cancelling) return
+    this.setData({ cancelling: true })
+    try {
+      const res = await app.callDB('cancelMyExpressOrder', { orderId: this.orderId })
+      this.setData({ order: decorate(res.data) })
+      wx.showToast({ title: '订单已取消', icon: 'success' })
+    } catch (e) {
+      wx.showToast({ title: e.msg || '取消失败', icon: 'none' })
+    }
+    this.setData({ cancelling: false })
+  }
+})

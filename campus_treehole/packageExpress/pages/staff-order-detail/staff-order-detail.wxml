@@ -1,1 +1,30 @@
-<campus-page-header title="订单处理" subtitle="更新前会再次校验权限与状态" showBack="{{true}}" bindback="onBack" /><view class="express-page" wx:if="{{order}}"><view class="express-hero"><text class="express-title">{{order.orderNo}}</text><text class="express-chip {{order.tone}}">{{order.statusLabel}}</text></view><view class="express-card staff-pickup-card"><text class="express-section-title">取件清单</text><text class="staff-pickup-code">{{order.pickupCode}}</text><text class="staff-pickup-point">{{order.pickupPointNameSnapshot || order.pickupPointName}} · {{order.packageCount}} 件</text><text class="express-order-meta">送至 {{order.deliveryCampusNameSnapshot || order.deliveryCampus}} · {{order.dormAreaNameSnapshot || order.dormArea}} · {{order.dormBuildingNameSnapshot || order.dormBuilding}} · {{order.roomNumberSnapshot || order.roomNumber}}</text><text class="express-order-meta">收件人 {{order.recipientNameSnapshot || '未填写'}}</text><text class="express-order-meta">联系电话 {{order.recipientPhoneSnapshot || order.phone}}</text><text class="express-order-meta">备注：{{order.note || '无'}}</text></view><view class="express-card"><view class="express-button" wx:if="{{order.orderStatus === 'WAIT_PICKUP'}}" bindtap="updateStatus" data-status="DELIVERING">标记配送中</view><view class="express-button" wx:if="{{order.orderStatus === 'DELIVERING'}}" bindtap="updateStatus" data-status="COMPLETED">标记已完成</view><view class="express-button danger" wx:if="{{capabilities.isOwner && order.orderStatus !== 'COMPLETED' && order.orderStatus !== 'CANCELLED'}}" bindtap="updateStatus" data-status="CANCELLED">Owner 取消订单</view></view></view>
+<campus-page-header title="订单处理" subtitle="更新前会再次校验权限与状态" showBack="{{true}}" bindback="onBack" />
+<view class="express-page" wx:if="{{order}}">
+  <view class="express-hero"><text class="express-title">{{order.orderNo}}</text><text class="express-chip {{order.tone}}">{{order.statusLabel}}</text></view>
+  <view class="express-card staff-pickup-card">
+    <text class="express-section-title">取件清单</text>
+    <text class="staff-pickup-code">{{order.pickupCode}}</text>
+    <text class="staff-pickup-point">{{order.pickupPointNameSnapshot || order.pickupPointName}} · {{order.packageCount}} 件 · {{order.parcelSizeLabel}}</text>
+    <view class="mismatch-tag-box" wx:if="{{order.parcelSizeMismatch}}">
+      <text class="mismatch-badge">⚠️ 规格不符已记录</text>
+      <text class="mismatch-text">下单选择: {{order.expectedParcelSizeLabel}} → 实际规格: {{order.actualParcelSizeLabel}}</text>
+    </view>
+    <view class="staff-pickup-items-list" wx:if="{{order.pickupItems && order.pickupItems.length}}">
+      <view class="staff-pickup-item-row" wx:for="{{order.pickupItems}}" wx:key="id">
+        <text class="item-code">{{item.pickupCode}}</text>
+        <text class="item-meta">{{item.pickupPointNameSnapshot}} · {{item.packageCount}}件 · {{item.parcelSizeLabel}}</text>
+      </view>
+    </view>
+    <text class="express-order-meta">送至 {{order.deliveryCampusNameSnapshot || order.deliveryCampus}} · {{order.dormAreaNameSnapshot || order.dormArea}} · {{order.dormBuildingNameSnapshot || order.dormBuilding}} · {{order.roomNumberSnapshot || order.roomNumber}}</text>
+    <text class="express-order-meta">收件人 {{order.recipientNameSnapshot || '未填写'}}</text>
+    <text class="express-order-meta">联系电话 {{order.recipientPhoneSnapshot || order.phone}}</text>
+    <text class="express-order-meta">服务费 ￥{{order.priceText}}</text>
+    <text class="express-order-meta">备注：{{order.note || '无'}}</text>
+  </view>
+  <view class="express-card">
+    <view class="express-button" wx:if="{{order.orderStatus === 'WAIT_PICKUP'}}" bindtap="updateStatus" data-status="DELIVERING">标记配送中</view>
+    <view class="express-button" wx:if="{{order.orderStatus === 'DELIVERING'}}" bindtap="updateStatus" data-status="COMPLETED">标记已完成</view>
+    <view class="express-button warn" wx:if="{{order.orderStatus !== 'COMPLETED' && order.orderStatus !== 'CANCELLED'}}" bindtap="onReportMismatch">规格不符核验</view>
+    <view class="express-button danger" wx:if="{{capabilities.isOwner && order.orderStatus !== 'COMPLETED' && order.orderStatus !== 'CANCELLED'}}" bindtap="updateStatus" data-status="CANCELLED">Owner 取消订单</view>
+  </view>
+</view>

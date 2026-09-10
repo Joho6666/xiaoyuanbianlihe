@@ -74,7 +74,7 @@ function findConfiguredDeliverySelection(settings, data) {
 function normalizeExpressPickupInput(data = {}, { allowEmptyCode = false, requireParcelSize = false } = {}) {
   const source = Array.isArray(data.pickupItems)
     ? data.pickupItems
-    : (data.pickupPointId || data.pickupCode ? [{ pickupPointId: data.pickupPointId, pickupCode: data.pickupCode, packageCount: data.packageCount }] : [])
+    : (data.pickupPointId || data.pickupCode ? [{ pickupPointId: data.pickupPointId, pickupCode: data.pickupCode, parcelSize: data.parcelSize, packageCount: data.packageCount }] : [])
   if (!source.length) return { error: '请至少添加一个取件码' }
   if (source.length > EXPRESS_PICKUP_ITEM_LIMIT) return { error: `最多添加 ${EXPRESS_PICKUP_ITEM_LIMIT} 个取件码` }
   const items = []
@@ -490,7 +490,8 @@ function createExpressModule({ db, _, cloud, helpers = {} }) {
       pickupPointNameSnapshot: item.pickupPointNameSnapshot,
       pickupCode: item.pickupCode,
       packageCount: item.packageCount,
-      parcelSize: item.parcelSize || null
+    parcelSize: item.parcelSize || null,
+    parcelPriceCents: Number.isFinite(Number(item.parcelPriceCents)) ? Number(item.parcelPriceCents) : null
     }))
   }
 
@@ -530,6 +531,11 @@ function createExpressModule({ db, _, cloud, helpers = {} }) {
       amountCents: order.amountCents,
       paymentStatus: order.paymentStatus,
       orderStatus: order.orderStatus,
+      parcelSizeMismatch: order.parcelSizeMismatch === true,
+      expectedParcelSize: order.expectedParcelSize || null,
+      actualParcelSize: order.actualParcelSize || null,
+      mismatchCheckedAt: order.mismatchCheckedAt || null,
+      mismatchNote: order.mismatchNote || '',
       createdAt: order.createdAt,
       updatedAt: order.updatedAt,
       paidAt: order.paidAt || null,
@@ -574,6 +580,12 @@ function createExpressModule({ db, _, cloud, helpers = {} }) {
       amountCents: order.amountCents,
       paymentStatus: order.paymentStatus,
       orderStatus: order.orderStatus,
+      parcelSizeMismatch: order.parcelSizeMismatch === true,
+      expectedParcelSize: order.expectedParcelSize || null,
+      actualParcelSize: order.actualParcelSize || null,
+      mismatchStaffUserId: order.mismatchStaffUserId || null,
+      mismatchCheckedAt: order.mismatchCheckedAt || null,
+      mismatchNote: order.mismatchNote || '',
       userId: order.userId,
       createdAt: order.createdAt,
       updatedAt: order.updatedAt,
@@ -630,7 +642,8 @@ function createExpressModule({ db, _, cloud, helpers = {} }) {
         pickupPointNameSnapshot: point.name,
         pickupCode: item.pickupCode,
         packageCount: item.packageCount,
-        parcelSize: item.parcelSize || null
+        parcelSize: item.parcelSize || null,
+        parcelPriceCents: pricing.pricingMode === 'PARCEL_SIZE' ? pricing.parcelSizePricing[item.parcelSize].priceCents : pricing.perPackagePriceCents
       })
     }
     const calculated = calculateExpressAmount(normalized, pricing)
@@ -828,6 +841,27 @@ function createExpressModule({ db, _, cloud, helpers = {} }) {
     return { code: 0, data: staffOrder({ ...order, ...patch }) }
   }
 
+  async function staffFlagExpressParcelSizeMismatch(openid, data = {}) {
+    const auth = await requireStaff(openid, STAFF_PERMISSIONS.EXPRESS_ORDER_UPDATE, data)
+    if (auth.code !== 0) return auth
+    const order = await readOrder(data.orderId)
+    if (!order || order.campusId !== auth.campusId) return fail('订单不存在', 404)
+    if (order.paymentStatus !== EXPRESS_PAYMENT_STATUS.PAID) return fail('订单尚未支付，不能核验包裹规格')
+    const actualParcelSize = normalizeExpressParcelSize(data.actualParcelSize)
+    if (!actualParcelSize) return fail('请选择有效的实际包裹规格')
+    const items = normalizeExpressPickupItems(order)
+    const itemIndex = items.findIndex((item) => item.id === String(data.itemId || ''))
+    if (itemIndex < 0) return fail('包裹条目不存在', 404)
+    const expectedParcelSize = items[itemIndex].parcelSize || null
+    if (!expectedParcelSize || expectedParcelSize === actualParcelSize) return fail('当前包裹没有规格差异')
+    const checkedAt = now()
+    const updatedItems = items.map((item, index) => index === itemIndex ? { ...item, parcelSizeMismatch: true, expectedParcelSize, actualParcelSize, mismatchStaffUserId: auth.capabilities.userId, mismatchCheckedAt: checkedAt } : item)
+    const patch = { pickupItems: updatedItems, parcelSizeMismatch: true, updatedAt: checkedAt }
+    await db.collection(ORDERS).doc(order._id).update({ data: patch })
+    await staff.writeAudit({ actorUserId: auth.capabilities.userId, action: 'EXPRESS_PARCEL_SIZE_MISMATCH', resourceType: 'express_order', resourceId: order._id, metadata: { itemId: items[itemIndex].id, expectedParcelSize, actualParcelSize, campusId: order.campusId } })
+    return { code: 0, data: staffOrder({ ...order, ...patch }) }
+  }
+
   async function staffBatchUpdateExpressOrderStatus(openid, data = {}) {
     const ids = Array.isArray(data.orderIds) ? Array.from(new Set(data.orderIds.map(String))).slice(0, 50) : []
     if (!ids.length) return fail('请选择订单')
@@ -837,6 +871,39 @@ function createExpressModule({ db, _, cloud, helpers = {} }) {
     }
     const failed = results.filter((item) => item.result.code !== 0)
     return { code: failed.length ? -1 : 0, data: { results }, msg: failed.length ? '部分订单未更新' : '订单状态已更新' }
+  }
+
+  async function staffRecordExpressParcelMismatch(openid, data = {}) {
+    const auth = await requireStaff(openid, STAFF_PERMISSIONS.EXPRESS_ORDER_UPDATE, data)
+    if (auth.code !== 0) return auth
+    const order = await readOrder(data.orderId)
+    if (!order || order.campusId !== auth.campusId) return fail('订单不存在', 404)
+    const actualParcelSize = normalizeExpressParcelSize(data.actualParcelSize)
+    if (!actualParcelSize) return fail('请选择实际包裹规格')
+    const expectedParcelSize = normalizeExpressParcelSize(data.expectedParcelSize) || (order.pickupItems && order.pickupItems[0] && order.pickupItems[0].parcelSize) || 'SMALL'
+    const patch = {
+      parcelSizeMismatch: true,
+      expectedParcelSize,
+      actualParcelSize,
+      mismatchStaffUserId: auth.capabilities.userId,
+      mismatchCheckedAt: now(),
+      mismatchNote: String(data.note || '').trim().slice(0, 100),
+      updatedAt: now()
+    }
+    await db.collection(ORDERS).doc(order._id).update({ data: patch })
+    await staff.writeAudit({
+      actorUserId: auth.capabilities.userId,
+      action: 'EXPRESS_PARCEL_SIZE_MISMATCH_RECORDED',
+      resourceType: 'express_order',
+      resourceId: order._id,
+      metadata: {
+        campusId: order.campusId,
+        expectedParcelSize,
+        actualParcelSize,
+        note: patch.mismatchNote
+      }
+    })
+    return { code: 0, data: staffOrder({ ...order, ...patch }) }
   }
 
   async function pruneExpiredExports() {
@@ -991,6 +1058,8 @@ function createExpressModule({ db, _, cloud, helpers = {} }) {
     staffGetExpressOrderDetail,
     staffUpdateExpressOrderStatus,
     staffBatchUpdateExpressOrderStatus,
+    staffFlagExpressParcelSizeMismatch,
+    staffRecordExpressParcelMismatch,
     staffExportExpressOrders,
     ownerUpdateExpressSettings,
     recognizeExpressScreenshots: expressImport.recognizeExpressScreenshots
@@ -1016,6 +1085,8 @@ module.exports.ACTION_NAMES = [
   'staffGetExpressOrderDetail',
   'staffUpdateExpressOrderStatus',
   'staffBatchUpdateExpressOrderStatus',
+  'staffFlagExpressParcelSizeMismatch',
+  'staffRecordExpressParcelMismatch',
   'staffExportExpressOrders',
   'ownerUpdateExpressSettings',
   'recognizeExpressScreenshots'

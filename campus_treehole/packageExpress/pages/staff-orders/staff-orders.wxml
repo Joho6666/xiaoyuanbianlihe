@@ -6,7 +6,19 @@
   <view wx:if="{{workMode === 'pickup'}}">
     <view class="pickup-board-group" wx:for="{{pickupGroups}}" wx:key="pickupPointId">
       <view class="pickup-board-head"><view><text class="pickup-board-title">{{item.pickupPointName}}</text><text class="pickup-board-count">{{item.totalPackages}} 件 · {{item.items.length}} 个取件码</text></view></view>
-      <view class="pickup-board-item" wx:for="{{item.items}}" wx:key="keyId" wx:for-item="pickupItem" catchtap="onSelectPickupItem" data-key-id="{{pickupItem.keyId}}"><text class="pickup-check {{pickupItem.selected ? 'selected' : ''}}">{{pickupItem.selected ? '✓' : '□'}}</text><view class="pickup-board-main"><text class="pickup-code-large">{{pickupItem.pickupCode}}</text><text class="pickup-board-meta">{{pickupItem.packageCount}} 件 · {{pickupItem.recipientName}} · {{pickupItem.progressLabel}}</text><text class="pickup-board-destination">→ {{pickupItem.destination}}</text></view><text class="pickup-board-order">{{pickupItem.orderNo}}</text></view>
+      <view class="pickup-board-item" wx:for="{{item.items}}" wx:key="keyId" wx:for-item="pickupItem" catchtap="onSelectPickupItem" data-key-id="{{pickupItem.keyId}}">
+        <text class="pickup-check {{pickupItem.selected ? 'selected' : ''}}">{{pickupItem.selected ? '✓' : '□'}}</text>
+        <view class="pickup-board-main">
+          <view class="pickup-code-line">
+            <text class="pickup-code-large">{{pickupItem.pickupCode}}</text>
+            <text class="pickup-size-badge {{pickupItem.parcelSize}}">{{pickupItem.parcelSizeLabel}}</text>
+            <text class="pickup-mismatch-badge" wx:if="{{pickupItem.parcelSizeMismatch}}">规格不符</text>
+          </view>
+          <text class="pickup-board-meta">{{pickupItem.packageCount}} 件 · {{pickupItem.priceEstimateText}} · {{pickupItem.recipientName}} · {{pickupItem.progressLabel}}</text>
+          <text class="pickup-board-destination">→ {{pickupItem.destination}}</text>
+        </view>
+        <text class="pickup-board-order" catchtap="onTapOrder" data-id="{{pickupItem.orderId}}">{{pickupItem.orderNo}}</text>
+      </view>
     </view>
     <view class="express-button" wx:if="{{selectedPickupItemIds.length}}" bindtap="startSelectedDelivery">全部取齐后开始配送（{{selectedPickupItemIds.length}}）</view>
     <view class="express-empty" wx:if="{{!pickupGroups.length}}"><text class="express-empty-title">暂无待取件 Item</text><text class="express-empty-desc">已支付订单会按快递点出现在这里</text></view>
