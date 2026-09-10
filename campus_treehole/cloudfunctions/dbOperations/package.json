@@ -5,6 +5,7 @@
   "main": "index.js",
   "dependencies": {
     "exceljs": "^4.4.0",
+    "tencentcloud-sdk-nodejs-ocr": "^4.1.310",
     "wx-server-sdk": "~2.6.3"
   }
 }

@@ -15,6 +15,8 @@
     "test:integration:memory": "node scripts/smoke/run-smoke.js && node scripts/smoke/run-heart-smoke.js && node test/regression/fate-card.test.js",
     "smoke:cloudbase": "node scripts/cloudbase-smoke/run-real-smoke.js",
     "smoke:cloudbase:required": "node scripts/cloudbase-smoke/run-real-smoke.js --required",
+    "smoke:cloudbase:ocr": "node scripts/cloudbase-smoke/run-express-ocr-smoke.js",
+    "smoke:cloudbase:ocr:required": "node scripts/cloudbase-smoke/run-express-ocr-smoke.js --required",
     "provision:heart": "node scripts/provision-heart.js",
     "provision:express": "node scripts/provision-express.js",
     "migrate:express:status": "node scripts/migrations/migrate-express-order-status.js",

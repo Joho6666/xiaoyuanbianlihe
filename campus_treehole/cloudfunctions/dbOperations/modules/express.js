@@ -2,6 +2,8 @@
 // Sensitive data stays behind dbOperations; only this module resolves OpenID.
 const crypto = require('crypto')
 const ExcelJS = require('exceljs')
+const { createExpressImportModule } = require('./express-import')
+const { createConfiguredOCRAdapter } = require('./express-ocr')
 const { publicId } = require('../shared/public-data')
 const {
   EXPRESS_DEFAULT_SCHOOL_ID,
@@ -111,7 +113,8 @@ function createExpressModule({ db, _, cloud, helpers = {} }) {
     getUserForAction,
     resolveCampusIdForRead = (value) => (typeof value === 'string' ? value.trim() : null),
     makeDeterministicId = (scope, value) => `${scope}_${String(value || '').replace(/[^a-z0-9_-]/gi, '')}`,
-    isCollectionNotExistError = () => false
+    isCollectionNotExistError = () => false,
+    ocrAdapter
   } = helpers
 
   const now = () => (typeof db.serverDate === 'function' ? db.serverDate() : new Date())
@@ -140,6 +143,7 @@ function createExpressModule({ db, _, cloud, helpers = {} }) {
       name: point.name,
       address: point.address || '',
       shortName: point.shortName || point.name || '',
+      aliases: Array.isArray(point.aliases) ? point.aliases.slice(0, 10) : [],
       deliveryCampus: point.deliveryCampus || '',
       openingHours: point.openingHours || '',
       sortOrder: Number(point.sortOrder) || 0
@@ -164,6 +168,13 @@ function createExpressModule({ db, _, cloud, helpers = {} }) {
       testPaymentAvailable: testPaymentEnabled()
     }
   }
+
+  const expressImport = createExpressImportModule({
+    cloud,
+    getUserForAction,
+    readSettings,
+    ocrAdapter: ocrAdapter || createConfiguredOCRAdapter()
+  })
 
   function publicDeliveryProfile(profile) {
     if (!profile) return null
@@ -714,7 +725,9 @@ function createExpressModule({ db, _, cloud, helpers = {} }) {
   async function staffGetExpressDashboard(openid, data = {}) {
     const auth = await requireStaff(openid, STAFF_PERMISSIONS.EXPRESS_ORDER_READ, data)
     if (auth.code !== 0) return auth
-    const dayStart = new Date()
+    const clock = now()
+    const dayStart = new Date(clock)
+    if (Number.isNaN(dayStart.getTime())) dayStart.setTime(Date.now())
     dayStart.setHours(0, 0, 0, 0)
     const rows = (await listScopedOrders(auth.campusId, data)).filter((row) => row.paymentStatus === EXPRESS_PAYMENT_STATUS.PAID && (!row.createdAt || new Date(row.createdAt).getTime() >= dayStart.getTime()))
     const counts = { all: rows.length, totalPackageCount: 0, pickupItemCount: 0, pickupPointCount: new Set(), revenueCents: 0, waitPickup: 0, delivering: 0, completed: 0, cancelled: 0 }
@@ -867,6 +880,7 @@ function createExpressModule({ db, _, cloud, helpers = {} }) {
       id: String(point.id || `point_${index + 1}`).trim().slice(0, 40),
       name: String(point.name || '').trim().slice(0, 40),
       shortName: String(point.shortName || point.name || '').trim().slice(0, 30),
+      aliases: Array.from(new Set((Array.isArray(point.aliases) ? point.aliases : []).map((alias) => String(alias || '').trim().slice(0, 30)).filter(Boolean))).slice(0, 10),
       deliveryCampus: String(point.deliveryCampus || '').trim().slice(0, 20),
       address: String(point.address || '').trim().slice(0, 100),
       openingHours: String(point.openingHours || '').trim().slice(0, 50),
@@ -924,7 +938,8 @@ function createExpressModule({ db, _, cloud, helpers = {} }) {
     staffUpdateExpressOrderStatus,
     staffBatchUpdateExpressOrderStatus,
     staffExportExpressOrders,
-    ownerUpdateExpressSettings
+    ownerUpdateExpressSettings,
+    recognizeExpressScreenshots: expressImport.recognizeExpressScreenshots
   }
 }
 
@@ -948,5 +963,6 @@ module.exports.ACTION_NAMES = [
   'staffUpdateExpressOrderStatus',
   'staffBatchUpdateExpressOrderStatus',
   'staffExportExpressOrders',
-  'ownerUpdateExpressSettings'
+  'ownerUpdateExpressSettings',
+  'recognizeExpressScreenshots'
 ]
