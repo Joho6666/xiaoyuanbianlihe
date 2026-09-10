@@ -74,6 +74,14 @@ function normalizeExpressPickupItems(order) {
     packageCount: Number(item.packageCount) || 0
     }
     if (item.parcelSize !== undefined) normalized.parcelSize = normalizeExpressParcelSize(item.parcelSize)
+    if (item.parcelPriceCents !== undefined) normalized.parcelPriceCents = Number.isFinite(Number(item.parcelPriceCents)) ? Number(item.parcelPriceCents) : null
+    if (item.parcelSizeMismatch === true) {
+      normalized.parcelSizeMismatch = true
+      normalized.expectedParcelSize = normalizeExpressParcelSize(item.expectedParcelSize)
+      normalized.actualParcelSize = normalizeExpressParcelSize(item.actualParcelSize)
+      normalized.mismatchStaffUserId = item.mismatchStaffUserId || null
+      normalized.mismatchCheckedAt = item.mismatchCheckedAt || null
+    }
     return normalized
   })
 }
