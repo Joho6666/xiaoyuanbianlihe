@@ -69,6 +69,10 @@
       <text class="quick-title">我的快递</text>
       <text class="quick-sub">查看订单与配送状态</text>
     </view>
+    <view class="quick-card" bindtap="onMenuTap" data-page="expressProfiles">
+      <text class="quick-title">常用配送信息</text>
+      <text class="quick-sub">管理宿舍与朋友的地址</text>
+    </view>
   </view>
 
   <view class="express-workbench-card" wx:if="{{staffCapabilities.isStaff}}" bindtap="onStaffWorkbench">

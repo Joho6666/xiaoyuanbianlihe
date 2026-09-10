@@ -1,0 +1,21 @@
+<campus-page-header title="{{profileId ? '编辑配送信息' : '新增配送信息'}}" subtitle="信息仅用于你的快递代拿订单" showBack="{{true}}" bindback="onBack" />
+<view class="profile-edit-page">
+  <view class="edit-card">
+    <view class="edit-section-title">收件人信息</view>
+    <text class="edit-label">备注名称</text><input class="edit-input" value="{{form.label}}" placeholder="例如：我的宿舍、小林" data-key="label" bindinput="onInput" maxlength="20" />
+    <text class="edit-label">收件人姓名</text><input class="edit-input" value="{{form.recipientName}}" placeholder="请输入收件人姓名" data-key="recipientName" bindinput="onInput" maxlength="30" />
+    <text class="edit-label">联系电话</text><input class="edit-input" value="{{form.contactPhone}}" type="number" placeholder="请输入 11 位手机号" data-key="contactPhone" bindinput="onInput" maxlength="11" />
+  </view>
+  <view class="edit-card">
+    <view class="edit-section-title">配送地址</view>
+    <text class="edit-label">配送校区</text><picker class="edit-picker" range="{{settings.deliveryCampuses}}" range-key="name" bindchange="onCampusChange"><view>{{selectedCampusName || '请选择南校区 / 北校区'}} <text>›</text></view></picker>
+    <text class="edit-label">宿舍园区</text><picker class="edit-picker" range="{{areaOptions}}" range-key="name" bindchange="onAreaChange"><view>{{selectedAreaName || '请选择宿舍园区'}} <text>›</text></view></picker>
+    <text class="edit-label">宿舍楼</text><picker class="edit-picker" range="{{buildingOptions}}" range-key="name" bindchange="onBuildingChange"><view>{{selectedBuildingName || '请选择楼栋'}} <text>›</text></view></picker>
+    <text class="edit-label">房间号</text><input class="edit-input" value="{{form.roomNumber}}" placeholder="例如 613" data-key="roomNumber" bindinput="onInput" maxlength="20" />
+  </view>
+  <view class="self-switch"><view><text class="self-title">这是给我自己的配送信息</text><text class="self-desc">“给自己 / 帮别人”会按这个标记筛选</text></view><switch checked="{{form.isSelf}}" bindchange="onSelfChange" color="#2f76ff" /></view>
+  <view class="self-switch"><view><text class="self-title">设为默认配送信息</text><text class="self-desc">下单时会优先使用这条资料</text></view><switch checked="{{form.isDefault}}" bindchange="onDefaultChange" color="#2f76ff" /></view>
+  <view class="edit-error" wx:if="{{error}}">{{error}}</view>
+  <view class="edit-submit" bindtap="onSave">{{saving ? '保存中…' : '保存配送信息'}}</view>
+  <view class="edit-archive" wx:if="{{profileId}}" bindtap="onArchive">归档这条配送信息</view>
+</view>

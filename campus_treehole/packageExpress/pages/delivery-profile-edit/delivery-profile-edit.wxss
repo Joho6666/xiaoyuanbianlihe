@@ -1,0 +1,14 @@
+@import "../../common.wxss";
+.profile-edit-page { min-height: 100vh; padding: 24rpx 28rpx 80rpx; box-sizing: border-box; background: #f3f7fd; }
+.edit-card { padding: 26rpx; margin-bottom: 18rpx; border-radius: 28rpx; background: #fff; box-shadow: 0 10rpx 30rpx rgba(55,91,145,.08); }
+.edit-section-title { margin-bottom: 22rpx; color: #172033; font-size: 30rpx; font-weight: 700; }
+.edit-label { display: block; margin: 18rpx 0 10rpx; color: #63718a; font-size: 23rpx; }
+.edit-input, .edit-picker { display: flex; align-items: center; width: 100%; min-height: 78rpx; padding: 0 20rpx; border: 2rpx solid #e5ecf5; border-radius: 18rpx; box-sizing: border-box; color: #172033; background: #fbfdff; font-size: 27rpx; line-height: 78rpx; }
+.edit-picker { justify-content: space-between; color: #45556d; }
+.edit-picker text { color: #2f76ff; font-size: 38rpx; }
+.self-switch { display: flex; align-items: center; justify-content: space-between; padding: 22rpx 24rpx; margin-bottom: 18rpx; border-radius: 24rpx; background: #fff; box-shadow: 0 10rpx 30rpx rgba(55,91,145,.06); }
+.self-title { display: block; color: #2f3f58; font-size: 26rpx; font-weight: 600; }
+.self-desc { display: block; margin-top: 7rpx; color: #8a98ab; font-size: 21rpx; }
+.edit-error { padding: 16rpx 18rpx; margin-bottom: 16rpx; border-radius: 16rpx; color: #c74e61; background: #fff0f2; font-size: 23rpx; }
+.edit-submit { display: flex; align-items: center; justify-content: center; min-height: 84rpx; border-radius: 22rpx; color: #fff; background: #2f76ff; font-size: 29rpx; font-weight: 600; box-shadow: 0 10rpx 24rpx rgba(47,118,255,.2); }
+.edit-archive { padding: 28rpx; color: #d34f62; text-align: center; font-size: 23rpx; }

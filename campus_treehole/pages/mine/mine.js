@@ -617,6 +617,8 @@ Page({
       wx.navigateTo({ url: '/pages/privacy/privacy' })
     } else if (page === 'expressOrders') {
       wx.navigateTo({ url: '/packageExpress/pages/orders/orders' })
+    } else if (page === 'expressProfiles') {
+      wx.navigateTo({ url: '/packageExpress/pages/delivery-profiles/delivery-profiles' })
     }
   },
 

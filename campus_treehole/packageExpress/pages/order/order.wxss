@@ -12,3 +12,22 @@
 .order-total-label { display: block; color: #7d899d; font-size: 22rpx; }
 .order-total { display: block; margin-top: 2rpx; color: #ff657a; font-size: 38rpx; font-weight: 800; }
 .order-submit { flex: 1; min-height: 78rpx; font-size: 26rpx; }
+.profile-section-head { display: flex; align-items: center; justify-content: space-between; }
+.profile-section-head .express-section-title { margin-bottom: 0; }
+.profile-switch-link { color: #2f76ff; font-size: 23rpx; }
+.selected-profile { padding: 22rpx; border: 2rpx solid #dce9ff; border-radius: 22rpx; background: #f7faff; }
+.selected-profile-top { display: flex; align-items: center; }
+.selected-profile-icon { display: flex; width: 58rpx; height: 58rpx; align-items: center; justify-content: center; margin-right: 14rpx; border-radius: 18rpx; color: #2f76ff; background: #e7f0ff; font-size: 24rpx; font-weight: 700; }
+.selected-profile-label, .selected-profile-name { display: block; }
+.selected-profile-label { color: #172033; font-size: 27rpx; font-weight: 700; }
+.selected-profile-name { margin-top: 4rpx; color: #71809a; font-size: 22rpx; }
+.selected-profile-default { margin-left: auto; padding: 5rpx 10rpx; border-radius: 999rpx; color: #2f76ff; background: #e5efff; font-size: 20rpx; }
+.selected-profile-address, .selected-profile-phone { display: block; margin-top: 14rpx; color: #43536b; font-size: 23rpx; line-height: 1.45; }
+.selected-profile-phone { margin-top: 6rpx; color: #8997aa; }
+.profile-prompt { padding: 26rpx 22rpx; border-radius: 22rpx; background: #f7faff; text-align: center; }
+.profile-prompt-title { display: block; color: #30405a; font-size: 26rpx; font-weight: 600; }
+.profile-prompt-desc { display: block; margin: 8rpx 0 18rpx; color: #8a98ab; font-size: 22rpx; }
+.profile-prompt .express-button { min-height: 70rpx; font-size: 25rpx; }
+.migration-prompt { padding: 18rpx; margin-top: 16rpx; border-radius: 18rpx; color: #55708f; background: #eaf3ff; font-size: 23rpx; }
+.migration-sub { display: block; margin-top: 6rpx; color: #8a98ab; font-size: 21rpx; }
+.migration-action { display: inline-block; padding: 8rpx 0; margin-top: 8rpx; color: #2f76ff; font-weight: 600; }

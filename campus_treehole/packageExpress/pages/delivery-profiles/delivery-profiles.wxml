@@ -1,0 +1,20 @@
+<campus-page-header title="常用配送信息" subtitle="保存一次，下单时自动带入" showBack="{{true}}" bindback="onBack" />
+<view class="profile-page">
+  <view class="profile-tip"><text class="profile-tip-icon">↗</text><text>配送信息跟随账号保存，换手机也能继续使用</text></view>
+  <view class="profile-tabs" wx:if="{{mode === 'select'}}">
+    <view class="profile-tab {{recipientMode === 'self' ? 'active' : ''}}" bindtap="onModeChange" data-mode="self">给自己</view>
+    <view class="profile-tab {{recipientMode === 'other' ? 'active' : ''}}" bindtap="onModeChange" data-mode="other">帮别人</view>
+  </view>
+  <view class="profile-section-title"><text>{{mode === 'select' ? '选择配送信息' : '我的配送信息'}}</text><text class="profile-count">{{profiles.length}} / 10</text></view>
+  <view wx:if="{{visibleProfiles.length}}">
+    <view class="profile-card {{item._id === selectedProfileId ? 'selected' : ''}}" wx:for="{{visibleProfiles}}" wx:key="_id" bindtap="onSelectProfile" data-id="{{item._id}}">
+      <view class="profile-card-top"><view class="profile-avatar">{{item.isSelf ? '我' : '友'}}</view><view class="profile-card-main"><view class="profile-name-row"><text class="profile-label">{{item.label}}</text><text class="default-chip" wx:if="{{item.isDefault}}">默认</text></view><text class="profile-recipient">{{item.recipientName}}</text></view><text class="profile-radio {{item._id === selectedProfileId ? 'checked' : ''}}">{{item._id === selectedProfileId ? '✓' : '○'}}</text></view>
+      <text class="profile-address">{{item.deliveryCampusName}} · {{item.dormAreaName}} · {{item.dormBuildingName}} · {{item.roomNumber}}</text>
+      <text class="profile-phone">{{item.maskedPhone}}</text>
+      <view class="profile-actions" wx:if="{{mode !== 'select'}}" catchtap="stopTap"><view class="profile-action" bindtap="onEdit" data-id="{{item._id}}">编辑</view><view class="profile-action" wx:if="{{!item.isDefault}}" bindtap="onSetDefault" data-id="{{item._id}}">设为默认</view><view class="profile-action danger" bindtap="onArchive" data-id="{{item._id}}">归档</view></view>
+    </view>
+  </view>
+  <view class="profile-empty" wx:else><text class="profile-empty-icon">⌂</text><text class="profile-empty-title">还没有常用配送信息</text><text class="profile-empty-desc">填写一次，以后下单会自动带入</text></view>
+  <view class="profile-add" bindtap="onAdd"><text class="profile-add-icon">＋</text><text>新增配送信息</text></view>
+  <view class="profile-note">最多保存 10 条，支持自己、室友和朋友的配送信息</view>
+</view>
