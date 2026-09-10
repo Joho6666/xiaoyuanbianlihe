@@ -12,7 +12,7 @@
     <view class="staff-pickup-items-list" wx:if="{{order.pickupItems && order.pickupItems.length}}">
       <view class="staff-pickup-item-row" wx:for="{{order.pickupItems}}" wx:key="id">
         <text class="item-code">{{item.pickupCode}}</text>
-        <text class="item-meta">{{item.pickupPointNameSnapshot}} · {{item.packageCount}}件 · {{item.parcelSizeLabel}}</text>
+        <text class="item-meta">{{item.pickupPointNameSnapshot}} · {{item.packageCount}}件 · {{item.parcelSizeLabel}}{{item.parcelPriceText ? ' · ¥' + item.parcelPriceText : ''}}</text>
       </view>
     </view>
     <text class="express-order-meta">送至 {{order.deliveryCampusNameSnapshot || order.deliveryCampus}} · {{order.dormAreaNameSnapshot || order.dormArea}} · {{order.dormBuildingNameSnapshot || order.dormBuilding}} · {{order.roomNumberSnapshot || order.roomNumber}}</text>

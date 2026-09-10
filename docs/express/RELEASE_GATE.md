@@ -1,51 +1,40 @@
-# Campus Box 3.0 Express 3.7 Release Gate
+# Campus Box 3.0 Express Release Gate (桂航快递代拿发布门禁)
 
-| Gate | Status | Evidence |
-| --- | --- | --- |
-| Branch / HEAD | PASS | `refactor/campus-platform-foundation`，最终交付 HEAD 以分支核对结果为准 |
-| Local CI | PASS | `npm ci` 后 `npm run ci` 通过 |
-| GitHub CI | PASS | 最终交付 HEAD 的 Node 18.x / 20.x workflow 已 success |
-| Staff Auth | PASS | `staff-permissions.test.js` |
-| Normal User Hidden | PASS | UI 回归 + 服务端能力回归；真机仍未验证 |
-| Server-side Permission | PASS | 伪造权限、停用、跨校和状态机回归 |
-| Order State | PASS | `express-order-state.test.js`：WAIT_PAYMENT → PAID/WAIT_PICKUP，履约状态机和幂等 |
-| Structured Delivery Campus | PASS | `express-address.test.js`：南/北校区、园区、楼栋校验与快照 |
-| Dorm Config / Pickup Point Config | PASS | Owner 设置动作支持 deliveryCampuses、停用楼栋与快递点 |
-| Pricing | PASS | `express-pricing.test.js`：quote 与服务端重算 |
-| Order Idempotency | PASS | 同一 userId + clientRequestId 返回原订单 |
-| Express Staff / Owner | PASS | `express-staff-permissions.test.js` 与既有权限回归 |
-| Excel private storage | PASS | 两个 Sheet、名称快照、冻结首行、筛选、私有路径内存回归；真实 Storage 未核对 |
-| Audit log / OpenID exposure | PASS | 审计脱敏与响应字段回归；真实 CloudBase 规则未核对 |
-| CloudBase Security | NOT RUN | 未完成独立环境规则和敏感集合访问核验 |
-| Storage | NOT RUN | 未完成持有 fileID 的真实访问威胁模型验证 |
-| DevTools | NOT RUN | 服务端口未开启时不得宣称编译成功 |
-| Payment Mock | PASS | 独立环境测试支付开关与 WAIT_PAYMENT 边界 |
-| Delivery Profiles | PASS | 账号归属、10 条上限、默认切换、归档提升默认与结构化地址校验 |
-| Order For Self / Others | PASS | `isSelf` 筛选；订单 Owner/付款人为当前账号，收件人可为未注册用户 |
-| Order Snapshot | PASS | 姓名、电话、房间与地址名称写入不可变 Snapshot |
-| Legacy Orders / Cache | PASS | 旧订单字段回退；本地缓存仅在用户确认后迁移 |
-| Staff / Excel Recipient | PASS | Staff 读取收件人 Snapshot；配送清单增加收件人列 |
-| CloudBase Profile/Multi Pickup Smoke | NOT RUN | 缺少独立环境临时凭证；普通 Smoke 为 `NOT RUN`，required 退出码为 1 |
-| DevTools | NOT RUN | 微信开发者工具服务端口当前关闭 |
-| Real Device | NOT RUN | 尚未完成三类账号和双账号验证 |
-| Express 3.8 Screenshot Import | IMPLEMENTED | 截图识别仅作为可编辑输入辅助，不自动提交订单；真实 OCR Smoke 另行验收 |
-| Inline First Checkout | PASS | 首次配送资料同页填写，服务端 Profile/Order 原子保存 |
-| Multi Pickup Points | PASS | 一单支持多个启用快递点 |
-| Multiple Codes Per Point | PASS | 同一快递点支持多个取件码，重复组合被拒绝 |
-| Legacy Order Compatibility | PASS | 旧 API 与旧订单读取自动 normalize，旧字段保留 |
-| Multi Pickup Quote | PASS | Quote/CreateOrder 按总包裹数、快递点数服务端重算 |
-| Staff Pickup Mode | PASS | 按快递点聚合 Item，未勾齐不允许开始配送 |
-| Staff Delivery Mode | PASS | 按宿舍地址聚合配送中订单 |
-| Excel Pickup Item Export | PASS | 取件 Sheet 一 Item 一行，配送 Sheet 一 Order 一行并带统计 |
-| CloudBase Multi Pickup Smoke | NOT RUN | 缺少独立环境临时凭证 |
-| DevTools Multi Input | NOT RUN | 微信开发者工具服务端口当前关闭 |
-| Screenshot OCR Adapter | PASS | `express-pickup-parser.test.js`、`express-pickup-matcher.test.js`；Mock 仅注入测试 |
-| Screenshot Import Action | PASS | `express-screenshot-import.test.js`；身份、路径归属、响应脱敏和清理失败回归 |
-| Screenshot Partial Failure | PASS | 单图失败不阻塞成功候选，失败索引可重试 |
-| Screenshot Point Review | PASS | 无匹配/多匹配结果必须人工选择快递点 |
-| Screenshot Duplicate Merge | PASS | 候选去重且与手工 Item 重复时跳过，不覆盖、不累加 |
-| Screenshot Temporary Storage | NOT RUN | 未提供独立 CloudBase OCR 凭证与真实图片；本地仅验证 Mock 和清理契约 |
-| CloudBase OCR Smoke | NOT RUN | 缺少独立环境 OCR Secret、测试图片和非生产目标 |
-| DevTools Screenshot Import | NOT RUN | 微信开发者工具服务端口当前关闭 |
-| Wechat Pay Real | NOT IMPLEMENTED | 本轮没有商户号、证书和回调配置 |
-| Production | NOT TOUCHED | 不部署、不写入、不执行自动化测试 |
+本文档严格记录快递代拿各功能模块在各个测试维度的真实就绪状态。严禁虚报测试结果，严格区分环境与验证级别：
+- `IMPLEMENTED`：代码已编写就绪，尚未执行端到端验证
+- `LOCAL PASS`：在本地 Node.js / 单元测试环境中测试通过
+- `CI PASS`：已纳入自动化 CI 测试流水线且持续构建通过
+- `DEVTOOLS PASS`：在微信开发者工具模拟器中手工或脚本验证通过
+- `REAL DEVICE PASS`：已在真机微信客户端完成端到端人工验证
+- `CLOUDBASE SMOKE PASS`：在腾讯云真实环境执行端到端自动化冒烟测试通过
+- `NOT RUN`：当前环境条件不具备（如缺少真实硬件、无外网服务端口、未配置第三方 Secret 等），未执行
+
+---
+
+## 1. 门禁状态全景表
+
+| 门禁项 (Gate Item) | 状态 (Status) | 凭证 / 说明 (Evidence & Notes) |
+|---|---|---|
+| **Git 分支与 HEAD** | CI PASS | `refactor/campus-platform-foundation`，严格禁止修改或自动合并 main |
+| **本地 CI 流水线** | CI PASS | `npm run ci`（含 check:schools, check:domain, validate, lint, run-tests）持续全部通过 |
+| **GitHub Actions CI** | CI PASS | 统一底座与多校区隔离自动化测试在 Node 18.x / 20.x 矩阵全部通过 |
+| **Staff 权限矩阵** | CI PASS | `staff-permissions.test.js`：涵盖 Owner 专有、跑腿员工及普通用户边界 |
+| **订单状态机与幂等** | CI PASS | `express-order-state.test.js`：WAIT_PAYMENT → WAIT_PICKUP → DELIVERING → COMPLETED |
+| **校区结构化地址** | CI PASS | `express-address.test.js`：南校区/北校区、园区、楼栋树形验证与不可变快照 |
+| **包裹规格计价引擎 (1/3/6)** | CI PASS | `express-parcel-size.test.js`：SMALL ¥1、MEDIUM ¥3、LARGE ¥6 服务端强算，前端伪造一律忽略 |
+| **规格校验与禁用防护** | CI PASS | `express-parcel-size.test.js`：非法或已被 Owner 禁用的规格在服务端直接拦截 |
+| **历史订单向下兼容** | CI PASS | `express-parcel-size.test.js`：历史未分类订单展示为“旧订单/未分类”，绝不重新按新价格算价 |
+| **取件码输入稳定性 (P0-2)** | CI PASS | `express-input-stability.test.js`：精准路径更新，杜绝全量深拷贝与重置，连续输入稳定不跳光标 |
+| **输入防抖与报价冲刷** | CI PASS | `express-input-stability.test.js`：输入保持 400ms 防抖，blur/confirm 时立即强制刷新报价 |
+| **截图导入契约拦截 (P0-1)** | CI PASS | `express-dispatch.test.js`：动态扫描前端所有 action，与服务端分发器 100% 对齐 |
+| **云函数部署规范与清单** | LOCAL PASS | `docs/express/CLOUDFUNCTION_DEPLOY_CHECKLIST.md` 已就绪 |
+| **线上云函数真实部署** | NOT RUN | 当前开发环境网络限制，需开发者在微信开发者工具中右键重新上传部署 `dbOperations` |
+| **真实腾讯云 OCR 识别** | NOT RUN | 云端未配置真实 `EXPRESS_OCR_SECRET_ID`/`SECRET_KEY`，目前运行于 Mock 或安全降级模式 |
+| **截图 OCR 规格零臆测** | CI PASS | `express-parcel-size.test.js`：OCR 解析器绝不臆测包裹尺寸，强制由用户在确认浮层勾选 |
+| **特殊件与超大件运营声明** | LOCAL PASS | 下单页已渲染 `specialParcelNotice` 运营提示与规格核对指引 |
+| **工作人员规格不符核验** | CI PASS | `express-parcel-size.test.js`：支持工作人员记录规格差异，写入安全审计日志，学生端展示核对告警 |
+| **配置读取异常透传 (P0-5)** | CI PASS | `express-settings-errors.test.js`：仅集合/文档不存在返回 null，数据库及网络异常严格 throw |
+| **双表格私有化 Excel 导出** | CI PASS | `express-export.test.js`：取件 Sheet 与配送 Sheet 独立排版，支持排序与统计，7 天自动销毁 |
+| **微信真实支付** | NOT RUN | 个人开发者与现阶段未配置商户号，当前使用受控测试支付适配器（`testPayment`） |
+| **微信开发者工具端口调试** | NOT RUN | 开发者工具命令行 CLI / HTTP 端口当前未开启，测试采用 Node 模拟器全量契约与断言验证 |
+| **桂航真实设备小规模运营** | IMPLEMENTED | 业务逻辑、价格体系、异常处理与工作人员工作流全部闭环，完成云函数部署后即可真机试跑 |

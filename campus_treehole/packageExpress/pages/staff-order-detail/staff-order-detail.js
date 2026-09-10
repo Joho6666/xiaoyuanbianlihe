@@ -7,7 +7,8 @@ const decorate = (row) => {
   const size = (firstItem && firstItem.parcelSize) || null
   const decoratedItems = (row.pickupItems || []).map((it) => ({
     ...it,
-    parcelSizeLabel: PARCEL_SIZE_LABELS[it.parcelSize] || '旧订单/未分类'
+    parcelSizeLabel: PARCEL_SIZE_LABELS[it.parcelSize] || '旧订单/未分类',
+    parcelPriceText: Number.isFinite(Number(it.parcelPriceCents)) ? (Number(it.parcelPriceCents) / 100).toFixed(2) : ''
   }))
   return {
     ...row,
