@@ -1,10 +1,10 @@
-# Campus Box 3.0 Express 3.6 Stage 1 Release Gate
+# Campus Box 3.0 Express 3.7 Release Gate
 
 | Gate | Status | Evidence |
 | --- | --- | --- |
-| Branch / HEAD | PASS | `refactor/campus-platform-foundation`，Stage 1 implementation through `abd2e45` |
+| Branch / HEAD | PASS | `refactor/campus-platform-foundation`，Express 3.7 implementation in current handoff |
 | Local CI | PASS | `npm ci` 后 `npm run ci` 通过 |
-| GitHub CI | PASS | [Actions run 34465745056](https://github.com/Joho6666/xiaoyuanbianlihe/actions/runs/34465745056)，对应 `abd2e45` 的 Node 18.x / 20.x 均 success |
+| GitHub CI | NOT RUN | Express 3.7 提交推送后以对应最终 HEAD 的 Node 18.x / 20.x 结果为准 |
 | Staff Auth | PASS | `staff-permissions.test.js` |
 | Normal User Hidden | PASS | UI 回归 + 服务端能力回归；真机仍未验证 |
 | Server-side Permission | PASS | 伪造权限、停用、跨校和状态机回归 |
@@ -25,9 +25,19 @@
 | Order Snapshot | PASS | 姓名、电话、房间与地址名称写入不可变 Snapshot |
 | Legacy Orders / Cache | PASS | 旧订单字段回退；本地缓存仅在用户确认后迁移 |
 | Staff / Excel Recipient | PASS | Staff 读取收件人 Snapshot；配送清单增加收件人列 |
-| CloudBase Stage 1 Smoke | NOT RUN | 缺少独立环境临时凭证；普通 Smoke 为 `NOT RUN`，required 退出码为 1 |
+| CloudBase Profile/Multi Pickup Smoke | NOT RUN | 缺少独立环境临时凭证；普通 Smoke 为 `NOT RUN`，required 退出码为 1 |
 | DevTools | NOT RUN | 微信开发者工具服务端口当前关闭 |
 | Real Device | NOT RUN | 尚未完成三类账号和双账号验证 |
-| Express 3.6 Stage 2 OCR | OUT OF SCOPE | 本阶段明确不开发 OCR/截图识别 |
+| Express 3.7 Stage 2 OCR | OUT OF SCOPE | 本阶段明确不开发 OCR/截图识别 |
+| Inline First Checkout | PASS | 首次配送资料同页填写，服务端 Profile/Order 原子保存 |
+| Multi Pickup Points | PASS | 一单支持多个启用快递点 |
+| Multiple Codes Per Point | PASS | 同一快递点支持多个取件码，重复组合被拒绝 |
+| Legacy Order Compatibility | PASS | 旧 API 与旧订单读取自动 normalize，旧字段保留 |
+| Multi Pickup Quote | PASS | Quote/CreateOrder 按总包裹数、快递点数服务端重算 |
+| Staff Pickup Mode | PASS | 按快递点聚合 Item，未勾齐不允许开始配送 |
+| Staff Delivery Mode | PASS | 按宿舍地址聚合配送中订单 |
+| Excel Pickup Item Export | PASS | 取件 Sheet 一 Item 一行，配送 Sheet 一 Order 一行并带统计 |
+| CloudBase Multi Pickup Smoke | NOT RUN | 缺少独立环境临时凭证 |
+| DevTools Multi Input | NOT RUN | 微信开发者工具服务端口当前关闭 |
 | Wechat Pay Real | NOT IMPLEMENTED | 本轮没有商户号、证书和回调配置 |
 | Production | NOT TOUCHED | 不部署、不写入、不执行自动化测试 |

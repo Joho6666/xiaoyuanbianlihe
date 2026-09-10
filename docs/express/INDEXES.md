@@ -8,6 +8,7 @@
 | `express_orders` | Staff 按社区校区和时间读取 | `campusId ASC, createdAt DESC` |
 | `express_orders` | Staff 按履约状态和时间读取 | `deliveryCampus ASC, orderStatus ASC, createdAt DESC` |
 | `express_orders` | 支付与履约过滤 | `paymentStatus ASC, orderStatus ASC` |
+| `express_orders` | 配送资料来源追溯 | `deliveryProfileId ASC, createdAt DESC`（数据量增长后评估） |
 | `express_settings` | 校区设置文档 | `campusId ASC` |
 | `staff_accounts` | 操作者与状态 | `userId ASC, status ASC` |
 | `staff_audit_logs` | 操作者/时间与资源 | `actorUserId ASC, createdAt DESC`；`resourceType ASC, resourceId ASC, createdAt DESC` |
