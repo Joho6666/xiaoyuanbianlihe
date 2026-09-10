@@ -12,6 +12,45 @@
 .order-total-label { display: block; color: #7d899d; font-size: 22rpx; }
 .order-total { display: block; margin-top: 2rpx; color: #ff657a; font-size: 38rpx; font-weight: 800; }
 .order-submit { flex: 1; min-height: 78rpx; font-size: 26rpx; }
+.express-mini-hero { display: flex; align-items: center; justify-content: space-between; padding: 24rpx 4rpx 12rpx; }
+.express-mini-hero .express-title { font-size: 36rpx; }
+.express-mini-hero .express-subtitle { margin-top: 4rpx; }
+.section-title-row { display: flex; align-items: center; justify-content: space-between; }
+.section-title-row .express-section-title { margin-bottom: 0; }
+.section-caption { color: #8a98ab; font-size: 21rpx; }
+.pickup-group { padding: 18rpx; margin-top: 16rpx; border-radius: 20rpx; background: #f7faff; }
+.pickup-group-head { display: flex; align-items: center; justify-content: space-between; }
+.pickup-point-picker { flex: 1; min-width: 0; }
+.pickup-point-picker > view { display: flex; align-items: center; min-height: 56rpx; color: #263750; font-size: 26rpx; font-weight: 650; }
+.pickup-point-picker .picker-arrow { margin-left: auto; }
+.pickup-point-icon { display: inline-flex; width: 40rpx; height: 40rpx; align-items: center; justify-content: center; margin-right: 10rpx; border-radius: 12rpx; color: #2f76ff; background: #e6f0ff; font-size: 21rpx; }
+.pickup-group-count { color: #8a98ab; font-size: 21rpx; }
+.pickup-item { display: flex; align-items: center; gap: 10rpx; margin-top: 12rpx; }
+.pickup-code-input { flex: 1; min-width: 0; min-height: 68rpx; line-height: 68rpx; }
+.item-stepper { display: flex; align-items: center; gap: 8rpx; white-space: nowrap; color: #667791; font-size: 20rpx; }
+.item-step { display: flex; width: 42rpx; height: 42rpx; align-items: center; justify-content: center; border-radius: 12rpx; color: #2f76ff; background: #fff; font-size: 29rpx; }
+.pickup-remove { padding: 10rpx 4rpx; color: #b4bfce; font-size: 30rpx; }
+.add-code, .add-point { padding: 14rpx 0 2rpx; color: #2f76ff; text-align: center; font-size: 23rpx; }
+.add-point { padding: 20rpx; margin-top: 16rpx; border: 2rpx dashed #cbdcff; border-radius: 18rpx; background: #fbfdff; }
+.inline-error { display: block; margin-top: 7rpx; color: #cf5266; font-size: 21rpx; }
+.inline-profile-editor { padding: 20rpx; border-radius: 22rpx; background: #f7faff; }
+.mode-tabs { display: flex; gap: 8rpx; padding: 6rpx; margin-bottom: 10rpx; border-radius: 16rpx; background: #e7effb; }
+.mode-tab { flex: 1; padding: 12rpx; border-radius: 12rpx; color: #71809a; text-align: center; font-size: 23rpx; }
+.mode-tab.active { color: #fff; background: #2f76ff; }
+.save-profile-row { display: flex; align-items: center; gap: 8rpx; padding-top: 18rpx; color: #5d6e86; font-size: 22rpx; }
+.profile-sheet-mask { position: fixed; z-index: 20; top: 0; right: 0; bottom: 0; left: 0; background: rgba(23,32,51,.24); }
+.profile-sheet { position: absolute; right: 0; bottom: 0; left: 0; max-height: 78vh; padding: 28rpx 28rpx max(28rpx, env(safe-area-inset-bottom)); border-radius: 28rpx 28rpx 0 0; background: #f3f7fd; }
+.profile-sheet-head { display: flex; justify-content: space-between; align-items: center; color: #172033; font-size: 30rpx; font-weight: 700; }
+.profile-sheet-head text:last-child { padding: 0 8rpx; color: #7889a1; font-size: 36rpx; }
+.sheet-mode-tabs { padding: 8rpx 0 14rpx; }
+.sheet-mode-tab { color: #2f76ff; font-size: 23rpx; font-weight: 600; }
+.sheet-profile-row { display: flex; align-items: center; justify-content: space-between; padding: 20rpx; margin-bottom: 12rpx; border: 2rpx solid transparent; border-radius: 20rpx; background: #fff; }
+.sheet-profile-label, .sheet-profile-meta, .sheet-profile-address { display: block; }
+.sheet-profile-label { color: #172033; font-size: 26rpx; font-weight: 650; }
+.sheet-profile-meta { margin-top: 5rpx; color: #61718a; font-size: 22rpx; }
+.sheet-profile-address { margin-top: 5rpx; color: #8a98ab; font-size: 21rpx; }
+.sheet-check { color: #2f76ff; font-size: 32rpx; }
+.sheet-add { padding: 18rpx; border: 2rpx solid #2f76ff; border-radius: 18rpx; color: #2f76ff; background: #fff; text-align: center; font-size: 24rpx; }
 .profile-section-head { display: flex; align-items: center; justify-content: space-between; }
 .profile-section-head .express-section-title { margin-bottom: 0; }
 .profile-switch-link { color: #2f76ff; font-size: 23rpx; }
