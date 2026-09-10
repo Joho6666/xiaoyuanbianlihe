@@ -47,7 +47,7 @@ const created = new Map()
 const smokeUserIds = []
 const uploadedFiles = new Set()
 function step(number, label) {
-  console.log(`[${number}/11] ${label}`)
+  console.log(`[${number}/10] ${label}`)
 }
 const track = (collection, id) => {
   if (!created.has(collection)) created.set(collection, new Set())
@@ -298,6 +298,7 @@ async function main() {
     acceptingOrders: true,
     basePriceCents: 300,
     pickupPoints: [{ id: 'south', name: '菜鸟驿站（南区）' }],
+    deliveryCampuses: [{ id: 'south', name: '南校区', enabled: true, dormAreas: [{ id: 'tianheyuan', name: '天和苑', enabled: true, buildings: [{ id: 'south-6', name: '6号楼', enabled: true }] }] }],
     notice: 'Smoke-only independent environment',
     smokeRunId: runId
   })
@@ -307,7 +308,9 @@ async function main() {
     pickupPointId: 'south',
     pickupCode: 'smoke-2-3-4587',
     packageCount: 1,
-    dormBuilding: '南区6号楼',
+    deliveryCampus: 'south',
+    dormArea: 'tianheyuan',
+    dormBuildingId: 'south-6',
     roomNumber: '613',
     phone: '13800001234',
     smokeRunId: runId
@@ -323,7 +326,7 @@ async function main() {
   track('express_exports', exported.data.fileId.replace(/^cloud:\/\//, '').split('/').pop().replace(/\.xlsx$/, ''))
   uploadedFiles.add(exported.data.fileId)
 
-  step(9, 'Checking block fences across Discover, Fate, Match, and Heart chat')
+  step(9, 'Checking block fences, disabled profiles, and Heart exposure')
   const gDiscover = await heart.getHeartDiscover(g._openid)
   const blockedTarget = gDiscover.data.rows[0]
   assert(blockedTarget, 'G has a candidate to block')
@@ -345,7 +348,6 @@ async function main() {
   assert.equal((await heart.getHeartMatches(a._openid)).data.length, 0)
   assert.notEqual((await heart.startHeartChat(a._openid, { targetUserId: b.internalUserId })).code, 0)
 
-  step(10, 'Checking disabled profiles stop Heart exposure')
   assert.equal((await heart.disableHeartProfile(c._openid)).data.enabled, false)
   assert(!(await heart.getHeartDiscover(a._openid)).data.rows.some(row => row.userId === c.internalUserId), 'disabled profile is no longer exposed')
 }
@@ -358,7 +360,7 @@ async function main() {
     failure = error
   }
   try {
-    step(11, 'Removing only run-scoped database records and Storage objects')
+    step(10, 'Removing only run-scoped database records and Storage objects')
     await cleanup()
   } catch (error) {
     failure = failure || error

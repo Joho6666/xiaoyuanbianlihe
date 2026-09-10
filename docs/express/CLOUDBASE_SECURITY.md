@@ -4,18 +4,20 @@
 
 Express 的敏感数据只能通过 `dbOperations` 访问。`express_orders`、`staff_accounts`、`staff_audit_logs`、`express_exports` 和 `express_settings` 必须在 CloudBase 控制台设置为禁止小程序客户端直接读写。客户端永远不能传入 OpenID、权限或操作者身份来替代服务端身份。
 
-当前首期服务校区是学校 `guat` 的校区 `guit-hangtian`。未配置 `express_settings/guit-hangtian` 或 `acceptingOrders` 不是 `true` 时，学生端保持“暂未开放”。
+当前首期服务学校是 `guat`，社区校区是 `guit-hangtian`；实际配送通过订单 `deliveryCampus=south|north` 表达南校区/北校区。未配置 `express_settings/guit-hangtian` 或 `acceptingOrders` 不是 `true` 时，学生端保持“暂未开放”。宿舍园区和楼栋来自设置中的 `deliveryCampuses`，订单保存名称快照，历史订单不会随配置重命名。
 
 ## 权限矩阵
 
 | 身份 | 订单读取 | 履约更新 | Excel 导出 | 工作人员管理 | 服务设置 |
 | --- | --- | --- | --- | --- | --- |
 | 普通用户 | 仅本人 | 无 | 无 | 无 | 无 |
-| active Express Staff | 所属校区 | `WAIT_PICKUP → DELIVERING → COMPLETED` | 所属校区 | 无 | 无 |
+| active Express Staff | 所属校区，且仅已支付订单 | `WAIT_PICKUP → DELIVERING → COMPLETED` | 所属校区 | 无 | 无 |
 | active 全局 Admin / Owner | 所属校区（按请求范围） | 全部 | 全部 | 全部 | 全部 |
 | disabled / banned | 无 | 无 | 无 | 无 | 无 |
 
 全局管理员身份由服务端现有 `users.role=admin && status=active` 判断；工作人员身份由 `staff_accounts` 判断。停用仅保留审计记录，不物理删除。
+
+订单状态与支付状态分离：`UNPAID + WAIT_PAYMENT` 创建，测试或真实支付确认后进入 `PAID + WAIT_PICKUP`；Owner 可取消未支付或未完成订单，Staff 不能修改支付状态。服务端校验截单、配送校区、园区、楼栋和 `clientRequestId`，客户端金额字段始终被忽略。
 
 ## 测试支付与生产隔离
 

@@ -19,6 +19,11 @@
 | 旧订单可能使用 `UNPAID + WAIT_PICKUP` | 幂等 migration 转为 `WAIT_PAYMENT` | P0 | 待实施 | 待新增 | NOT RUN |
 | DevTools 服务端口之前关闭 | 开启后编译并截图核心 Express 页面 | P1 | CLI 可用 | N/A | NOT RUN |
 
+## 本轮代码收口结果
+
+- `PASS`：订单状态拆分、历史兼容规范化函数、服务端报价、金额重算、`clientRequestId` 幂等、结构化配送校验、地址名称快照、未支付 Staff 过滤、Owner 设置字段、Excel 打印友好设置。
+- `NOT RUN`：独立 CloudBase 集合权限、Storage 私有访问、真实支付回调、DevTools 编译截图和真机键盘/安全区验证。
+
 ## 运行边界
 
 - 首期服务校区仍为 `guat` / Campus Box `guit-hangtian`，实际配送通过 `deliveryCampus` 表达 `south` / `north`。

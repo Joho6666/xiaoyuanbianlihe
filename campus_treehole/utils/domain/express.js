@@ -2,6 +2,7 @@ const EXPRESS_DEFAULT_SCHOOL_ID = 'guat'
 const EXPRESS_DEFAULT_CAMPUS_ID = 'guit-hangtian'
 
 const EXPRESS_ORDER_STATUS = Object.freeze({
+  WAIT_PAYMENT: 'WAIT_PAYMENT',
   WAIT_PICKUP: 'WAIT_PICKUP',
   DELIVERING: 'DELIVERING',
   COMPLETED: 'COMPLETED',
@@ -10,10 +11,12 @@ const EXPRESS_ORDER_STATUS = Object.freeze({
 
 const EXPRESS_PAYMENT_STATUS = Object.freeze({
   UNPAID: 'UNPAID',
-  PAID: 'PAID'
+  PAID: 'PAID',
+  REFUNDED: 'REFUNDED'
 })
 
 const EXPRESS_STATUS_TRANSITIONS = Object.freeze({
+  WAIT_PAYMENT: [EXPRESS_ORDER_STATUS.CANCELLED],
   WAIT_PICKUP: [EXPRESS_ORDER_STATUS.DELIVERING, EXPRESS_ORDER_STATUS.CANCELLED],
   DELIVERING: [EXPRESS_ORDER_STATUS.COMPLETED, EXPRESS_ORDER_STATUS.CANCELLED],
   COMPLETED: [],
@@ -30,6 +33,14 @@ function normalizeExpressOrderStatus(value) {
   return Object.values(EXPRESS_ORDER_STATUS).includes(value) ? value : null
 }
 
+function normalizeLegacyExpressOrder(order) {
+  if (!order || typeof order !== 'object') return order
+  if (order.paymentStatus === EXPRESS_PAYMENT_STATUS.UNPAID && order.orderStatus === 'WAIT_PICKUP') {
+    return { ...order, orderStatus: EXPRESS_ORDER_STATUS.WAIT_PAYMENT }
+  }
+  return order
+}
+
 function normalizeExpressPaymentStatus(value) {
   return Object.values(EXPRESS_PAYMENT_STATUS).includes(value) ? value : null
 }
@@ -42,5 +53,6 @@ module.exports = {
   EXPRESS_STATUS_TRANSITIONS,
   canTransitionExpressOrder,
   normalizeExpressOrderStatus,
-  normalizeExpressPaymentStatus
+  normalizeExpressPaymentStatus,
+  normalizeLegacyExpressOrder
 }

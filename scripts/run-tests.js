@@ -22,7 +22,13 @@ const testFiles = [
   path.join(__dirname, '..', 'test', 'regression', 'contact-grants.test.js'),
   path.join(__dirname, '..', 'test', 'regression', 'staff-permissions.test.js'),
   path.join(__dirname, '..', 'test', 'regression', 'express-orders.test.js'),
+  path.join(__dirname, '..', 'test', 'regression', 'express-order-state.test.js'),
+  path.join(__dirname, '..', 'test', 'regression', 'express-address.test.js'),
+  path.join(__dirname, '..', 'test', 'regression', 'express-pricing.test.js'),
+  path.join(__dirname, '..', 'test', 'regression', 'express-staff-permissions.test.js'),
+  path.join(__dirname, '..', 'test', 'regression', 'express-migration.test.js'),
   path.join(__dirname, '..', 'test', 'regression', 'express-export.test.js'),
+  path.join(__dirname, '..', 'test', 'regression', 'express-security-contract.test.js'),
   path.join(__dirname, '..', 'test', 'regression', 'express-ui.test.js'),
   path.join(__dirname, '..', 'test', 'regression', 'phase2-ui.test.js'),
 
