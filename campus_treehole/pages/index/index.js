@@ -149,7 +149,9 @@ Page({
       acceptingOrders: false,
       priceText: '',
       cutoffText: '当前校区服务状态',
-      activeOrder: null
+      activeOrder: null,
+      serviceStatus: 'LOADING',
+      configured: false
     }
   },
 
@@ -286,7 +288,7 @@ Page({
 
   async loadExpressCard() {
     if (!app.hasSelectedCampusInStorage()) {
-      this.setData({ expressCard: { acceptingOrders: false, priceText: '', cutoffText: '请选择校区后查看服务', activeOrder: null } })
+      this.setData({ expressCard: { acceptingOrders: false, priceText: '', cutoffText: '请选择校区后查看服务', activeOrder: null, serviceStatus: 'UNCONFIGURED', configured: false } })
       return
     }
     try {
@@ -295,9 +297,9 @@ Page({
       const priceText = Number(config.basePriceCents) > 0 ? (Number(config.basePriceCents) / 100).toFixed(0) : ''
       const cutoffText = config.cutoffTime ? `今天 ${config.cutoffTime} 截单` : (config.acceptingOrders ? '当前校区可下单' : '服务暂未开放')
       const active = ((ordersRes && ordersRes.data) || []).find((order) => ['WAIT_PICKUP', 'DELIVERING'].includes(order.orderStatus))
-      this.setData({ expressCard: { acceptingOrders: config.acceptingOrders === true, priceText, cutoffText, activeOrder: active ? { orderId: active._id, statusLabel: active.orderStatus === 'DELIVERING' ? '配送中' : '待取件', address: `${active.dormAreaNameSnapshot || active.dormArea || ''}${active.dormBuildingNameSnapshot || active.dormBuilding || ''} ${active.roomNumber || ''}` } : null } })
+      this.setData({ expressCard: { acceptingOrders: config.acceptingOrders === true, priceText, cutoffText, activeOrder: active ? { orderId: active._id, statusLabel: active.orderStatus === 'DELIVERING' ? '配送中' : '待取件', address: `${active.dormAreaNameSnapshot || active.dormArea || ''}${active.dormBuildingNameSnapshot || active.dormBuilding || ''} ${active.roomNumber || ''}` } : null, serviceStatus: config.serviceStatus || (config.configured ? (config.acceptingOrders ? 'OPEN' : 'PAUSED') : 'UNCONFIGURED'), configured: config.configured === true } })
     } catch (e) {
-      this.setData({ expressCard: { acceptingOrders: false, priceText: '', cutoffText: '服务暂未开放', activeOrder: null } })
+      this.setData({ expressCard: { acceptingOrders: false, priceText: '', cutoffText: '服务状态加载失败', activeOrder: null, serviceStatus: 'ERROR', configured: false } })
     }
   },
 

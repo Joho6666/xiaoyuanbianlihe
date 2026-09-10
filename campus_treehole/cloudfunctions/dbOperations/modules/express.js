@@ -96,6 +96,8 @@ function createExpressModule({ db, _, cloud, helpers = {} }) {
     return {
       campusId,
       schoolId: row.schoolId || EXPRESS_DEFAULT_SCHOOL_ID,
+      configured: !!settings,
+      serviceStatus: !settings ? 'UNCONFIGURED' : (row.acceptingOrders === true ? 'OPEN' : 'PAUSED'),
       acceptingOrders: row.acceptingOrders === true,
       cutoffTime: row.cutoffTime || '',
       deliveryWindow: row.deliveryWindow || '',

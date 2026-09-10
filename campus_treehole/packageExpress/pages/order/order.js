@@ -4,11 +4,11 @@ const requestId = () => `express_${Date.now()}_${Math.random().toString(36).slic
 
 Page({
   data: {
-    settings: { acceptingOrders: false, pickupPoints: [], deliveryCampuses: [] },
+    settings: { acceptingOrders: false, configured: false, serviceStatus: 'LOADING', pickupPoints: [], deliveryCampuses: [] },
     selectedPointIndex: -1, selectedPointName: '', selectedCampusIndex: -1, selectedCampusName: '',
     selectedAreaIndex: -1, selectedAreaName: '', selectedBuildingIndex: -1, selectedBuildingName: '',
     areaOptions: [], buildingOptions: [],
-    quote: null, clientRequestId: requestId(),
+    quote: null, clientRequestId: requestId(), loadError: false,
     form: { packageCount: 1, pickupCode: '', dormBuildingId: '', dormArea: '', deliveryCampus: '', roomNumber: '', phone: '', note: '' },
     submitting: false, quoting: false
   },
@@ -20,9 +20,10 @@ Page({
       const areaIndex = campus ? (campus.dormAreas || []).findIndex((item) => item.id === saved.dormArea && item.enabled !== false) : -1; const area = areaIndex >= 0 ? campus.dormAreas[areaIndex] : null
       const buildingIndex = area ? (area.buildings || []).findIndex((item) => item.id === saved.dormBuildingId && item.enabled !== false) : -1; const building = buildingIndex >= 0 ? area.buildings[buildingIndex] : null
       const pointIndex = (settings.pickupPoints || []).findIndex((item) => item.id === saved.pickupPointId)
-      this.setData({ settings, areaOptions: campus ? (campus.dormAreas || []) : [], buildingOptions: area ? (area.buildings || []) : [], selectedPointIndex: pointIndex, selectedPointName: pointIndex >= 0 ? settings.pickupPoints[pointIndex].name : '', selectedCampusIndex: campusIndex, selectedCampusName: campus ? campus.name : '', selectedAreaIndex: areaIndex, selectedAreaName: area ? area.name : '', selectedBuildingIndex: buildingIndex, selectedBuildingName: building ? building.name : '', 'form.deliveryCampus': campus ? campus.id : '', 'form.dormArea': area ? area.id : '', 'form.dormBuildingId': building ? building.id : '', 'form.dormBuilding': building ? building.name : '', 'form.roomNumber': saved.roomNumber || '', 'form.phone': saved.phone || '', 'form.note': '' })
-    } catch (e) { this.setData({ settings: { acceptingOrders: false, pickupPoints: [], deliveryCampuses: [] } }) }
+      this.setData({ settings, loadError: false, areaOptions: campus ? (campus.dormAreas || []) : [], buildingOptions: area ? (area.buildings || []) : [], selectedPointIndex: pointIndex, selectedPointName: pointIndex >= 0 ? settings.pickupPoints[pointIndex].name : '', selectedCampusIndex: campusIndex, selectedCampusName: campus ? campus.name : '', selectedAreaIndex: areaIndex, selectedAreaName: area ? area.name : '', selectedBuildingIndex: buildingIndex, selectedBuildingName: building ? building.name : '', 'form.deliveryCampus': campus ? campus.id : '', 'form.dormArea': area ? area.id : '', 'form.dormBuildingId': building ? building.id : '', 'form.dormBuilding': building ? building.name : '', 'form.roomNumber': saved.roomNumber || '', 'form.phone': saved.phone || '', 'form.note': '' })
+    } catch (e) { this.setData({ loadError: true, settings: { acceptingOrders: false, configured: false, serviceStatus: 'ERROR', pickupPoints: [], deliveryCampuses: [] } }) }
   },
+  onRetry() { if (!this.data.loadError) return; this.loadSettings() },
   onBack() { wx.navigateBack() },
   onPointChange(e) { const index = Number(e.detail.value); const point = (this.data.settings.pickupPoints || [])[index]; if (point) this.setData({ selectedPointIndex: index, selectedPointName: point.name }, () => this.refreshQuote()) },
   onCampusChange(e) { const index = Number(e.detail.value); const campus = (this.data.settings.deliveryCampuses || [])[index]; if (!campus) return; this.setData({ selectedCampusIndex: index, selectedCampusName: campus.name, areaOptions: campus.dormAreas || [], buildingOptions: [], selectedAreaIndex: -1, selectedAreaName: '', selectedBuildingIndex: -1, selectedBuildingName: '', 'form.deliveryCampus': campus.id, 'form.dormArea': '', 'form.dormBuildingId': '', 'form.dormBuilding': '' }) },

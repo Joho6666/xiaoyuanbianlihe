@@ -103,7 +103,7 @@
       <view class="express-home-price" wx:if="{{expressCard.priceText}}"><text class="express-home-currency">¥</text><text class="express-home-amount">{{expressCard.priceText}}</text><text class="express-home-unit">起</text></view>
     </view>
     <view class="express-home-art" aria-hidden="true"><view class="parcel-shadow"></view><view class="parcel-box"><view class="parcel-tape"></view><view class="parcel-label"></view><view class="parcel-seam"></view></view></view>
-    <text class="express-home-closed" wx:if="{{!expressCard.acceptingOrders}}">今日暂停接单</text>
+    <text class="express-home-closed" wx:if="{{!expressCard.acceptingOrders}}">{{expressCard.serviceStatus === 'ERROR' ? '服务状态加载失败' : (expressCard.configured ? '今日暂停接单' : '服务尚未配置')}}</text>
     <view class="express-home-cta" wx:if="{{expressCard.acceptingOrders}}">立即下单</view>
   </view>
   <view class="express-active-order" wx:if="{{expressCard.activeOrder}}" bindtap="onOpenExpressOrders">
