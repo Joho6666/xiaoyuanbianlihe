@@ -24,7 +24,7 @@ Component({
             } else if (res.tapIndex === 1) {
               wx.navigateTo({ url: '/packageBuddy/pages/buddy-create/buddy-create' })
             } else if (res.tapIndex === 2) {
-              wx.navigateTo({ url: '/packageMarket/pages/market-publish/market-publish' })
+              wx.navigateTo({ url: '/packageMarket/pages/market-post/market-post' })
             } else if (res.tapIndex === 3) {
               wx.navigateTo({ url: '/packageMutual/pages/mutual-create/mutual-create' })
             }
