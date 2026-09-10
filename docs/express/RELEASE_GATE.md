@@ -2,8 +2,9 @@
 
 | Gate | Status | Evidence |
 | --- | --- | --- |
-| Branch / HEAD | PASS | `refactor/campus-platform-foundation`，本轮变更完成后以最终 HEAD 为准 |
+| Branch / HEAD | PASS | `refactor/campus-platform-foundation`，最终 HEAD `54cacd7e8306e2dfeb61ff38abc9876b670d9828` |
 | Local CI | PASS | `npm ci` 后 `npm run ci` 通过 |
+| GitHub CI | PASS | [Actions run 34431641153](https://github.com/Joho6666/xiaoyuanbianlihe/actions/runs/34431641153)，Node 18.x / 20.x 均 success |
 | Staff Auth | PASS | `staff-permissions.test.js` |
 | Normal User Hidden | PASS | UI 回归 + 服务端能力回归；真机仍未验证 |
 | Server-side Permission | PASS | 伪造权限、停用、跨校和状态机回归 |
