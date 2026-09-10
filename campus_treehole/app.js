@@ -496,7 +496,7 @@ App({
 
   // 调用 dbOperations 云函数（统一入口）
   callDB(action, data = {}) {
-    const campusReads = ['getPosts','getMarketGoods','getBuddyPosts','getLanguagePartners','getMutualPosts','getActivityZone','getCampusNowSummary']
+    const campusReads = ['getPosts','getMarketGoods','getBuddyPosts','getLanguagePartners','getMutualPosts','getActivityZone','getCampusNowSummary','getExpressServiceConfig']
     const campusRead = campusReads.includes(action)
     const requestedCampus = this.getSelectedCampusId()
     if (campusRead) data = { ...data, campusId: requestedCampus }

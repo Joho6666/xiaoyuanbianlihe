@@ -30,6 +30,7 @@ const testFiles = [
   path.join(__dirname, '..', 'test', 'regression', 'express-export.test.js'),
   path.join(__dirname, '..', 'test', 'regression', 'express-security-contract.test.js'),
   path.join(__dirname, '..', 'test', 'regression', 'express-ui.test.js'),
+  path.join(__dirname, '..', 'test', 'regression', 'express-dispatch.test.js'),
   path.join(__dirname, '..', 'test', 'regression', 'phase2-ui.test.js'),
 
   path.join(__dirname, '..', 'test', 'regression', 'school-isolation.test.js'),

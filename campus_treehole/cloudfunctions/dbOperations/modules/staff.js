@@ -232,6 +232,7 @@ function createStaffModule({ db, _, helpers = {} }) {
     requirePermission,
     writeAudit,
     getMyStaffCapabilities,
+    ownerResolveExpressStaffCandidate: ownerResolveCandidate,
     ownerResolveCandidate,
     ownerAddExpressStaff,
     ownerDisableExpressStaff,

@@ -413,7 +413,9 @@ const PUBLIC_READ_ACTIONS = new Set([
   'getMutualPostById',
   'getAnnouncementList',
   'getActivityZone',
-  'getCampusNowSummary'
+  'getCampusNowSummary',
+  'getExpressServiceConfig',
+  'getExpressQuote'
 ])
 
 async function checkAdmin(openid) {

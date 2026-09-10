@@ -77,8 +77,7 @@ function createExpressModule({ db, _, cloud, helpers = {} }) {
       const result = await db.collection(SETTINGS).doc(campusId).get()
       return result && result.data ? result.data : null
     } catch (err) {
-      if (isCollectionNotExistError(err)) return null
-      throw err
+      return null
     }
   }
 
@@ -130,16 +129,24 @@ function createExpressModule({ db, _, cloud, helpers = {} }) {
   }
 
   async function getServiceConfig(openid, data = {}) {
-    const user = await getUserForAction(openid, { requireActive: true })
-    if (data.campusId && data.campusId !== user.campusId) return fail('只能查看当前校区服务', 403)
+    let user = null
+    if (openid) {
+      try {
+        user = await getUserForAction(openid, { requireActive: false })
+      } catch (_) {}
+    }
     const campusId = resolveCampus(user, data.campusId)
     const settings = await readSettings(campusId)
     return { code: 0, data: publicSettings(settings, campusId) }
   }
 
   async function getExpressQuote(openid, data = {}) {
-    const user = await getUserForAction(openid, { requireActive: true })
-    if (data.campusId && data.campusId !== user.campusId) return fail('只能为当前校区询价', 403)
+    let user = null
+    if (openid) {
+      try {
+        user = await getUserForAction(openid, { requireActive: false })
+      } catch (_) {}
+    }
     const campusId = resolveCampus(user, data.campusId)
     const settings = await readSettings(campusId)
     if (!settings || settings.acceptingOrders !== true) return fail('当前校区暂未开放快递代拿')
@@ -530,6 +537,7 @@ function createExpressModule({ db, _, cloud, helpers = {} }) {
     ORDERS,
     SETTINGS,
     EXPORTS,
+    getExpressServiceConfig: getServiceConfig,
     getServiceConfig,
     getExpressQuote,
     createExpressOrder,

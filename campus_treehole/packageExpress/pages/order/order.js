@@ -8,20 +8,56 @@ Page({
     selectedPointIndex: -1, selectedPointName: '', selectedCampusIndex: -1, selectedCampusName: '',
     selectedAreaIndex: -1, selectedAreaName: '', selectedBuildingIndex: -1, selectedBuildingName: '',
     areaOptions: [], buildingOptions: [],
-    quote: null, clientRequestId: requestId(), loadError: false,
+    quote: null, clientRequestId: requestId(), loadError: false, loadErrorMsg: '',
     form: { packageCount: 1, pickupCode: '', dormBuildingId: '', dormArea: '', deliveryCampus: '', roomNumber: '', phone: '', note: '' },
     submitting: false, quoting: false
   },
   onLoad() { this.loadSettings() },
   async loadSettings() {
     try {
-      const res = await app.callDB('getExpressServiceConfig', {}); const settings = res.data || {}; const saved = wx.getStorageSync('express_delivery_address') || {}
-      const campuses = settings.deliveryCampuses || []; const campusIndex = campuses.findIndex((item) => item.id === saved.deliveryCampus && item.enabled !== false); const campus = campusIndex >= 0 ? campuses[campusIndex] : null
-      const areaIndex = campus ? (campus.dormAreas || []).findIndex((item) => item.id === saved.dormArea && item.enabled !== false) : -1; const area = areaIndex >= 0 ? campus.dormAreas[areaIndex] : null
-      const buildingIndex = area ? (area.buildings || []).findIndex((item) => item.id === saved.dormBuildingId && item.enabled !== false) : -1; const building = buildingIndex >= 0 ? area.buildings[buildingIndex] : null
+      const selectedCampus = (typeof app.getSelectedCampusId === 'function' && app.getSelectedCampusId()) || 'guit-hangtian'
+      const res = await app.callDB('getExpressServiceConfig', { campusId: selectedCampus })
+      const settings = (res && res.data) || {}
+      const saved = wx.getStorageSync('express_delivery_address') || {}
+      const campuses = settings.deliveryCampuses || []
+      const campusIndex = campuses.findIndex((item) => item.id === saved.deliveryCampus && item.enabled !== false)
+      const campus = campusIndex >= 0 ? campuses[campusIndex] : null
+      const areaIndex = campus ? (campus.dormAreas || []).findIndex((item) => item.id === saved.dormArea && item.enabled !== false) : -1
+      const area = areaIndex >= 0 ? campus.dormAreas[areaIndex] : null
+      const buildingIndex = area ? (area.buildings || []).findIndex((item) => item.id === saved.dormBuildingId && item.enabled !== false) : -1
+      const building = buildingIndex >= 0 ? area.buildings[buildingIndex] : null
       const pointIndex = (settings.pickupPoints || []).findIndex((item) => item.id === saved.pickupPointId)
-      this.setData({ settings, loadError: false, areaOptions: campus ? (campus.dormAreas || []) : [], buildingOptions: area ? (area.buildings || []) : [], selectedPointIndex: pointIndex, selectedPointName: pointIndex >= 0 ? settings.pickupPoints[pointIndex].name : '', selectedCampusIndex: campusIndex, selectedCampusName: campus ? campus.name : '', selectedAreaIndex: areaIndex, selectedAreaName: area ? area.name : '', selectedBuildingIndex: buildingIndex, selectedBuildingName: building ? building.name : '', 'form.deliveryCampus': campus ? campus.id : '', 'form.dormArea': area ? area.id : '', 'form.dormBuildingId': building ? building.id : '', 'form.dormBuilding': building ? building.name : '', 'form.roomNumber': saved.roomNumber || '', 'form.phone': saved.phone || '', 'form.note': '' })
-    } catch (e) { this.setData({ loadError: true, settings: { acceptingOrders: false, configured: false, serviceStatus: 'ERROR', pickupPoints: [], deliveryCampuses: [] } }) }
+      this.setData({
+        settings,
+        loadError: false,
+        loadErrorMsg: '',
+        areaOptions: campus ? (campus.dormAreas || []) : [],
+        buildingOptions: area ? (area.buildings || []) : [],
+        selectedPointIndex: pointIndex,
+        selectedPointName: pointIndex >= 0 && settings.pickupPoints[pointIndex] ? settings.pickupPoints[pointIndex].name : '',
+        selectedCampusIndex: campusIndex,
+        selectedCampusName: campus ? campus.name : '',
+        selectedAreaIndex: areaIndex,
+        selectedAreaName: area ? area.name : '',
+        selectedBuildingIndex: buildingIndex,
+        selectedBuildingName: building ? building.name : '',
+        'form.deliveryCampus': campus ? campus.id : '',
+        'form.dormArea': area ? area.id : '',
+        'form.dormBuildingId': building ? building.id : '',
+        'form.dormBuilding': building ? building.name : '',
+        'form.roomNumber': saved.roomNumber || '',
+        'form.phone': saved.phone || '',
+        'form.note': ''
+      })
+    } catch (e) {
+      console.error('[loadSettings] 加载配置失败:', e)
+      const errorMsg = (e && (e.msg || e.errMsg || e.message)) || '请检查网络后重试，暂未创建订单'
+      this.setData({
+        loadError: true,
+        loadErrorMsg: errorMsg,
+        settings: { acceptingOrders: false, configured: false, serviceStatus: 'ERROR', pickupPoints: [], deliveryCampuses: [] }
+      })
+    }
   },
   onRetry() { if (!this.data.loadError) return; this.loadSettings() },
   onBack() { wx.navigateBack() },
