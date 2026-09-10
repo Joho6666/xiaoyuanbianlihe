@@ -106,9 +106,14 @@
   </view>
 
   <view class="express-home-hero" bindtap="onOpenExpress">
-    <view class="express-home-icon">📦</view>
-    <view class="express-home-copy"><text class="express-home-title">快递代拿</text><text class="express-home-desc">一键提交取件信息，订单状态随时可查</text></view>
-    <text class="express-home-arrow">›</text>
+    <view class="express-home-copy">
+      <text class="express-home-title">快递代拿</text>
+      <text class="express-home-cutoff">{{expressCard.cutoffText}}</text>
+      <view class="express-home-price" wx:if="{{expressCard.priceText}}"><text class="express-home-currency">¥</text><text class="express-home-amount">{{expressCard.priceText}}</text><text class="express-home-unit">起</text></view>
+      <text class="express-home-closed" wx:else>校内专人配送 · 状态可查</text>
+    </view>
+    <view class="express-home-art" aria-hidden="true"><view class="parcel-shadow"></view><view class="parcel-box"><view class="parcel-tape"></view><view class="parcel-label"></view><view class="parcel-seam"></view></view></view>
+    <view class="express-home-cta">立即下单</view>
   </view>
 
   <view class="service-panel">

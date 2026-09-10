@@ -144,7 +144,12 @@ Page({
     subscribeGuideSubmitting: false,
     subscribeGuideStep: 1,
     campusNowItems: [],
-    heartEnabled: false
+    heartEnabled: false,
+    expressCard: {
+      acceptingOrders: false,
+      priceText: '',
+      cutoffText: '当前校区服务状态'
+    }
   },
 
 
@@ -202,6 +207,7 @@ Page({
       }
       this._syncCampusUiFromApp()
       this._maybeShowSubscribeGuideModal()
+      this.loadExpressCard()
       this.loadLatestAnnouncement()
       this.loadCampusNowSummary()
       this.loadPosts()
@@ -272,8 +278,25 @@ Page({
       hasMore: true
     })
     this._syncCampusUiFromApp()
+    this.loadExpressCard()
     this.loadLatestAnnouncement()
     this.loadPosts()
+  },
+
+  async loadExpressCard() {
+    if (!app.hasSelectedCampusInStorage()) {
+      this.setData({ expressCard: { acceptingOrders: false, priceText: '', cutoffText: '请选择校区后查看服务' } })
+      return
+    }
+    try {
+      const res = await app.callDB('getExpressServiceConfig', { campusId: app.getSelectedCampusId() })
+      const config = (res && res.data) || {}
+      const priceText = Number(config.basePriceCents) > 0 ? (Number(config.basePriceCents) / 100).toFixed(0) : ''
+      const cutoffText = config.cutoffTime ? `今天 ${config.cutoffTime} 截单` : (config.acceptingOrders ? '当前校区可下单' : '服务暂未开放')
+      this.setData({ expressCard: { acceptingOrders: config.acceptingOrders === true, priceText, cutoffText } })
+    } catch (e) {
+      this.setData({ expressCard: { acceptingOrders: false, priceText: '', cutoffText: '服务暂未开放' } })
+    }
   },
 
   async loadLatestAnnouncement() {

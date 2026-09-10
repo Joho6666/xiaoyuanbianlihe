@@ -16,6 +16,7 @@ const mine = fs.readFileSync(path.join(mini, 'pages/mine/mine.wxml'), 'utf8')
 const index = fs.readFileSync(path.join(mini, 'pages/index/index.wxml'), 'utf8')
 assert.ok(mine.includes('staffCapabilities.isStaff') && mine.includes('staffCapabilities.isOwner'))
 assert.ok(index.includes('onOpenExpress') && index.includes('快递代拿'))
+assert.ok(index.includes('express-home-cta') && index.includes('express-home-price') && index.includes('parcel-box'), 'Express home card is a large, salient hero')
 assert.ok(!mine.includes('isStaff === true'), 'Mine does not trust a client-only staff flag')
 for (const page of express.pages.filter((page) => page.includes('/staff-'))) {
   const js = fs.readFileSync(path.join(mini, 'packageExpress', `${page}.js`), 'utf8')
