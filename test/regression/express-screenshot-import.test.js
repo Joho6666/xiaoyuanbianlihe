@@ -35,6 +35,7 @@ async function run() {
   assert.strictEqual(result.data.candidates[0].pickupPointId, 'sf')
   assert.strictEqual(result.data.candidates[0].pickupCode, 'SF2831')
   assert.strictEqual(result.data.candidates[0].packageCount, 2)
+  assert.strictEqual(result.data.candidates[0].parcelSize, null)
   assert.ok(!JSON.stringify(result).includes('mock-image'))
   assert.ok(!JSON.stringify(result).includes(fileId))
   assert.ok(!JSON.stringify(result).includes('TENCENT_SECRET'))

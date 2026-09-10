@@ -24,6 +24,7 @@ function sanitizeCandidate(candidate) {
     pickupCode: String(candidate.pickupCode || '').trim().slice(0, 40),
     pickupPointId: String(candidate.pickupPointId || ''),
     pickupPointName: String(candidate.pickupPointName || '').slice(0, 40),
+    parcelSize: candidate.parcelSize || null,
     packageCount: Number(candidate.packageCount) || 1,
     confidence: Math.max(0, Math.min(1, Number(candidate.confidence) || 0)),
     matchStatus: candidate.matchStatus === 'MATCHED' ? 'MATCHED' : 'NEEDS_REVIEW',

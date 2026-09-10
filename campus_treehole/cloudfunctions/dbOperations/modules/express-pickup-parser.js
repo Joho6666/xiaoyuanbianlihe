@@ -73,6 +73,7 @@ function parsePickupCandidates(text, context = {}) {
       id: `ocr_candidate_${context.sourceImageIndex || 1}_${index + 1}`,
       pickupCode: entry.code,
       pickupPointText,
+      parcelSize: null,
       packageCount: count.packageCount,
       confidence,
       warnings,

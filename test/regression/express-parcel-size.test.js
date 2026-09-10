@@ -50,6 +50,12 @@ async function run() {
   assert.strictEqual(order.code, 0)
   assert.strictEqual(order.data.amountCents, 1100)
   assert.strictEqual(order.data.pickupItems[0].parcelSize, 'SMALL')
+  await express.createExpressTestPayment('oid-student', { orderId: order.data._id })
+  const mismatch = await express.staffRecordExpressParcelMismatch('oid-staff', { orderId: order.data._id, itemId: order.data.pickupItems[0].id, expectedParcelSize: 'LARGE', actualParcelSize: 'MEDIUM', note: '现场核验' })
+  assert.strictEqual(mismatch.code, 0)
+  assert.strictEqual(mismatch.data.expectedParcelSize, 'SMALL')
+  assert.strictEqual(mismatch.data.actualParcelSize, 'MEDIUM')
+  assert.ok(fixture.store.staff_audit_logs.some((row) => row.action === 'EXPRESS_PARCEL_SIZE_MISMATCH_RECORDED'))
 
   // Staff verification: Staff can see parcelSize and record mismatch
   await express.createExpressTestPayment('oid-student', { orderId: order.data._id })
@@ -98,7 +104,7 @@ async function run() {
   assert.strictEqual(legacy.amountCents, 900)
   assert.strictEqual(legacy.pickupItems[0].parcelSize == null, true)
   assert.strictEqual(legacy.pickupItems[0].packageCount, 3)
-  assert.strictEqual(parsePickupCandidates('顺丰服务点\n取件码：SF2831')[0].parcelSize, undefined)
+  assert.strictEqual(parsePickupCandidates('顺丰服务点\n取件码：SF2831')[0].parcelSize, null)
   console.log('PASS Express parcel size: 1/3/6 pricing, server recalculation, disabled/invalid guards and legacy compatibility')
 }
 

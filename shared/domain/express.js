@@ -74,6 +74,7 @@ function normalizeExpressPickupItems(order) {
     packageCount: Number(item.packageCount) || 0
     }
     if (item.parcelSize !== undefined) normalized.parcelSize = normalizeExpressParcelSize(item.parcelSize)
+    if (item.parcelSizeLabelSnapshot !== undefined) normalized.parcelSizeLabelSnapshot = String(item.parcelSizeLabelSnapshot || '').trim().slice(0, 20)
     if (item.parcelPriceCents !== undefined) normalized.parcelPriceCents = Number.isFinite(Number(item.parcelPriceCents)) ? Number(item.parcelPriceCents) : null
     if (item.parcelSizeMismatch === true) {
       normalized.parcelSizeMismatch = true

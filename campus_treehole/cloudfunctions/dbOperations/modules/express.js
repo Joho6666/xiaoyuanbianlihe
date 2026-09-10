@@ -133,10 +133,14 @@ function calculateExpressAmount(normalized, pricing) {
   return { parcelSubtotalCents, extraPickupPointFee, additionalFeeCents, totalPriceCents, sizeBreakdown }
 }
 
-  function summarizePickupPoints(items) {
+function summarizePickupPoints(items) {
   const counts = new Map()
   items.forEach((item) => counts.set(item.pickupPointNameSnapshot || item.pickupPointName || item.pickupPointId, (counts.get(item.pickupPointNameSnapshot || item.pickupPointName || item.pickupPointId) || 0) + item.packageCount))
   return Array.from(counts.entries()).map(([name, count]) => `${name}×${count}`).join(' / ')
+}
+
+function parcelSizeLabel(size) {
+  return ({ SMALL: '小件', MEDIUM: '中件', LARGE: '大件' }[size] || '旧订单/未分类')
 }
 
 function createExpressModule({ db, _, cloud, helpers = {} }) {
@@ -489,13 +493,13 @@ function createExpressModule({ db, _, cloud, helpers = {} }) {
       pickupPointId: item.pickupPointId,
       pickupPointNameSnapshot: item.pickupPointNameSnapshot,
       pickupCode: item.pickupCode,
-    packageCount: item.packageCount,
-    parcelSize: item.parcelSize || null,
-    parcelSizeLabelSnapshot: item.parcelSizeLabelSnapshot || null,
-    parcelPriceCents: Number.isFinite(Number(item.parcelPriceCents)) ? Number(item.parcelPriceCents) : null,
-    parcelSizeMismatch: item.parcelSizeMismatch === true,
-    expectedParcelSize: item.expectedParcelSize || null,
-    actualParcelSize: item.actualParcelSize || null
+      packageCount: item.packageCount,
+      parcelSize: item.parcelSize || null,
+      parcelSizeLabelSnapshot: item.parcelSizeLabelSnapshot || null,
+      parcelPriceCents: Number.isFinite(Number(item.parcelPriceCents)) ? Number(item.parcelPriceCents) : null,
+      parcelSizeMismatch: item.parcelSizeMismatch === true,
+      expectedParcelSize: item.expectedParcelSize || null,
+      actualParcelSize: item.actualParcelSize || null
     }))
   }
 
@@ -929,15 +933,17 @@ function createExpressModule({ db, _, cloud, helpers = {} }) {
       { header: '快递点', key: 'pickupPointName', width: 20 },
       { header: '取件码', key: 'pickupCode', width: 18 },
       { header: '件数', key: 'packageCount', width: 8 },
+      { header: '规格', key: 'parcelSize', width: 12 },
+      { header: '单价', key: 'parcelPrice', width: 10 },
       { header: '订单号', key: 'orderNo', width: 24 },
       { header: '配送校区', key: 'deliveryCampusName', width: 18 },
       { header: '宿舍楼', key: 'dormBuilding', width: 18 },
       { header: '房间', key: 'roomNumber', width: 12 },
       { header: '备注', key: 'note', width: 30 }
     ]
-    pickup.forEach((row, index) => pickupSheet.addRow({ index: index + 1, pickupPointName: row.pickupPointNameSnapshot || row.pickupPointName, pickupCode: row.pickupCode, packageCount: row.packageCount, orderNo: row.orderNo, deliveryCampusName: row.deliveryCampusNameSnapshot || row.deliveryCampus || '未配置', dormBuilding: row.dormBuildingNameSnapshot || row.dormBuilding || '未配置', roomNumber: row.roomNumberSnapshot || row.roomNumber || '', note: row.note || '' }))
+    pickup.forEach((row, index) => pickupSheet.addRow({ index: index + 1, pickupPointName: row.pickupPointNameSnapshot || row.pickupPointName, pickupCode: row.pickupCode, packageCount: row.packageCount, parcelSize: row.parcelSizeLabelSnapshot || parcelSizeLabel(row.parcelSize), parcelPrice: Number.isFinite(Number(row.parcelPriceCents)) ? `¥${(Number(row.parcelPriceCents) / 100).toFixed(2)}` : '', orderNo: row.orderNo, deliveryCampusName: row.deliveryCampusNameSnapshot || row.deliveryCampus || '未配置', dormBuilding: row.dormBuildingNameSnapshot || row.dormBuilding || '未配置', roomNumber: row.roomNumberSnapshot || row.roomNumber || '', note: row.note || '' }))
     pickupSheet.getRow(1).font = { bold: true }
-    pickupSheet.autoFilter = { from: 'A1', to: 'I1' }
+    pickupSheet.autoFilter = { from: 'A1', to: 'K1' }
     pickupSheet.pageSetup.orientation = 'landscape'
     const deliverySheet = workbook.addWorksheet('配送清单', { views: [{ state: 'frozen', ySplit: 1 }] })
     deliverySheet.columns = [
