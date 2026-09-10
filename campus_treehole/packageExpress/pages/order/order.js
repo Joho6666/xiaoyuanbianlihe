@@ -1,8 +1,10 @@
 const app = getApp()
 
 const requestId = () => `express_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`
-const emptyPickupItem = (index = 1) => ({ id: `pickup_item_${Date.now()}_${index}`, pickupCode: '', packageCount: 1, focus: index === 1 })
-const emptyPickupGroup = () => ({ pickupPointId: '', pickupPointName: '', pointIndex: -1, items: [emptyPickupItem()] })
+let pickupItemSequence = 0
+let pickupGroupSequence = 0
+const emptyPickupItem = (index = 1) => ({ id: `pickup_item_${++pickupItemSequence}_${index}`, pickupCode: '', parcelSize: 'SMALL', packageCount: 1, focus: index === 1 })
+const emptyPickupGroup = () => ({ groupKey: `pickup_group_${++pickupGroupSequence}`, pickupPointId: '', pickupPointName: '', pointIndex: -1, items: [emptyPickupItem()] })
 
 function maskPhone(phone) {
   const value = String(phone || '')
@@ -15,7 +17,8 @@ function decorateProfile(profile) {
 
 Page({
   data: {
-    settings: { acceptingOrders: false, configured: false, serviceStatus: 'LOADING', pickupPoints: [], deliveryCampuses: [] },
+    settings: { acceptingOrders: false, configured: false, serviceStatus: 'LOADING', pickupPoints: [], deliveryCampuses: [], pricingMode: 'PER_PACKAGE', parcelSizePricing: {} },
+    parcelSizeOptions: [{ value: 'SMALL', label: '小件', priceText: '¥1' }, { value: 'MEDIUM', label: '中件', priceText: '¥3' }, { value: 'LARGE', label: '大件', priceText: '¥6' }],
     pickupGroups: [emptyPickupGroup()],
     profiles: [], visibleProfiles: [], profileFilter: 'self', selectedProfile: null, showProfileSheet: false, inlineDelivery: true,
     deliveryMode: 'self', deliveryForm: { label: '我的宿舍', recipientName: '', contactPhone: '', deliveryCampus: '', deliveryCampusName: '', dormArea: '', dormAreaName: '', dormBuildingId: '', dormBuildingName: '', roomNumber: '' },
@@ -36,7 +39,9 @@ Page({
       const cached = wx.getStorageSync('express_delivery_address') || {}
       const points = settings.pickupPoints || []
       const savedPoint = points.find((item) => item.id === cached.pickupPointId) || points.find((item) => item.enabled !== false)
-      this.setData({ settings, loadError: false, loadErrorMsg: '', pickupGroups: [{ pickupPointId: savedPoint ? savedPoint.id : '', pickupPointName: savedPoint ? savedPoint.name : '', pointIndex: savedPoint ? points.findIndex((item) => item.id === savedPoint.id) : -1, items: [emptyPickupItem()] }] })
+      const sizePricing = settings.parcelSizePricing || {}
+      const parcelSizeOptions = ['SMALL', 'MEDIUM', 'LARGE'].map((value) => ({ value, label: sizePricing[value] && sizePricing[value].label ? sizePricing[value].label : ({ SMALL: '小件', MEDIUM: '中件', LARGE: '大件' }[value]), priceText: `¥${((sizePricing[value] && sizePricing[value].priceCents != null ? sizePricing[value].priceCents : ({ SMALL: 100, MEDIUM: 300, LARGE: 600 }[value])) / 100).toFixed(0)}` }))
+      this.setData({ settings, parcelSizeOptions, loadError: false, loadErrorMsg: '', pickupGroups: [{ groupKey: `pickup_group_${++pickupGroupSequence}`, pickupPointId: savedPoint ? savedPoint.id : '', pickupPointName: savedPoint ? savedPoint.name : '', pointIndex: savedPoint ? points.findIndex((item) => item.id === savedPoint.id) : -1, items: [emptyPickupItem()] }] })
       await this.loadProfiles(cached)
       this.scheduleQuote()
     } catch (e) {
@@ -95,22 +100,66 @@ Page({
   },
   onPickupInput(e) {
     const groupIndex = Number(e.currentTarget.dataset.groupIndex); const itemIndex = Number(e.currentTarget.dataset.itemIndex)
-    const groups = this.data.pickupGroups.map((group) => ({ ...group, items: group.items.slice() }))
-    groups[groupIndex].items[itemIndex] = { ...groups[groupIndex].items[itemIndex], pickupCode: e.detail.value }
-    this.setData({ pickupGroups: groups, 'inlineErrors.pickup': '' }, () => this.scheduleQuote())
+    const group = this.data.pickupGroups && this.data.pickupGroups[groupIndex]
+    const item = group && group.items && group.items[itemIndex]
+    if (item) item.pickupCode = e.detail.value
+    const pickupCodePath = `pickupGroups[${groupIndex}].items[${itemIndex}].pickupCode`
+    this.setData({ [pickupCodePath]: e.detail.value, 'inlineErrors.pickup': '' })
+    this.scheduleQuote()
   },
   onItemCountChange(e) {
     const groupIndex = Number(e.currentTarget.dataset.groupIndex); const itemIndex = Number(e.currentTarget.dataset.itemIndex); const delta = Number(e.currentTarget.dataset.delta)
-    const groups = this.data.pickupGroups.map((group) => ({ ...group, items: group.items.slice() })); const item = groups[groupIndex].items[itemIndex]
-    item.packageCount = Math.min(20, Math.max(1, Number(item.packageCount || 1) + delta))
-    this.setData({ pickupGroups: groups }, () => this.scheduleQuote())
+    const item = this.data.pickupGroups[groupIndex] && this.data.pickupGroups[groupIndex].items[itemIndex]
+    if (!item) return
+    const packageCountPath = `pickupGroups[${groupIndex}].items[${itemIndex}].packageCount`
+    this.setData({ [packageCountPath]: Math.min(20, Math.max(1, Number(item.packageCount || 1) + delta)) }, () => this.scheduleQuote())
+  },
+  onPickupBlur() { this.scheduleQuote(0) },
+  onPickupConfirm() { this.scheduleQuote(0) },
+  onPickupFocus(e) {
+    const groupIndex = Number(e.currentTarget.dataset.groupIndex); const itemIndex = Number(e.currentTarget.dataset.itemIndex)
+    const item = this.data.pickupGroups[groupIndex] && this.data.pickupGroups[groupIndex].items[itemIndex]
+    if (item && item.focus) {
+      item.focus = false
+      this.setData({ [`pickupGroups[${groupIndex}].items[${itemIndex}].focus`]: false })
+    }
+  },
+  onParcelSizeChange(e) {
+    const groupIndex = Number(e.currentTarget.dataset.groupIndex); const itemIndex = Number(e.currentTarget.dataset.itemIndex); const sizeIndex = Number(e.detail.value)
+    const option = this.data.parcelSizeOptions[sizeIndex]
+    if (!option) return
+    this.setData({ [`pickupGroups[${groupIndex}].items[${itemIndex}].parcelSize`]: option.value }, () => this.scheduleQuote(0))
+  },
+  onParcelSizeTap(e) {
+    const groupIndex = Number(e.currentTarget.dataset.groupIndex); const itemIndex = Number(e.currentTarget.dataset.itemIndex); const value = e.currentTarget.dataset.size
+    if (!value) return
+    this.setData({ [`pickupGroups[${groupIndex}].items[${itemIndex}].parcelSize`]: value }, () => this.scheduleQuote())
+  },
+  onSelectParcelSize(e) {
+    const groupIndex = Number(e.currentTarget.dataset.groupIndex); const itemIndex = Number(e.currentTarget.dataset.itemIndex)
+    const size = e.currentTarget.dataset.size
+    if (!size) return
+    const item = this.data.pickupGroups[groupIndex] && this.data.pickupGroups[groupIndex].items[itemIndex]
+    if (item) item.parcelSize = size
+    this.setData({ [`pickupGroups[${groupIndex}].items[${itemIndex}].parcelSize`]: size }, () => this.scheduleQuote(0))
   },
   addPickupCode(e) {
     const groupIndex = Number(e.currentTarget.dataset.groupIndex); const groups = this.data.pickupGroups.map((group) => ({ ...group, items: group.items.map((item) => ({ ...item, focus: false })) }))
     groups[groupIndex].items.push(emptyPickupItem(groups[groupIndex].items.length + 1))
     this.setData({ pickupGroups: groups }, () => { this.scheduleQuote(); setTimeout(() => this.clearPickupFocus(), 600) })
   },
-  clearPickupFocus() { this.setData({ pickupGroups: this.data.pickupGroups.map((group) => ({ ...group, items: group.items.map((item) => ({ ...item, focus: false })) })) }) },
+  clearPickupFocus() {
+    const patch = {}
+    ;(this.data.pickupGroups || []).forEach((group, gIdx) => {
+      ;(group.items || []).forEach((item, iIdx) => {
+        if (item.focus) {
+          item.focus = false
+          patch[`pickupGroups[${gIdx}].items[${iIdx}].focus`] = false
+        }
+      })
+    })
+    if (Object.keys(patch).length) this.setData(patch)
+  },
   removePickupItem(e) {
     const groupIndex = Number(e.currentTarget.dataset.groupIndex); const itemIndex = Number(e.currentTarget.dataset.itemIndex); const groups = this.data.pickupGroups.map((group) => ({ ...group, items: group.items.slice() }))
     if (groups[groupIndex].items.length > 1) groups[groupIndex].items.splice(itemIndex, 1)
@@ -126,7 +175,7 @@ Page({
       const existing = this.data.pickupGroups.findIndex((group) => group.pickupPointId === point.id)
       if (existing >= 0) return this.addPickupCode({ currentTarget: { dataset: { groupIndex: existing } } })
       const groups = this.data.pickupGroups.map((group) => ({ ...group, items: group.items.map((item) => ({ ...item, focus: false })) }))
-      groups.push({ pickupPointId: point.id, pickupPointName: point.name, pointIndex: (this.data.settings.pickupPoints || []).findIndex((item) => item.id === point.id), items: [emptyPickupItem()] })
+      groups.push({ groupKey: `pickup_group_${++pickupGroupSequence}`, pickupPointId: point.id, pickupPointName: point.name, pointIndex: (this.data.settings.pickupPoints || []).findIndex((item) => item.id === point.id), items: [emptyPickupItem()] })
       this.setData({ pickupGroups: groups }, () => { this.scheduleQuote(); setTimeout(() => this.clearPickupFocus(), 600) })
     } })
   },
@@ -169,6 +218,8 @@ Page({
       const candidates = (res.data && res.data.candidates || []).map((item) => ({
         ...item,
         pointIndex: points.findIndex((point) => point.id === item.pickupPointId),
+        parcelSize: '',
+        sizeIndex: -1,
         editable: true
       }))
       this.setData({ showImportSheet: true, importCandidates: candidates, importFailedImages: res.data.failedImages || [], importSummary: res.data.summary || { imageCount: files.length, successImageCount: 0, candidateCount: candidates.length, duplicateCount: 0 }, importStage: '' })
@@ -190,11 +241,25 @@ Page({
     const candidates = this.data.importCandidates.map((item, itemIndex) => itemIndex === index ? { ...item, pickupPointId: point.id, pickupPointName: point.name, pointIndex, matchStatus: 'MATCHED', warnings: (item.warnings || []).filter((warning) => !/^pickupPoint/.test(warning)) } : item)
     this.setData({ importCandidates: candidates })
   },
+  onImportSizeChange(e) {
+    const index = Number(e.currentTarget.dataset.index); const sizeIndex = Number(e.detail.value); const option = this.data.parcelSizeOptions[sizeIndex]
+    if (!option) return
+    this.setData({ [`importCandidates[${index}].parcelSize`]: option.value, [`importCandidates[${index}].sizeIndex`]: sizeIndex })
+  },
+  onImportSizeTap(e) {
+    const index = Number(e.currentTarget.dataset.index); const value = e.currentTarget.dataset.size
+    if (!value) return
+    const sizeIndex = this.data.parcelSizeOptions.findIndex((option) => option.value === value)
+    this.setData({ [`importCandidates[${index}].parcelSize`]: value, [`importCandidates[${index}].sizeIndex`]: sizeIndex })
+  },
   onImportCandidateInput(e) {
     const index = Number(e.currentTarget.dataset.index)
     const key = e.currentTarget.dataset.key
-    const candidates = this.data.importCandidates.map((item, itemIndex) => itemIndex === index ? { ...item, [key]: e.detail.value, matchStatus: key === 'pickupCode' && item.pickupPointId ? 'MATCHED' : item.matchStatus } : item)
-    this.setData({ importCandidates: candidates })
+    const candidate = this.data.importCandidates[index]
+    if (!candidate) return
+    const patch = { [`importCandidates[${index}].${key}`]: e.detail.value }
+    if (key === 'pickupCode' && candidate.pickupPointId) patch[`importCandidates[${index}].matchStatus`] = 'MATCHED'
+    this.setData(patch)
   },
   onImportCountChange(e) {
     const index = Number(e.currentTarget.dataset.index); const delta = Number(e.currentTarget.dataset.delta)
@@ -211,12 +276,13 @@ Page({
     const candidates = this.data.importCandidates.filter((item) => item && item.pickupCode)
     if (!candidates.length) return wx.showToast({ title: '没有可导入的识别结果', icon: 'none' })
     if (candidates.some((item) => item.matchStatus !== 'MATCHED' || !item.pickupPointId)) return wx.showToast({ title: '请先为待确认结果选择快递点', icon: 'none' })
+    if (this.data.settings.pricingMode === 'PARCEL_SIZE' && candidates.some((item) => !item.parcelSize)) return wx.showToast({ title: '请确认每个包裹规格', icon: 'none' })
     const existingItems = this.flattenPickupItems().filter((item) => item.pickupPointId && item.pickupCode)
     const mergedItems = existingItems.slice(); let skipped = 0
     candidates.forEach((candidate) => {
       const duplicate = mergedItems.some((item) => item.pickupPointId === candidate.pickupPointId && String(item.pickupCode).trim().toUpperCase() === String(candidate.pickupCode).trim().toUpperCase())
       if (duplicate) { skipped += 1; return }
-      mergedItems.push({ pickupPointId: candidate.pickupPointId, pickupCode: String(candidate.pickupCode).trim(), packageCount: Number(candidate.packageCount) || 1 })
+      mergedItems.push({ pickupPointId: candidate.pickupPointId, pickupCode: String(candidate.pickupCode).trim(), parcelSize: candidate.parcelSize || 'SMALL', packageCount: Number(candidate.packageCount) || 1 })
     })
     if (mergedItems.length > 10) return wx.showToast({ title: '一个订单最多添加 10 个取件码', icon: 'none' })
     const packageTotal = mergedItems.reduce((sum, item) => sum + (Number(item.packageCount) || 0), 0)
@@ -227,10 +293,10 @@ Page({
       if (!group) {
         const pointIndex = (this.data.settings.pickupPoints || []).findIndex((point) => point.id === item.pickupPointId)
         const point = (this.data.settings.pickupPoints || [])[pointIndex]
-        group = { pickupPointId: item.pickupPointId, pickupPointName: point ? point.name : '', pointIndex, items: [] }
+        group = { groupKey: `pickup_group_${++pickupGroupSequence}`, pickupPointId: item.pickupPointId, pickupPointName: point ? point.name : '', pointIndex, items: [] }
         groups.push(group)
       }
-      group.items.push({ ...emptyPickupItem(group.items.length + 1), pickupCode: item.pickupCode, packageCount: item.packageCount, focus: false })
+      group.items.push({ ...emptyPickupItem(group.items.length + 1), pickupCode: item.pickupCode, parcelSize: item.parcelSize || 'SMALL', packageCount: item.packageCount, focus: false })
     })
     if (!groups.length) groups.push(emptyPickupGroup())
     this.setData({ pickupGroups: groups, showImportSheet: false, importCandidates: [], importFailedImages: [], importStage: '' }, () => this.scheduleQuote())
@@ -255,8 +321,15 @@ Page({
   onDeliveryCampusChange(e) { const index = Number(e.detail.value); const campus = (this.data.settings.deliveryCampuses || [])[index]; if (!campus) return; this.setData({ selectedCampusIndex: index, selectedCampusName: campus.name, areaOptions: campus.dormAreas || [], buildingOptions: [], selectedAreaIndex: -1, selectedBuildingIndex: -1, 'deliveryForm.deliveryCampus': campus.id, 'deliveryForm.deliveryCampusName': campus.name, 'deliveryForm.dormArea': '', 'deliveryForm.dormAreaName': '', 'deliveryForm.dormBuildingId': '', 'deliveryForm.dormBuildingName': '' }) },
   onDeliveryAreaChange(e) { const index = Number(e.detail.value); const area = this.data.areaOptions[index]; if (!area) return; this.setData({ selectedAreaIndex: index, selectedAreaName: area.name, buildingOptions: area.buildings || [], selectedBuildingIndex: -1, 'deliveryForm.dormArea': area.id, 'deliveryForm.dormAreaName': area.name, 'deliveryForm.dormBuildingId': '', 'deliveryForm.dormBuildingName': '' }) },
   onDeliveryBuildingChange(e) { const index = Number(e.detail.value); const building = this.data.buildingOptions[index]; if (!building) return; this.setData({ selectedBuildingIndex: index, selectedBuildingName: building.name, 'deliveryForm.dormBuildingId': building.id, 'deliveryForm.dormBuildingName': building.name }) },
-  scheduleQuote() { if (this.quoteTimer) clearTimeout(this.quoteTimer); this.quoteTimer = setTimeout(() => this.refreshQuote(), 400) },
-  flattenPickupItems() { return this.data.pickupGroups.flatMap((group) => group.items.map((item) => ({ pickupPointId: group.pickupPointId, pickupCode: item.pickupCode, packageCount: Number(item.packageCount) }))) },
+  scheduleQuote(delay = 400) {
+    if (this.quoteTimer) clearTimeout(this.quoteTimer)
+    if (delay === 0) {
+      this.refreshQuote()
+    } else {
+      this.quoteTimer = setTimeout(() => this.refreshQuote(), delay)
+    }
+  },
+  flattenPickupItems() { return this.data.pickupGroups.flatMap((group) => group.items.map((item) => ({ pickupPointId: group.pickupPointId, pickupCode: item.pickupCode, parcelSize: item.parcelSize, packageCount: Number(item.packageCount) }))) },
   async refreshQuote() {
     if (this.data.quoting) return
     const pickupItems = this.flattenPickupItems().filter((item) => item.pickupPointId && item.pickupCode)
@@ -281,6 +354,7 @@ Page({
     if (!app.requestComplianceForAction() || this.data.submitting) return
     const pickupItems = this.flattenPickupItems()
     if (!pickupItems.some((item) => item.pickupPointId && item.pickupCode)) return wx.showToast({ title: '请至少填写一个取件码', icon: 'none' })
+    if (this.data.settings.pricingMode === 'PARCEL_SIZE' && pickupItems.some((item) => item.pickupPointId && item.pickupCode && !item.parcelSize)) return wx.showToast({ title: '请选择每个包裹规格', icon: 'none' })
     if (!this.validateInlineDelivery()) return
     const point = this.data.pickupGroups.find((group) => group.pickupPointId)
     if (!point) return wx.showToast({ title: '请选择快递点', icon: 'none' })

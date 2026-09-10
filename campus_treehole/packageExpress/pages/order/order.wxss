@@ -27,6 +27,13 @@
 .pickup-group-count { color: #8a98ab; font-size: 21rpx; }
 .pickup-item { display: flex; align-items: center; gap: 10rpx; margin-top: 12rpx; }
 .pickup-code-input { flex: 1; min-width: 0; min-height: 68rpx; line-height: 68rpx; }
+.parcel-size-row { display: flex; align-items: center; width: 100%; padding: 12rpx 0 4rpx; }
+.parcel-size-label { flex: 0 0 110rpx; color: #76859a; font-size: 21rpx; }
+.parcel-size-options, .import-size-options { display: flex; flex: 1; gap: 8rpx; }
+.parcel-size-option, .import-size-option { display: flex; flex: 1; min-width: 0; flex-direction: column; align-items: center; justify-content: center; padding: 8rpx 4rpx; border: 2rpx solid #e3eaf4; border-radius: 14rpx; color: #77869a; background: #fff; font-size: 19rpx; line-height: 1.35; }
+.parcel-size-option text:last-child, .import-size-option text:last-child { color: #a2adbb; font-size: 18rpx; }
+.parcel-size-option.active, .import-size-option.active { border-color: #2f76ff; color: #2f76ff; background: #edf4ff; }
+.parcel-size-option.active text:last-child, .import-size-option.active text:last-child { color: #2f76ff; }
 .item-stepper { display: flex; align-items: center; gap: 8rpx; white-space: nowrap; color: #667791; font-size: 20rpx; }
 .item-step { display: flex; width: 42rpx; height: 42rpx; align-items: center; justify-content: center; border-radius: 12rpx; color: #2f76ff; background: #fff; font-size: 29rpx; }
 .pickup-remove { padding: 10rpx 4rpx; color: #b4bfce; font-size: 30rpx; }
@@ -92,5 +99,8 @@
 .import-point-picker { display: block; margin-top: 12rpx; }
 .import-point-picker > view { min-height: 64rpx; padding: 0 18rpx; line-height: 64rpx; border-radius: 16rpx; color: #40536e; background: #f5f8fd; font-size: 23rpx; }
 .import-count { padding-top: 14rpx; color: #76859a; font-size: 21rpx; }
+.import-size-row { display: flex; align-items: center; padding-top: 14rpx; color: #76859a; font-size: 21rpx; }
+.import-size-row > text { flex: 0 0 110rpx; }
+.import-empty { padding: 26rpx 12rpx; color: #8a98ab; text-align: center; font-size: 22rpx; }
 .import-warning { display: block; padding-top: 10rpx; color: #b97935; font-size: 20rpx; }
 .import-sheet > .sheet-add { margin-top: 10rpx; margin-bottom: 4rpx; }

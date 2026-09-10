@@ -18,6 +18,12 @@ assert.ok(order.includes('showProfileSheet') && order.includes('visibleProfiles'
 assert.ok(orderJs.includes('pickupItems') && orderJs.includes('deliveryData') && orderJs.includes('saveDeliveryProfile') && orderJs.includes('quoteTimer'), 'Order sends multi-pickup and inline delivery data with debounced quote')
 assert.ok(orderJs.includes('onImportScreenshots') && orderJs.includes('recognizeExpressScreenshots') && orderJs.includes('confirmImport') && orderJs.includes('retryImportScreenshots') && orderJs.includes('closeImportSheet'), 'Order wires screenshot OCR import through editable confirmation, cancel and retry')
 assert.ok(order.includes('截图一键导入') && order.includes('showImportSheet') && order.includes('全部导入到下单页'), 'Order UI exposes screenshot import and confirmation sheet')
+const pickupInputBody = (orderJs.match(/onPickupInput\(e\) \{([\s\S]*?)\n  \},\n  onItemCountChange/) || [])[1] || ''
+const importInputBody = (orderJs.match(/onImportCandidateInput\(e\) \{([\s\S]*?)\n  \},\n  onImportCountChange/) || [])[1] || ''
+assert.ok(!pickupInputBody.includes('map((group)') && !pickupInputBody.includes('setData({ pickupGroups:'), 'Pickup code input must not clone and set the whole groups array per character')
+assert.ok(pickupInputBody.includes('pickupGroups[${groupIndex}].items[${itemIndex}].pickupCode'), 'Pickup code input updates a precise data path')
+assert.ok(importInputBody.includes('importCandidates[${index}]'), 'OCR candidate input updates a precise data path')
+assert.ok(order.includes('wx:key="id"') && order.includes('wx:key="groupKey"'), 'Pickup groups and items use stable keys')
 assert.ok(!orderJs.includes("createExpressOrder', { requestId") && !orderJs.includes("createExpressOrder', { imageFileIds"), 'Screenshot import does not auto-create an order')
 assert.ok(!orderJs.includes("wx.navigateTo({ url: `/packageExpress/pages/delivery-profiles"), 'Checkout does not require a profile-management navigation')
 assert.ok(staff.includes('配送模式') && staff.includes('取件模式') && staff.includes('pickupGroups') && staff.includes('deliveryGroups'), 'Staff UI has pickup and delivery modes')
