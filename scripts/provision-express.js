@@ -11,8 +11,8 @@ const apply = args.includes('--apply')
 const collections = ['express_orders', 'express_settings', 'staff_accounts', 'staff_audit_logs', 'express_exports']
 const indexes = [
   'express_orders: userId ASC, createdAt DESC',
-  'express_orders: campusId ASC, orderStatus ASC, createdAt DESC',
-  'express_orders: campusId ASC, pickupPointId ASC, orderStatus ASC',
+  'express_orders: deliveryCampus ASC, orderStatus ASC, createdAt DESC',
+  'express_orders: paymentStatus ASC, orderStatus ASC',
   'express_settings: campusId ASC',
   'staff_accounts: userId ASC, status ASC',
   'staff_audit_logs: actorUserId ASC, createdAt DESC',

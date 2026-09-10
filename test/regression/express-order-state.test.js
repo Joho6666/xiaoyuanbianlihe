@@ -1,0 +1,21 @@
+const assert = require('assert')
+const { EXPRESS_ORDER_STATUS } = require('../../shared/domain/express')
+const { createExpressFixture } = require('../helpers/express-fixture')
+
+async function run() {
+  const { express } = createExpressFixture()
+  await express.ownerUpdateExpressSettings('oid-owner', { acceptingOrders: true, basePriceCents: 300, pickupPoints: [{ id: 'south-point', name: '南区驿站' }], deliveryCampuses: [{ id: 'south', name: '南校区', dormAreas: [{ id: 'tianheyuan', name: '天和苑', buildings: [{ id: 'b6', name: '6号楼', enabled: true }] }] }] })
+  const first = await express.createExpressOrder('oid-student', { clientRequestId: 'same-request', pickupPointId: 'south-point', pickupCode: '2-3-4587', packageCount: 2, deliveryCampus: 'south', dormArea: 'tianheyuan', dormBuildingId: 'b6', roomNumber: '613', phone: '13800001234' })
+  assert.strictEqual(first.data.orderStatus, EXPRESS_ORDER_STATUS.WAIT_PAYMENT)
+  assert.strictEqual(first.data.amountCents, 600)
+  const retry = await express.createExpressOrder('oid-student', { clientRequestId: 'same-request', pickupPointId: 'south-point', pickupCode: 'different', packageCount: 1, deliveryCampus: 'south', dormArea: 'tianheyuan', dormBuildingId: 'b6', roomNumber: '613', phone: '13800001234' })
+  assert.strictEqual(retry.data._id, first.data._id)
+  assert.strictEqual((await express.staffGetExpressOrders('oid-staff', {})).data.length, 0)
+  const paid = await express.createExpressTestPayment('oid-student', { orderId: first.data._id })
+  assert.strictEqual(paid.data.orderStatus, EXPRESS_ORDER_STATUS.WAIT_PICKUP)
+  assert.strictEqual((await express.staffUpdateExpressOrderStatus('oid-staff', { orderId: first.data._id, status: 'DELIVERING' })).code, 0)
+  assert.strictEqual((await express.staffUpdateExpressOrderStatus('oid-staff', { orderId: first.data._id, status: 'COMPLETED' })).code, 0)
+  assert.strictEqual((await express.staffUpdateExpressOrderStatus('oid-owner', { orderId: first.data._id, status: 'CANCELLED' })).code, -1)
+  console.log('PASS Express order state: WAIT_PAYMENT, paid transition, staff paid-only view, idempotency')
+}
+run().catch((error) => { console.error(error); process.exitCode = 1 })

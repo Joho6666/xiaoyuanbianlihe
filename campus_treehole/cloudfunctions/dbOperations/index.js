@@ -750,7 +750,7 @@ exports.main = async (event, context) => {
     if (['startMarketContact', 'startBuddyContact', 'startMutualContact', 'startBridgeContact', 'startExistingContact'].includes(action)) return await getContactsModule()[action](openid, data)
     if (action === 'getMyStaffCapabilities') return await getStaffModule().getMyStaffCapabilities(openid)
     if (['ownerResolveExpressStaffCandidate', 'ownerAddExpressStaff', 'ownerDisableExpressStaff', 'ownerUpdateExpressStaffPermissions', 'ownerGetExpressStaff'].includes(action)) return await getStaffModule()[action](openid, data)
-    if (['getExpressServiceConfig', 'createExpressOrder', 'getMyExpressOrders', 'getMyExpressOrder', 'createExpressTestPayment', 'staffGetExpressDashboard', 'staffGetExpressOrders', 'staffGetExpressOrderDetail', 'staffUpdateExpressOrderStatus', 'staffBatchUpdateExpressOrderStatus', 'staffExportExpressOrders', 'ownerUpdateExpressSettings'].includes(action)) return await getExpressModule()[action](openid, data)
+    if (['getExpressServiceConfig', 'getExpressQuote', 'createExpressOrder', 'getMyExpressOrders', 'getMyExpressOrder', 'createExpressTestPayment', 'cancelMyExpressOrder', 'staffGetExpressDashboard', 'staffGetExpressOrders', 'staffGetExpressOrderDetail', 'staffUpdateExpressOrderStatus', 'staffBatchUpdateExpressOrderStatus', 'staffExportExpressOrders', 'ownerUpdateExpressSettings'].includes(action)) return await getExpressModule()[action](openid, data)
     switch (action) {
       // ===== 帖子动态相关 (modules/posts.js) =====
       case 'getPosts':
