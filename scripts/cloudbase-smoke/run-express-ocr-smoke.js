@@ -42,6 +42,8 @@ else {
       const upload = await cloud.uploadFile({ cloudPath, filePath: imagePath })
       imageFileIds.push(upload.fileID)
       const result = await importer.recognizeExpressScreenshots(userOpenid, { requestId: runId, imageFileIds, deliveryCampus: 'south' })
+      // The importer owns normal cleanup; retain the ID for fallback cleanup when it reports failure.
+      if (result.code === 0) imageFileIds.length = 0
       assert.equal(result.code, 0)
       assert(result.data.candidates.length > 0, 'OCR returned no pickup candidates')
       assert(result.data.candidates.some((candidate) => candidate.pickupPointId === 'smoke-sf'), 'OCR candidate did not match configured pickup point')
