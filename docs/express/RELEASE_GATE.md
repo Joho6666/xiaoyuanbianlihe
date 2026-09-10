@@ -28,7 +28,7 @@
 | CloudBase Profile/Multi Pickup Smoke | NOT RUN | 缺少独立环境临时凭证；普通 Smoke 为 `NOT RUN`，required 退出码为 1 |
 | DevTools | NOT RUN | 微信开发者工具服务端口当前关闭 |
 | Real Device | NOT RUN | 尚未完成三类账号和双账号验证 |
-| Express 3.7 Stage 2 OCR | OUT OF SCOPE | 本阶段明确不开发 OCR/截图识别 |
+| Express 3.8 Screenshot Import | IMPLEMENTED | 截图识别仅作为可编辑输入辅助，不自动提交订单；真实 OCR Smoke 另行验收 |
 | Inline First Checkout | PASS | 首次配送资料同页填写，服务端 Profile/Order 原子保存 |
 | Multi Pickup Points | PASS | 一单支持多个启用快递点 |
 | Multiple Codes Per Point | PASS | 同一快递点支持多个取件码，重复组合被拒绝 |
@@ -39,5 +39,13 @@
 | Excel Pickup Item Export | PASS | 取件 Sheet 一 Item 一行，配送 Sheet 一 Order 一行并带统计 |
 | CloudBase Multi Pickup Smoke | NOT RUN | 缺少独立环境临时凭证 |
 | DevTools Multi Input | NOT RUN | 微信开发者工具服务端口当前关闭 |
+| Screenshot OCR Adapter | PASS | `express-pickup-parser.test.js`、`express-pickup-matcher.test.js`；Mock 仅注入测试 |
+| Screenshot Import Action | PASS | `express-screenshot-import.test.js`；身份、路径归属、响应脱敏和清理失败回归 |
+| Screenshot Partial Failure | PASS | 单图失败不阻塞成功候选，失败索引可重试 |
+| Screenshot Point Review | PASS | 无匹配/多匹配结果必须人工选择快递点 |
+| Screenshot Duplicate Merge | PASS | 候选去重且与手工 Item 重复时跳过，不覆盖、不累加 |
+| Screenshot Temporary Storage | NOT RUN | 未提供独立 CloudBase OCR 凭证与真实图片；本地仅验证 Mock 和清理契约 |
+| CloudBase OCR Smoke | NOT RUN | 缺少独立环境 OCR Secret、测试图片和非生产目标 |
+| DevTools Screenshot Import | NOT RUN | 微信开发者工具服务端口当前关闭 |
 | Wechat Pay Real | NOT IMPLEMENTED | 本轮没有商户号、证书和回调配置 |
 | Production | NOT TOUCHED | 不部署、不写入、不执行自动化测试 |
