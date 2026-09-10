@@ -2,7 +2,7 @@
 
 ## 数据边界
 
-Express 的敏感数据只能通过 `dbOperations` 访问。`express_orders`、`staff_accounts`、`staff_audit_logs`、`express_exports` 和 `express_settings` 必须在 CloudBase 控制台设置为禁止小程序客户端直接读写。客户端永远不能传入 OpenID、权限或操作者身份来替代服务端身份。
+Express 的敏感数据只能通过 `dbOperations` 访问。`express_orders`、`express_delivery_profiles`、`staff_accounts`、`staff_audit_logs`、`express_exports` 和 `express_settings` 必须在 CloudBase 控制台设置为禁止小程序客户端直接读写。客户端永远不能传入 OpenID、权限或操作者身份来替代服务端身份。
 
 当前首期服务学校是 `guat`，社区校区是 `guit-hangtian`；实际配送通过订单 `deliveryCampus=south|north` 表达南校区/北校区。未配置 `express_settings/guit-hangtian` 或 `acceptingOrders` 不是 `true` 时，学生端保持“暂未开放”。宿舍园区和楼栋来自设置中的 `deliveryCampuses`，订单保存名称快照，历史订单不会随配置重命名。
 

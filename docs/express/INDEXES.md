@@ -12,5 +12,7 @@
 | `staff_accounts` | 操作者与状态 | `userId ASC, status ASC` |
 | `staff_audit_logs` | 操作者/时间与资源 | `actorUserId ASC, createdAt DESC`；`resourceType ASC, resourceId ASC, createdAt DESC` |
 | `express_exports` | 过期清理与操作者历史 | `expiresAt ASC`；`actorUserId ASC, createdAt DESC` |
+| `express_delivery_profiles` | 用户读取 Active 配送资料 | `ownerUserId ASC, status ASC, updatedAt DESC` |
+| `express_delivery_profiles` | 默认资料切换与唯一性核对 | `ownerUserId ASC, status ASC, isDefault ASC` |
 
 CLI 无法证明索引创建成功时只能输出本清单，不记录为 READY。敏感集合全部设置为仅云函数访问。
