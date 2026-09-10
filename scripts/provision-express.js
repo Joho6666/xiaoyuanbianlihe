@@ -40,6 +40,8 @@ if (!apply) {
   indexes.forEach((item) => console.log(`- ${item}`))
   console.log('- Set all Express collections to server-side access only; deny Mini Program client read/write.')
   console.log('- Verify staff_accounts, staff_audit_logs, and express_exports do not expose OpenID or public URLs.')
+  console.log('- pickupPoints.aliases is optional display configuration; no OCR collection or express_order_items collection is created.')
+  console.log('- Manually verify tmp/express-import/<internalUserId>/<requestId>/ storage access and cleanup behavior in the console.')
   process.exit(0)
 }
 
@@ -60,4 +62,6 @@ console.log('\nManual Index and Permission Checklist')
 indexes.forEach((item) => console.log(`- ${item}`))
 console.log('- Set all Express collections to server-side access only; deny Mini Program client read/write.')
 console.log('- Index and permission creation is not claimed by this CLI run; verify in CloudBase Console.')
+console.log('- No new OCR collection or express_order_items collection is provisioned; pickup point aliases remain in express_settings.')
+console.log('- Verify temporary screenshot path access and delete behavior manually in CloudBase Console.')
 if (failed) process.exitCode = 1

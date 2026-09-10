@@ -27,6 +27,12 @@ Express 的敏感数据只能通过 `dbOperations` 访问。`express_orders`、`
 
 导出路径为 `exports/express/<date>/<runId>.xlsx`，仅写入私有 Storage，响应只返回 `fileId`。`express_exports` 保存 7 天过期时间；每次导出会清理到期文件，运维人员至少每周按本清单核对并清理无后续导出的过期文件。
 
+## 截图智能导入
+
+截图只允许通过 `dbOperations.recognizeExpressScreenshots` 使用。客户端上传路径必须是 `tmp/express-import/<internalUserId>/<requestId>/<uuid>.<jpg|jpeg|png>`，服务端根据真实调用者重新校验路径归属和 requestId，拒绝任意公网 URL 或其他用户目录。
+
+图片下载后立即交给显式配置的 OCR Adapter，响应不得包含 OCR 全文、fileID 或 Provider 错误栈；OCR 文本、取件码和截图内容不得写日志或数据库。无论识别成功、部分失败还是异常，均在 `finally` 删除临时文件；清理失败时整次导入失败。腾讯云 OCR Secret 只配置在独立测试环境，生产环境强制关闭截图 OCR。
+
 ## Provisioning 与人工核对
 
 ```powershell

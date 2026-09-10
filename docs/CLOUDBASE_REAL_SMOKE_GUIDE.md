@@ -9,6 +9,8 @@
 3. Smoke 使用有效的 `guit-hangtian` 校区来覆盖学校功能开关；隔离依赖独立环境、唯一 `runId`、专属文档 ID 和 Storage 路径，而不是无效的 `campusId: "__test__"`。
 4. 所有数据库和 Storage 测试对象均由当前 run 跟踪并在完成或失败后清理；清理失败即为 `FAIL`。
 
+Express 3.8 截图 OCR 使用独立脚本：`npm run smoke:cloudbase:ocr`。它额外要求 `EXPRESS_OCR_PROVIDER=tencent`、`EXPRESS_OCR_TEST_ENV_ID`、腾讯云 OCR 临时密钥和本地 `EXPRESS_OCR_SMOKE_IMAGE`；缺少任一条件时为 `NOT RUN`，required 模式退出码为 1。截图只上传到 `tmp/express-import/<internalUserId>/<requestId>/` 并在识别后清理，生产环境硬拒绝。
+
 ## 执行顺序
 
 在仓库根目录的同一 PowerShell 会话中临时设置凭证后执行：
