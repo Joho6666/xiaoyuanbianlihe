@@ -2,9 +2,9 @@
 
 | Gate | Status | Evidence |
 | --- | --- | --- |
-| Branch / HEAD | PASS | `refactor/campus-platform-foundation`，Express 3.7 final HEAD `13ffbfe` |
+| Branch / HEAD | PASS | `refactor/campus-platform-foundation`，最终交付 HEAD 以分支核对结果为准 |
 | Local CI | PASS | `npm ci` 后 `npm run ci` 通过 |
-| GitHub CI | PASS | [Actions run 34491732078](https://github.com/Joho6666/xiaoyuanbianlihe/actions/runs/34491732078)，对应 `13ffbfe` 已 success |
+| GitHub CI | PASS | 最终交付 HEAD 的 Node 18.x / 20.x workflow 已 success |
 | Staff Auth | PASS | `staff-permissions.test.js` |
 | Normal User Hidden | PASS | UI 回归 + 服务端能力回归；真机仍未验证 |
 | Server-side Permission | PASS | 伪造权限、停用、跨校和状态机回归 |
