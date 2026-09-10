@@ -87,8 +87,10 @@ function createExpressMock(initial = {}) {
   const cloud = {
     uploads: [],
     deleted: [],
+    files: {},
     uploadFile: async (payload) => { cloud.uploads.push(payload); return { fileID: `cloud://${payload.cloudPath}` } },
-    deleteFile: async ({ fileList }) => { cloud.deleted.push(...fileList); return { fileList } }
+    downloadFile: async ({ fileID }) => ({ fileContent: cloud.files[fileID] || Buffer.from('mock-image') }),
+    deleteFile: async ({ fileList }) => { cloud.deleted.push(...fileList); return { fileList: fileList.map((fileID) => ({ fileID, status: 0 })) } }
   }
   const _ = db.command
   return { store, db, _, cloud }
