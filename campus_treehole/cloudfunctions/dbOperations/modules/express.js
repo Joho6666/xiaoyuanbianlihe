@@ -8,6 +8,7 @@ const {
   EXPRESS_DEFAULT_CAMPUS_ID,
   EXPRESS_ORDER_STATUS,
   EXPRESS_PAYMENT_STATUS,
+  EXPRESS_DELIVERY_PROFILE_STATUS,
   canTransitionExpressOrder,
   normalizeLegacyExpressOrder
 } = require('../domain/express')
@@ -16,6 +17,7 @@ const { STAFF_PERMISSIONS } = require('../domain/staff')
 const ORDERS = 'express_orders'
 const SETTINGS = 'express_settings'
 const EXPORTS = 'express_exports'
+const DELIVERY_PROFILES = 'express_delivery_profiles'
 
 const DEFAULT_DELIVERY_CAMPUSES = [
   { id: 'south', name: '南校区', enabled: true, dormAreas: [
@@ -51,6 +53,13 @@ function findDeliverySelection(settings, data) {
   const building = area.buildings.find((item) => item.enabled && ((buildingId && item.id === buildingId) || (!buildingId && item.name === buildingName)))
   if (!building) return { error: '请选择有效的宿舍楼' }
   return { campuses, campus, area, building }
+}
+
+function findConfiguredDeliverySelection(settings, data) {
+  if (!settings || !Array.isArray(settings.deliveryCampuses) || !settings.deliveryCampuses.length) {
+    return { error: '当前校区尚未配置可用宿舍地址' }
+  }
+  return findDeliverySelection(settings, data)
 }
 
 function createExpressModule({ db, _, cloud, helpers = {} }) {
@@ -107,6 +116,193 @@ function createExpressModule({ db, _, cloud, helpers = {} }) {
       notice: row.notice || '',
       testPaymentAvailable: testPaymentEnabled()
     }
+  }
+
+  function publicDeliveryProfile(profile) {
+    if (!profile) return null
+    return {
+      _id: profile._id,
+      label: profile.label,
+      isSelf: profile.isSelf === true,
+      recipientName: profile.recipientName,
+      contactPhone: profile.contactPhone,
+      schoolId: profile.schoolId,
+      campusId: profile.campusId,
+      deliveryCampus: profile.deliveryCampus,
+      deliveryCampusName: profile.deliveryCampusName,
+      dormArea: profile.dormArea,
+      dormAreaName: profile.dormAreaName,
+      dormBuildingId: profile.dormBuildingId,
+      dormBuildingName: profile.dormBuildingName,
+      roomNumber: profile.roomNumber,
+      isDefault: profile.isDefault === true,
+      status: profile.status,
+      createdAt: profile.createdAt,
+      updatedAt: profile.updatedAt
+    }
+  }
+
+  async function withTransaction(handler) {
+    if (typeof db.runTransaction === 'function') return db.runTransaction(handler)
+    return handler(db)
+  }
+
+  async function readOwnedDeliveryProfile(ownerUserId, profileId, store = db) {
+    if (!profileId) return null
+    try {
+      const result = await store.collection(DELIVERY_PROFILES).doc(String(profileId)).get()
+      const profile = result && result.data
+      return profile && profile.ownerUserId === ownerUserId ? profile : null
+    } catch (err) {
+      if (isCollectionNotExistError(err)) return null
+      throw err
+    }
+  }
+
+  function sortProfiles(profiles) {
+    return profiles.slice().sort((a, b) => {
+      if (a.isDefault !== b.isDefault) return a.isDefault ? -1 : 1
+      return new Date(b.updatedAt || b.createdAt || 0).getTime() - new Date(a.updatedAt || a.createdAt || 0).getTime()
+    })
+  }
+
+  async function listActiveDeliveryProfiles(ownerUserId, store = db) {
+    try {
+      const result = await store.collection(DELIVERY_PROFILES).where({ ownerUserId, status: EXPRESS_DELIVERY_PROFILE_STATUS.ACTIVE }).get()
+      return sortProfiles(result.data || [])
+    } catch (err) {
+      if (isCollectionNotExistError(err)) return []
+      throw err
+    }
+  }
+
+  function validateDeliveryProfileInput(settings, data = {}) {
+    const selection = findConfiguredDeliverySelection(settings, data)
+    if (selection.error) return selection
+    const label = String(data.label || '').trim().slice(0, 20)
+    const recipientName = String(data.recipientName || '').trim().slice(0, 30)
+    const contactPhone = String(data.contactPhone || '').trim()
+    const roomNumber = String(data.roomNumber || '').trim().slice(0, 20)
+    if (!label) return { error: '请填写配送信息名称' }
+    if (!recipientName) return { error: '请填写收件人姓名' }
+    if (!/^1\d{10}$/.test(contactPhone)) return { error: '请填写有效手机号' }
+    if (!roomNumber) return { error: '请填写房间号' }
+    return {
+      selection,
+      label,
+      recipientName,
+      contactPhone,
+      roomNumber,
+      isSelf: data.isSelf === true
+    }
+  }
+
+  async function getMyExpressDeliveryProfiles(openid) {
+    const user = await getUserForAction(openid, { requireActive: true })
+    return { code: 0, data: (await listActiveDeliveryProfiles(userIdOf(user))).map(publicDeliveryProfile) }
+  }
+
+  async function createExpressDeliveryProfile(openid, data = {}) {
+    const user = await getUserForAction(openid, { requireActive: true })
+    const ownerUserId = userIdOf(user)
+    const campusId = resolveCampus(user, data.campusId)
+    if (campusId !== (user.campusId || campusId)) return fail('只能保存当前校区的配送信息', 403)
+    const settings = await readSettings(campusId)
+    const parsed = validateDeliveryProfileInput(settings, data)
+    if (parsed.error) return fail(parsed.error)
+    const result = await withTransaction(async (transaction) => {
+      const active = await listActiveDeliveryProfiles(ownerUserId, transaction)
+      if (active.length >= 10) return fail('最多保存 10 条常用配送信息')
+      const isDefault = active.length === 0 || data.isDefault === true
+      if (isDefault && active.length) {
+        await transaction.collection(DELIVERY_PROFILES).where({ ownerUserId, status: EXPRESS_DELIVERY_PROFILE_STATUS.ACTIVE, isDefault: true }).update({ data: { isDefault: false, updatedAt: now() } })
+      }
+      const profile = {
+        _id: `express_profile_${crypto.randomBytes(12).toString('hex')}`,
+        ownerUserId,
+        label: parsed.label,
+        isSelf: parsed.isSelf,
+        recipientName: parsed.recipientName,
+        contactPhone: parsed.contactPhone,
+        schoolId: settings.schoolId || EXPRESS_DEFAULT_SCHOOL_ID,
+        campusId,
+        deliveryCampus: parsed.selection.campus.id,
+        deliveryCampusName: parsed.selection.campus.name,
+        dormArea: parsed.selection.area.id,
+        dormAreaName: parsed.selection.area.name,
+        dormBuildingId: parsed.selection.building.id,
+        dormBuildingName: parsed.selection.building.name,
+        roomNumber: parsed.roomNumber,
+        isDefault,
+        status: EXPRESS_DELIVERY_PROFILE_STATUS.ACTIVE,
+        createdAt: now(),
+        updatedAt: now(),
+        smokeRunId: data.smokeRunId || null
+      }
+      await transaction.collection(DELIVERY_PROFILES).doc(profile._id).set({ data: profile })
+      return { code: 0, data: publicDeliveryProfile(profile) }
+    })
+    return result
+  }
+
+  async function setDefaultExpressDeliveryProfile(openid, data = {}) {
+    const user = await getUserForAction(openid, { requireActive: true })
+    const ownerUserId = userIdOf(user)
+    return withTransaction(async (transaction) => {
+      const profile = await readOwnedDeliveryProfile(ownerUserId, data.profileId, transaction)
+      if (!profile || profile.status !== EXPRESS_DELIVERY_PROFILE_STATUS.ACTIVE) return fail('配送信息不存在', 404)
+      await transaction.collection(DELIVERY_PROFILES).where({ ownerUserId, status: EXPRESS_DELIVERY_PROFILE_STATUS.ACTIVE, isDefault: true }).update({ data: { isDefault: false, updatedAt: now() } })
+      const patch = { isDefault: true, updatedAt: now() }
+      await transaction.collection(DELIVERY_PROFILES).doc(profile._id).update({ data: patch })
+      return { code: 0, data: publicDeliveryProfile({ ...profile, ...patch }) }
+    })
+  }
+
+  async function updateExpressDeliveryProfile(openid, data = {}) {
+    const user = await getUserForAction(openid, { requireActive: true })
+    const ownerUserId = userIdOf(user)
+    const profile = await readOwnedDeliveryProfile(ownerUserId, data.profileId)
+    if (!profile || profile.status !== EXPRESS_DELIVERY_PROFILE_STATUS.ACTIVE) return fail('配送信息不存在', 404)
+    const settings = await readSettings(profile.campusId)
+    const parsed = validateDeliveryProfileInput(settings, { ...profile, ...data })
+    if (parsed.error) return fail(parsed.error)
+    const patch = {
+      label: parsed.label,
+      isSelf: parsed.isSelf,
+      recipientName: parsed.recipientName,
+      contactPhone: parsed.contactPhone,
+      deliveryCampus: parsed.selection.campus.id,
+      deliveryCampusName: parsed.selection.campus.name,
+      dormArea: parsed.selection.area.id,
+      dormAreaName: parsed.selection.area.name,
+      dormBuildingId: parsed.selection.building.id,
+      dormBuildingName: parsed.selection.building.name,
+      roomNumber: parsed.roomNumber,
+      updatedAt: now()
+    }
+    await db.collection(DELIVERY_PROFILES).doc(profile._id).update({ data: patch })
+    const updated = { ...profile, ...patch }
+    if (data.isDefault === true && !profile.isDefault) return setDefaultExpressDeliveryProfile(openid, { profileId: profile._id })
+    return { code: 0, data: publicDeliveryProfile(updated) }
+  }
+
+  async function archiveExpressDeliveryProfile(openid, data = {}) {
+    const user = await getUserForAction(openid, { requireActive: true })
+    const ownerUserId = userIdOf(user)
+    return withTransaction(async (transaction) => {
+      const profile = await readOwnedDeliveryProfile(ownerUserId, data.profileId, transaction)
+      if (!profile || profile.status !== EXPRESS_DELIVERY_PROFILE_STATUS.ACTIVE) return fail('配送信息不存在', 404)
+      const patch = { status: EXPRESS_DELIVERY_PROFILE_STATUS.ARCHIVED, isDefault: false, updatedAt: now() }
+      await transaction.collection(DELIVERY_PROFILES).doc(profile._id).update({ data: patch })
+      if (profile.isDefault) {
+        const remaining = (await listActiveDeliveryProfiles(ownerUserId, transaction)).filter((item) => item._id !== profile._id)
+        if (remaining.length) {
+          const replacement = remaining.sort((a, b) => new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime())[0]
+          await transaction.collection(DELIVERY_PROFILES).doc(replacement._id).update({ data: { isDefault: true, updatedAt: now() } })
+        }
+      }
+      return { code: 0, data: publicDeliveryProfile({ ...profile, ...patch }) }
+    })
   }
 
   function userIdOf(user) {
@@ -184,7 +380,11 @@ function createExpressModule({ db, _, cloud, helpers = {} }) {
       dormBuildingId: order.dormBuildingId || '',
       dormBuildingNameSnapshot: order.dormBuildingNameSnapshot || order.dormBuilding,
       roomNumber: order.roomNumber,
-      phone: order.phone,
+      roomNumberSnapshot: order.roomNumberSnapshot || order.roomNumber,
+      deliveryProfileId: order.deliveryProfileId || null,
+      recipientNameSnapshot: order.recipientNameSnapshot || '未填写',
+      recipientPhoneSnapshot: order.recipientPhoneSnapshot || order.phone || '',
+      phone: order.recipientPhoneSnapshot || order.phone,
       note: order.note || '',
       amountCents: order.amountCents,
       paymentStatus: order.paymentStatus,
@@ -216,7 +416,11 @@ function createExpressModule({ db, _, cloud, helpers = {} }) {
       dormBuildingId: order.dormBuildingId || '',
       dormBuildingNameSnapshot: order.dormBuildingNameSnapshot || order.dormBuilding,
       roomNumber: order.roomNumber,
-      phone: order.phone,
+      roomNumberSnapshot: order.roomNumberSnapshot || order.roomNumber,
+      deliveryProfileId: order.deliveryProfileId || null,
+      recipientNameSnapshot: order.recipientNameSnapshot || '未填写',
+      recipientPhoneSnapshot: order.recipientPhoneSnapshot || order.phone || '',
+      phone: order.recipientPhoneSnapshot || order.phone,
       note: order.note || '',
       amountCents: order.amountCents,
       paymentStatus: order.paymentStatus,
@@ -237,12 +441,24 @@ function createExpressModule({ db, _, cloud, helpers = {} }) {
     if (!settings || settings.acceptingOrders !== true) return fail('当前校区暂未开放快递代拿')
     const point = (settings.pickupPoints || []).find((item) => item.id === data.pickupPointId && item.enabled !== false)
     if (!point) return fail('请选择有效的快递点')
-    if (data.deliveryCampus && point.deliveryCampus && point.deliveryCampus !== data.deliveryCampus) return fail('快递点与配送校区不匹配')
     if (isPastCutoff(settings)) return fail('今日已过截单时间，请明天再试')
     const pickupCode = String(data.pickupCode || '').trim()
     const packageCount = Number(data.packageCount)
     let deliverySelection
-    if (!data.deliveryCampus && !data.dormArea && !data.dormBuildingId) {
+    let deliveryProfile = null
+    let recipientName = ''
+    let recipientPhone = ''
+    let roomNumber = ''
+    if (data.deliveryProfileId) {
+      deliveryProfile = await readOwnedDeliveryProfile(userIdOf(user), data.deliveryProfileId)
+      if (!deliveryProfile || deliveryProfile.status !== EXPRESS_DELIVERY_PROFILE_STATUS.ACTIVE) return fail('配送信息不存在', 404)
+      if (deliveryProfile.campusId !== campusId) return fail('配送信息不属于当前服务校区', 403)
+      deliverySelection = findConfiguredDeliverySelection(settings, deliveryProfile)
+      if (deliverySelection.error) return fail('该地址已失效，请更新')
+      recipientName = deliveryProfile.recipientName
+      recipientPhone = deliveryProfile.contactPhone
+      roomNumber = deliveryProfile.roomNumber
+    } else if (!data.deliveryCampus && !data.dormArea && !data.dormBuildingId) {
       const legacyBuilding = String(data.dormBuilding || '').trim()
       if (!legacyBuilding) return fail('请填写有效的宿舍楼')
       const campuses = cloneDeliveryCampuses(settings.deliveryCampuses)
@@ -251,13 +467,15 @@ function createExpressModule({ db, _, cloud, helpers = {} }) {
       deliverySelection = findDeliverySelection(settings, data)
     }
     if (deliverySelection.error) return fail(deliverySelection.error)
+    if (point.deliveryCampus && point.deliveryCampus !== deliverySelection.campus.id) return fail('快递点与配送校区不匹配')
     const dormBuilding = deliverySelection.building.name
-    const roomNumber = String(data.roomNumber || '').trim()
-    const phone = String(data.phone || '').trim()
+    roomNumber = roomNumber || String(data.roomNumber || '').trim()
+    recipientPhone = recipientPhone || String(data.recipientPhoneSnapshot || data.phone || '').trim()
+    recipientName = recipientName || String(data.recipientName || '').trim().slice(0, 30)
     if (!pickupCode || pickupCode.length > 40) return fail('请填写有效取件码')
     if (!Number.isInteger(packageCount) || packageCount < 1 || packageCount > 20) return fail('包裹数量需为 1-20 件')
     if (!dormBuilding || dormBuilding.length > 40 || !roomNumber || roomNumber.length > 20) return fail('请填写宿舍楼和房间号')
-    if (!/^1\d{10}$/.test(phone)) return fail('请填写有效手机号')
+    if (!/^1\d{10}$/.test(recipientPhone)) return fail('请填写有效手机号')
     const clientRequestId = String(data.clientRequestId || '').trim().slice(0, 100) || crypto.randomUUID()
     const existingResult = await db.collection(ORDERS).where({ userId: userIdOf(user), clientRequestId }).limit(1).get()
     if (existingResult.data && existingResult.data[0]) return { code: 0, data: publicOwnOrder(normalizeLegacyExpressOrder(existingResult.data[0])), idempotent: true }
@@ -270,6 +488,7 @@ function createExpressModule({ db, _, cloud, helpers = {} }) {
       userId: userIdOf(user),
       schoolId: settings.schoolId || EXPRESS_DEFAULT_SCHOOL_ID,
       campusId,
+      deliveryProfileId: deliveryProfile ? deliveryProfile._id : null,
       deliveryCampus: deliverySelection.campus.id,
       deliveryCampusNameSnapshot: deliverySelection.campus.name,
       pickupPointId: point.id,
@@ -283,7 +502,10 @@ function createExpressModule({ db, _, cloud, helpers = {} }) {
       dormBuilding,
       dormBuildingNameSnapshot: dormBuilding,
       roomNumber,
-      phone,
+      roomNumberSnapshot: roomNumber,
+      recipientNameSnapshot: recipientName,
+      recipientPhoneSnapshot: recipientPhone,
+      phone: recipientPhone,
       note: String(data.note || '').trim().slice(0, 100),
       amountCents,
       clientRequestId,
@@ -472,14 +694,15 @@ function createExpressModule({ db, _, cloud, helpers = {} }) {
       { header: '宿舍园区', key: 'dormAreaName', width: 18 },
       { header: '宿舍楼', key: 'dormBuilding', width: 18 },
       { header: '房间', key: 'roomNumber', width: 12 },
+      { header: '收件人', key: 'recipientName', width: 16 },
       { header: '手机号', key: 'phone', width: 16 },
       { header: '件数', key: 'packageCount', width: 8 },
       { header: '订单号', key: 'orderNo', width: 24 },
       { header: '状态', key: 'orderStatus', width: 14 }
     ]
-    delivery.forEach((row, index) => deliverySheet.addRow({ index: index + 1, deliveryCampusName: row.deliveryCampusNameSnapshot || row.deliveryCampus || '未配置', dormAreaName: row.dormAreaNameSnapshot || row.dormArea || '未配置', dormBuilding: row.dormBuildingNameSnapshot || row.dormBuilding, roomNumber: row.roomNumber, phone: row.phone, packageCount: row.packageCount, orderNo: row.orderNo, orderStatus: row.orderStatus }))
+    delivery.forEach((row, index) => deliverySheet.addRow({ index: index + 1, deliveryCampusName: row.deliveryCampusNameSnapshot || row.deliveryCampus || '未配置', dormAreaName: row.dormAreaNameSnapshot || row.dormArea || '未配置', dormBuilding: row.dormBuildingNameSnapshot || row.dormBuilding, roomNumber: row.roomNumberSnapshot || row.roomNumber, recipientName: row.recipientNameSnapshot || '未填写', phone: row.recipientPhoneSnapshot || row.phone, packageCount: row.packageCount, orderNo: row.orderNo, orderStatus: row.orderStatus }))
     deliverySheet.getRow(1).font = { bold: true }
-    deliverySheet.autoFilter = { from: 'A1', to: 'I1' }
+    deliverySheet.autoFilter = { from: 'A1', to: 'J1' }
     deliverySheet.pageSetup.orientation = 'portrait'
     const content = await workbook.xlsx.writeBuffer()
     const runId = crypto.randomBytes(8).toString('hex')
@@ -537,9 +760,15 @@ function createExpressModule({ db, _, cloud, helpers = {} }) {
     ORDERS,
     SETTINGS,
     EXPORTS,
+    DELIVERY_PROFILES,
     getExpressServiceConfig: getServiceConfig,
     getServiceConfig,
     getExpressQuote,
+    getMyExpressDeliveryProfiles,
+    createExpressDeliveryProfile,
+    updateExpressDeliveryProfile,
+    archiveExpressDeliveryProfile,
+    setDefaultExpressDeliveryProfile,
     createExpressOrder,
     getMyExpressOrders,
     getMyExpressOrder,
@@ -556,3 +785,24 @@ function createExpressModule({ db, _, cloud, helpers = {} }) {
 }
 
 module.exports = createExpressModule
+module.exports.ACTION_NAMES = [
+  'getExpressServiceConfig',
+  'getExpressQuote',
+  'getMyExpressDeliveryProfiles',
+  'createExpressDeliveryProfile',
+  'updateExpressDeliveryProfile',
+  'archiveExpressDeliveryProfile',
+  'setDefaultExpressDeliveryProfile',
+  'createExpressOrder',
+  'getMyExpressOrders',
+  'getMyExpressOrder',
+  'createExpressTestPayment',
+  'cancelMyExpressOrder',
+  'staffGetExpressDashboard',
+  'staffGetExpressOrders',
+  'staffGetExpressOrderDetail',
+  'staffUpdateExpressOrderStatus',
+  'staffBatchUpdateExpressOrderStatus',
+  'staffExportExpressOrders',
+  'ownerUpdateExpressSettings'
+]

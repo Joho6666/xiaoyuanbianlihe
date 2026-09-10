@@ -19,7 +19,7 @@ if (!envId || !runId || !/^[-a-zA-Z0-9_]{8,100}$/.test(runId)) {
   const cloud = require('wx-server-sdk')
   cloud.init({ env: envId, secretId: process.env.TCB_SECRET_ID, secretKey: process.env.TCB_SECRET_KEY })
   const db = cloud.database()
-  const names = ['express_orders', 'express_exports', 'express_settings']
+  const names = ['express_orders', 'express_exports', 'express_settings', 'express_delivery_profiles']
   Promise.resolve().then(async () => {
     let removed = 0
     const exports = await db.collection('express_exports').where({ smokeRunId: runId }).get()

@@ -257,6 +257,7 @@ const createMessagesModule = require('./modules/messages')
 const createContactsModule = require('./modules/contacts')
 const createStaffModule = require('./modules/staff')
 const createExpressModule = require('./modules/express')
+const EXPRESS_ACTIONS = new Set(createExpressModule.ACTION_NAMES || [])
 let contactsModuleInstance = null
 function getContactsModule() {
   if (!contactsModuleInstance) contactsModuleInstance = createContactsModule({
@@ -752,7 +753,11 @@ exports.main = async (event, context) => {
     if (['startMarketContact', 'startBuddyContact', 'startMutualContact', 'startBridgeContact', 'startExistingContact'].includes(action)) return await getContactsModule()[action](openid, data)
     if (action === 'getMyStaffCapabilities') return await getStaffModule().getMyStaffCapabilities(openid)
     if (['ownerResolveExpressStaffCandidate', 'ownerAddExpressStaff', 'ownerDisableExpressStaff', 'ownerUpdateExpressStaffPermissions', 'ownerGetExpressStaff'].includes(action)) return await getStaffModule()[action](openid, data)
-    if (['getExpressServiceConfig', 'getExpressQuote', 'createExpressOrder', 'getMyExpressOrders', 'getMyExpressOrder', 'createExpressTestPayment', 'cancelMyExpressOrder', 'staffGetExpressDashboard', 'staffGetExpressOrders', 'staffGetExpressOrderDetail', 'staffUpdateExpressOrderStatus', 'staffBatchUpdateExpressOrderStatus', 'staffExportExpressOrders', 'ownerUpdateExpressSettings'].includes(action)) return await getExpressModule()[action](openid, data)
+    if (EXPRESS_ACTIONS.has(action)) {
+      const handler = getExpressModule()[action]
+      if (typeof handler !== 'function') throw new Error(`Express action handler is missing: ${action}`)
+      return await handler(openid, data)
+    }
     switch (action) {
       // ===== 帖子动态相关 (modules/posts.js) =====
       case 'getPosts':

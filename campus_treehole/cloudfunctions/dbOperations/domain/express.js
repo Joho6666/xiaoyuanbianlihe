@@ -15,6 +15,11 @@ const EXPRESS_PAYMENT_STATUS = Object.freeze({
   REFUNDED: 'REFUNDED'
 })
 
+const EXPRESS_DELIVERY_PROFILE_STATUS = Object.freeze({
+  ACTIVE: 'ACTIVE',
+  ARCHIVED: 'ARCHIVED'
+})
+
 const EXPRESS_STATUS_TRANSITIONS = Object.freeze({
   WAIT_PAYMENT: [EXPRESS_ORDER_STATUS.CANCELLED],
   WAIT_PICKUP: [EXPRESS_ORDER_STATUS.DELIVERING, EXPRESS_ORDER_STATUS.CANCELLED],
@@ -45,14 +50,20 @@ function normalizeExpressPaymentStatus(value) {
   return Object.values(EXPRESS_PAYMENT_STATUS).includes(value) ? value : null
 }
 
+function normalizeExpressDeliveryProfileStatus(value) {
+  return Object.values(EXPRESS_DELIVERY_PROFILE_STATUS).includes(value) ? value : null
+}
+
 module.exports = {
   EXPRESS_DEFAULT_SCHOOL_ID,
   EXPRESS_DEFAULT_CAMPUS_ID,
   EXPRESS_ORDER_STATUS,
   EXPRESS_PAYMENT_STATUS,
+  EXPRESS_DELIVERY_PROFILE_STATUS,
   EXPRESS_STATUS_TRANSITIONS,
   canTransitionExpressOrder,
   normalizeExpressOrderStatus,
   normalizeExpressPaymentStatus,
+  normalizeExpressDeliveryProfileStatus,
   normalizeLegacyExpressOrder
 }

@@ -8,7 +8,7 @@ const args = process.argv.slice(2)
 const envIndex = args.indexOf('--env')
 const envId = envIndex >= 0 ? normalizeEnvId(args[envIndex + 1]) : ''
 const apply = args.includes('--apply')
-const collections = ['express_orders', 'express_settings', 'staff_accounts', 'staff_audit_logs', 'express_exports']
+const collections = ['express_orders', 'express_settings', 'staff_accounts', 'staff_audit_logs', 'express_exports', 'express_delivery_profiles']
 const indexes = [
   'express_orders: userId ASC, createdAt DESC',
   'express_orders: deliveryCampus ASC, orderStatus ASC, createdAt DESC',
@@ -18,7 +18,9 @@ const indexes = [
   'staff_audit_logs: actorUserId ASC, createdAt DESC',
   'staff_audit_logs: resourceType ASC, resourceId ASC, createdAt DESC',
   'express_exports: actorUserId ASC, createdAt DESC',
-  'express_exports: expiresAt ASC'
+  'express_exports: expiresAt ASC',
+  'express_delivery_profiles: ownerUserId ASC, status ASC, updatedAt DESC',
+  'express_delivery_profiles: ownerUserId ASC, status ASC, isDefault ASC'
 ]
 
 if (!envId) {
