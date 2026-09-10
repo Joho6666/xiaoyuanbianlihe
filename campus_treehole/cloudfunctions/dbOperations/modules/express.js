@@ -489,9 +489,13 @@ function createExpressModule({ db, _, cloud, helpers = {} }) {
       pickupPointId: item.pickupPointId,
       pickupPointNameSnapshot: item.pickupPointNameSnapshot,
       pickupCode: item.pickupCode,
-      packageCount: item.packageCount,
+    packageCount: item.packageCount,
     parcelSize: item.parcelSize || null,
-    parcelPriceCents: Number.isFinite(Number(item.parcelPriceCents)) ? Number(item.parcelPriceCents) : null
+    parcelSizeLabelSnapshot: item.parcelSizeLabelSnapshot || null,
+    parcelPriceCents: Number.isFinite(Number(item.parcelPriceCents)) ? Number(item.parcelPriceCents) : null,
+    parcelSizeMismatch: item.parcelSizeMismatch === true,
+    expectedParcelSize: item.expectedParcelSize || null,
+    actualParcelSize: item.actualParcelSize || null
     }))
   }
 
@@ -643,7 +647,8 @@ function createExpressModule({ db, _, cloud, helpers = {} }) {
         pickupCode: item.pickupCode,
         packageCount: item.packageCount,
         parcelSize: item.parcelSize || null,
-        parcelPriceCents: pricing.pricingMode === 'PARCEL_SIZE' ? pricing.parcelSizePricing[item.parcelSize].priceCents : pricing.perPackagePriceCents
+        parcelSizeLabelSnapshot: pricing.pricingMode === 'PARCEL_SIZE' ? pricing.parcelSizePricing[item.parcelSize].label : null,
+        parcelPriceCents: pricing.pricingMode === 'PARCEL_SIZE' ? pricing.parcelSizePricing[item.parcelSize].priceCents : null
       })
     }
     const calculated = calculateExpressAmount(normalized, pricing)

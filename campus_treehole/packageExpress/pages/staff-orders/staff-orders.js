@@ -22,8 +22,12 @@ Page({
     try {
       const caps = await app.callDB('getMyStaffCapabilities', {})
       if (!caps.data || !caps.data.isStaff) throw { msg: '无权限' }
-      const res = await app.callDB('staffGetExpressOrders', { status: this.data.activeStatus, keyword: this.data.keyword })
+      const [res, config] = await Promise.all([
+        app.callDB('staffGetExpressOrders', { status: this.data.activeStatus, keyword: this.data.keyword }),
+        app.callDB('getExpressServiceConfig', {})
+      ])
       const orders = (res.data || []).map(decorate)
+      this.parcelSizePricing = config.data && config.data.parcelSizePricing || {}
       this.setData({ orders, pickupGroups: this.buildPickupGroups(orders), deliveryGroups: this.buildDeliveryGroups(orders) })
       this._loaded = true
     } catch (e) { wx.showToast({ title: e.msg || '订单加载失败', icon: 'none' }) } finally { this.setData({ loading: false }) }
@@ -38,9 +42,9 @@ Page({
         if (!groups.has(key)) groups.set(key, { pickupPointId: key, pickupPointName: item.pickupPointNameSnapshot || item.pickupPointId, totalPackages: 0, items: [] })
         const group = groups.get(key); const keyId = itemKey(order._id, item.id); group.totalPackages += item.packageCount
         const PARCEL_SIZE_LABELS = { SMALL: '小件', MEDIUM: '中件', LARGE: '大件' }
-        const PARCEL_SIZE_PRICES = { SMALL: '¥1', MEDIUM: '¥3', LARGE: '¥6' }
-        const parcelSizeLabel = PARCEL_SIZE_LABELS[item.parcelSize] || '旧订单/未分类'
-        const priceEstimateText = PARCEL_SIZE_PRICES[item.parcelSize] || ''
+        const parcelSizeLabel = item.parcelSizeLabelSnapshot || PARCEL_SIZE_LABELS[item.parcelSize] || '旧订单/未分类'
+        const priceCents = Number.isFinite(Number(item.parcelPriceCents)) ? Number(item.parcelPriceCents) : (this.parcelSizePricing[item.parcelSize] && Number(this.parcelSizePricing[item.parcelSize].priceCents))
+        const priceEstimateText = Number.isFinite(priceCents) ? `¥${(priceCents / 100).toFixed(2)}` : ''
         group.items.push({
           ...item,
           keyId,
