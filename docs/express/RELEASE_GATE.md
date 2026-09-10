@@ -2,9 +2,9 @@
 
 | Gate | Status | Evidence |
 | --- | --- | --- |
-| Branch / HEAD | PASS | `refactor/campus-platform-foundation`，Stage 1 implementation HEAD `0cda12c` |
+| Branch / HEAD | PASS | `refactor/campus-platform-foundation`，Stage 1 implementation through `abd2e45` |
 | Local CI | PASS | `npm ci` 后 `npm run ci` 通过 |
-| GitHub CI | NOT RUN | Stage 1 提交尚未推送，推送后以对应 HEAD 的 Node 18.x / 20.x 结果为准 |
+| GitHub CI | PASS | [Actions run 34465745056](https://github.com/Joho6666/xiaoyuanbianlihe/actions/runs/34465745056)，对应 `abd2e45` 的 Node 18.x / 20.x 均 success |
 | Staff Auth | PASS | `staff-permissions.test.js` |
 | Normal User Hidden | PASS | UI 回归 + 服务端能力回归；真机仍未验证 |
 | Server-side Permission | PASS | 伪造权限、停用、跨校和状态机回归 |
