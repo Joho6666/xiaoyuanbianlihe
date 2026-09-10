@@ -47,6 +47,8 @@
 
 ## 本轮验证边界
 
+- 2026-09-10：首页顺序调整为公告、快递代拿、校园服务、紧凑校园活动卡、动态流。快递卡使用天空蓝背景、立体纸箱、真实价格与截单时间、整宽下单按钮；仅修改 WXML/WXSS。遵循 frontend-design 的信息层级原则，将活动入口弱化。此次本地 CI、内存 Smoke 与 diff 检查通过；DevTools 再次返回 `IDE service port disabled`，截图视觉验收 `NOT RUN`。
+
 - `PASS`：`npm run ci` 与 `npm run test:integration:memory` 已在本轮 UI 修改后通过。
 - `NOT RUN`：微信开发者工具 CLI 存在，但调用 `build-npm --project ... --port 9420` 返回“IDE service port disabled”。因此没有将代码静态检查误记为页面编译、截图或视觉验收通过。
 - `NOT TOUCHED`：CloudBase 生产环境、数据库结构与云函数均未修改。

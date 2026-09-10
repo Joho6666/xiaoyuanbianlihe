@@ -95,22 +95,12 @@
     <text class="announcement-arrow">›</text>
   </view>
 
-  <view class="campus-hero" bindtap="onOpenActivityZone">
-    <image class="hero-campus-image" src="/images/banner_library.png" mode="aspectFill" />
-    <view class="hero-copy">
-      <text class="hero-title">把校园生活放进一个盒子</text>
-      <text class="hero-desc">动态、搭子、闲置与互助，都在当前校区发生</text>
-      <text class="hero-link">查看校园活动 →</text>
-    </view>
-    <view class="hero-mark"><text>✦</text></view>
-  </view>
-
   <view class="express-home-hero" bindtap="onOpenExpress">
     <view class="express-home-copy">
       <text class="express-home-title">快递代拿</text>
       <text class="express-home-cutoff">{{expressCard.cutoffText}}</text>
+      <text class="express-home-note">校内专人配送 · 状态可查</text>
       <view class="express-home-price" wx:if="{{expressCard.priceText}}"><text class="express-home-currency">¥</text><text class="express-home-amount">{{expressCard.priceText}}</text><text class="express-home-unit">起</text></view>
-      <text class="express-home-closed" wx:else>校内专人配送 · 状态可查</text>
     </view>
     <view class="express-home-art" aria-hidden="true"><view class="parcel-shadow"></view><view class="parcel-box"><view class="parcel-tape"></view><view class="parcel-label"></view><view class="parcel-seam"></view></view></view>
     <view class="express-home-cta">立即下单</view>
@@ -127,6 +117,15 @@
       <view class="home-service-item tone-lost" bindtap="onOpenLost"><image class="home-service-icon" src="/images/services/lost.svg" mode="aspectFit" /><text>失物</text></view>
       <view class="home-service-item tone-events" bindtap="onOpenActivityZone"><image class="home-service-icon" src="/images/services/events.svg" mode="aspectFit" /><text>活动</text></view>
       <view class="home-service-item tone-more" bindtap="onOpenDiscover"><image class="home-service-icon" src="/images/services/more.svg" mode="aspectFit" /><text>更多服务</text></view>
+    </view>
+  </view>
+
+  <view class="campus-hero" bindtap="onOpenActivityZone">
+    <image class="hero-campus-image" src="/images/banner_library.png" mode="aspectFill" />
+    <view class="hero-copy">
+      <text class="hero-title">校园活动</text>
+      <text class="hero-desc">看看校内正在发生的新鲜事</text>
+      <text class="hero-link">查看活动 →</text>
     </view>
   </view>
 

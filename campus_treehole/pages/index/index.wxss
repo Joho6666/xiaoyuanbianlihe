@@ -1286,20 +1286,6 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.express-home-hero {
-  display: flex;
-  align-items: center;
-  margin: 20rpx 28rpx;
-  padding: 22rpx 24rpx;
-  border-radius: 24rpx;
-  background: #ffffff;
-  box-shadow: 0 10rpx 28rpx rgba(55, 91, 145, .08);
-}
-.express-home-icon { width: 64rpx; height: 64rpx; display: flex; align-items: center; justify-content: center; border-radius: 18rpx; color: #2f76ff; background: #edf4ff; font-size: 32rpx; }
-.express-home-copy { flex: 1; margin-left: 16rpx; }
-.express-home-title { display: block; color: #172033; font-size: 29rpx; font-weight: 700; }
-.express-home-desc { display: block; margin-top: 4rpx; color: #71809a; font-size: 23rpx; }
-.express-home-arrow { color: #2f76ff; font-size: 40rpx; }
 
 /* Reference alignment: compact campus header, one strong service card, then
  * the living feed. These final rules intentionally override legacy defaults
@@ -1313,24 +1299,26 @@
 .nav-search { min-height: 72rpx; padding: 12rpx 18rpx; border: 0; background: #ffffff; box-shadow: 0 6rpx 18rpx rgba(23,32,51,.06); }
 .nav-search-input { height: 44rpx; line-height: 44rpx; font-size: 26rpx; color: #172033; }
 .announcement-strip { margin: 16rpx 28rpx 10rpx; border: 0; background: #ffffff; box-shadow: 0 5rpx 16rpx rgba(23,32,51,.04); }
-.campus-hero { margin: 16rpx 28rpx 14rpx; min-height: 198rpx; border-radius: 28rpx; background: #dfeeff; box-shadow: 0 12rpx 30rpx rgba(47,118,255,.10); }
-.hero-title { font-size: 34rpx; color: #172033; }
-.hero-desc { max-width: 430rpx; color: #58708f; }
-.hero-link { background: #2f76ff; box-shadow: 0 7rpx 15rpx rgba(47,118,255,.20); }
-.express-home-hero { position: relative; overflow: hidden; margin: 14rpx 28rpx 18rpx; min-height: 296rpx; padding: 28rpx 28rpx 88rpx; border-radius: 30rpx; background: linear-gradient(135deg, #dcecff 0%, #eef6ff 58%, #c7e0ff 100%); box-shadow: 0 16rpx 34rpx rgba(47,118,255,.17); box-sizing: border-box; }
-.express-home-copy { position: relative; z-index: 2; max-width: 52%; }
-.express-home-title { display: block; color: #172033; font-size: 40rpx; line-height: 1.2; font-weight: 800; letter-spacing: 1rpx; }
+.campus-hero { margin: 0 28rpx 18rpx; padding: 22rpx 26rpx; min-height: 0; border-radius: 24rpx; background: #eaf2fb; box-shadow: none; }
+.hero-title { font-size: 28rpx; color: #344660; }
+.hero-desc { max-width: 430rpx; color: #71809a; font-size: 22rpx; }
+.hero-link { margin-top: 0; padding: 0; background: transparent; color: #5277a7; font-size: 22rpx; box-shadow: none; }
+.express-home-hero { position: relative; overflow: hidden; margin: 14rpx 28rpx 18rpx; min-height: 330rpx; padding: 28rpx 28rpx 108rpx; border: 2rpx solid #e5f2ff; border-radius: 28rpx; background: radial-gradient(ellipse at 12% 65%, #ffffff 0%, transparent 65%), linear-gradient(125deg, #e1f2ff 12%, #b7dcff 100%); box-shadow: 0 10rpx 24rpx rgba(47,118,255,.14); box-sizing: border-box; }
+.express-home-hero::before { content: ''; position: absolute; right: -40rpx; top: -44rpx; width: 250rpx; height: 100rpx; border-radius: 80rpx; background: rgba(255,255,255,.28); transform: rotate(-35deg); }
+.express-home-copy { position: relative; z-index: 2; max-width: 56%; }
+.express-home-title { display: block; color: #172d50; font-size: 44rpx; line-height: 1.2; font-weight: 800; letter-spacing: 2rpx; }
 .express-home-cutoff { display: block; margin-top: 12rpx; color: #324b72; font-size: 24rpx; font-weight: 600; }
 .express-home-price { display: flex; align-items: baseline; margin-top: 10rpx; color: #2f76ff; }
 .express-home-currency { font-size: 26rpx; font-weight: 700; }
 .express-home-amount { margin-left: 2rpx; font-size: 58rpx; line-height: 1; font-weight: 800; letter-spacing: -1rpx; }
 .express-home-unit { margin-left: 5rpx; color: #59739b; font-size: 23rpx; font-weight: 600; }
-.express-home-closed { display: block; margin-top: 12rpx; color: #59739b; font-size: 23rpx; }
-.express-home-art { position: absolute; z-index: 1; top: 40rpx; right: 20rpx; width: 270rpx; height: 158rpx; transform: rotate(-5deg); }
+.express-home-note { display: block; margin-top: 8rpx; color: #59739b; font-size: 21rpx; line-height: 1.5; }
+.express-home-art { position: absolute; z-index: 1; top: 64rpx; right: 10rpx; width: 250rpx; height: 170rpx; transform: rotate(-5deg); }
 .parcel-shadow { position: absolute; left: 20rpx; right: 8rpx; bottom: 4rpx; height: 24rpx; border-radius: 50%; background: rgba(50,86,136,.18); filter: blur(10rpx); }
 .parcel-box { position: absolute; left: 42rpx; bottom: 22rpx; width: 174rpx; height: 112rpx; border-radius: 8rpx; background: linear-gradient(145deg, #eebc79 0%, #d99247 100%); box-shadow: inset -14rpx -10rpx 20rpx rgba(153,83,24,.18), 0 13rpx 20rpx rgba(54,92,139,.16); transform: skewY(-3deg); }
-.parcel-box::before { content: ''; position: absolute; top: -22rpx; left: 3rpx; width: 168rpx; height: 40rpx; border-radius: 8rpx 8rpx 2rpx 2rpx; background: linear-gradient(160deg, #f7d093, #dba25b); transform: skewX(-27deg); transform-origin: left bottom; }
-.parcel-tape { position: absolute; z-index: 2; top: -18rpx; left: 76rpx; width: 26rpx; height: 130rpx; background: rgba(244,207,143,.9); transform: rotate(2deg); }
+.parcel-box::before { content: ''; position: absolute; top: -34rpx; left: 0; width: 174rpx; height: 34rpx; border-radius: 3rpx 3rpx 0 0; background: linear-gradient(90deg, #f6d49f 43%, #fff0cc 43%, #fff0cc 59%, #f6d49f 59%); transform: skewX(-38deg); transform-origin: left bottom; }
+.parcel-box::after { content: ''; position: absolute; top: -17rpx; right: -27rpx; width: 27rpx; height: 112rpx; background: #bf8548; transform: skewY(-52deg); border-radius: 0 3rpx 3rpx 0; }
+.parcel-tape { position: absolute; z-index: 2; top: 0; left: 75rpx; width: 28rpx; height: 112rpx; background: #f5d7a6; }
 .parcel-label { position: absolute; z-index: 3; top: 36rpx; left: 26rpx; width: 54rpx; height: 34rpx; border-radius: 3rpx; background: rgba(255,243,215,.82); transform: rotate(-2deg); }
 .parcel-label::after { content: ''; position: absolute; left: 9rpx; right: 9rpx; top: 10rpx; height: 3rpx; background: #b67a3d; box-shadow: 0 7rpx 0 #b67a3d; }
 .parcel-seam { position: absolute; right: 20rpx; top: 12rpx; width: 3rpx; height: 80rpx; background: rgba(137,72,24,.22); transform: rotate(-2deg); }
