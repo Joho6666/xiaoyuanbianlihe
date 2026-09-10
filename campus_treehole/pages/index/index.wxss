@@ -1300,3 +1300,46 @@
 .express-home-title { display: block; color: #172033; font-size: 29rpx; font-weight: 700; }
 .express-home-desc { display: block; margin-top: 4rpx; color: #71809a; font-size: 23rpx; }
 .express-home-arrow { color: #2f76ff; font-size: 40rpx; }
+
+/* Reference alignment: compact campus header, one strong service card, then
+ * the living feed. These final rules intentionally override legacy defaults
+ * while keeping the existing WXML and interaction contract unchanged. */
+.nav-bar { background: rgba(243,247,253,.98); box-shadow: 0 8rpx 24rpx rgba(47,118,255,.06); }
+.nav-content { padding: 14rpx 28rpx 18rpx; gap: 14rpx; }
+.brand-row { min-height: 92rpx; padding-right: 178rpx; gap: 8rpx; }
+.brand-name { color: #1b438d; font-size: 40rpx; letter-spacing: 0; }
+.nav-campus-row { max-width: 360rpx; padding: 8rpx 14rpx; background: #ffffff; box-shadow: 0 4rpx 14rpx rgba(47,118,255,.08); }
+.nav-campus-name { font-size: 23rpx; color: #2f76ff; }
+.nav-search { min-height: 72rpx; padding: 12rpx 18rpx; border: 0; background: #ffffff; box-shadow: 0 6rpx 18rpx rgba(23,32,51,.06); }
+.nav-search-input { height: 44rpx; line-height: 44rpx; font-size: 26rpx; color: #172033; }
+.announcement-strip { margin: 16rpx 28rpx 10rpx; border: 0; background: #ffffff; box-shadow: 0 5rpx 16rpx rgba(23,32,51,.04); }
+.campus-hero { margin: 16rpx 28rpx 14rpx; min-height: 198rpx; border-radius: 28rpx; background: #dfeeff; box-shadow: 0 12rpx 30rpx rgba(47,118,255,.10); }
+.hero-title { font-size: 34rpx; color: #172033; }
+.hero-desc { max-width: 430rpx; color: #58708f; }
+.hero-link { background: #2f76ff; box-shadow: 0 7rpx 15rpx rgba(47,118,255,.20); }
+.express-home-hero { margin: 14rpx 28rpx 18rpx; min-height: 118rpx; padding: 24rpx 26rpx; border-radius: 28rpx; background: #2f76ff; box-shadow: 0 14rpx 30rpx rgba(47,118,255,.24); }
+.express-home-icon { color: #2f76ff; background: #e8f1ff; }
+.express-home-title { color: #ffffff; font-size: 31rpx; }
+.express-home-desc { color: rgba(255,255,255,.78); }
+.express-home-arrow { color: #ffffff; }
+.service-panel { margin: 0 28rpx 20rpx; padding: 22rpx 18rpx 20rpx; border-radius: 28rpx; }
+.service-panel-head { margin: 0 8rpx 16rpx; }
+.home-service-grid { gap: 18rpx 4rpx; }
+.home-service-item { color: #42516b; font-size: 22rpx; }
+.home-service-icon { width: 70rpx; height: 70rpx; border-radius: 22rpx; }
+.campus-now-card { margin: 14rpx 28rpx 8rpx; padding: 18rpx 20rpx; border-radius: 24rpx; box-shadow: 0 8rpx 22rpx rgba(23,32,51,.05); }
+.feed-switch { padding: 18rpx 28rpx 0; gap: 34rpx; }
+.feed-switch .nav-tab { font-size: 29rpx; color: #8a98ae; }
+.feed-switch .nav-tab-active { color: #172033; font-size: 31rpx; }
+.feed-switch .nav-tab-active::after { width: 36rpx; height: 5rpx; bottom: 2rpx; }
+.category-scroll { margin: 0 20rpx; }
+.cat-tag { padding: 10rpx 17rpx 12rpx; border-radius: 999rpx; background: #eaf1fb; color: #70809a; font-size: 22rpx; }
+.cat-active { background: #2f76ff; color: #ffffff; font-size: 22rpx; }
+.waterfall { padding: 14rpx 28rpx 22rpx; gap: 16rpx; }
+.wf-card { border-radius: 24rpx; background: #ffffff; box-shadow: 0 8rpx 22rpx rgba(23,32,51,.06); }
+.wf-cover-wrap, .wf-video-wrap { border-radius: 24rpx 24rpx 0 0; }
+.wf-info { padding: 18rpx 16rpx 16rpx; }
+.wf-title { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; color: #172033; font-size: 26rpx; line-height: 1.45; }
+.wf-footer { margin-top: 14rpx; }
+.wf-name, .like-num { color: #8b98ab; font-size: 21rpx; }
+.page-hint { color: #94a2b7; font-size: 21rpx; }

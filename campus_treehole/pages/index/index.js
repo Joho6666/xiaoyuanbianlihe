@@ -41,12 +41,15 @@ function getNavMetrics() {
   const topGap = menuButton ? Math.max(menuButton.top - statusBarHeight, 8) : 10
   const contentHeight = menuButton ? menuButton.height + topGap * 2 : 44
   const navBarHeight = statusBarHeight + contentHeight
+  // The custom header contains a brand row and a search row in addition to
+  // the native capsule line; reserve that full height before feed content.
+  const navOffsetHeight = navBarHeight + 112
 
   return {
     statusBarHeight,
     navBarHeight,
     navContentHeight: contentHeight,
-    navOffsetHeight: navBarHeight + 12,
+    navOffsetHeight,
     navBottomGap: 12
   }
 }
@@ -200,7 +203,6 @@ Page({
       this._syncCampusUiFromApp()
       this._maybeShowSubscribeGuideModal()
       this.loadLatestAnnouncement()
-      this.loadCampusNowSummary()
       this.loadCampusNowSummary()
       this.loadPosts()
     })
