@@ -9,8 +9,12 @@ const {
   EXPRESS_ORDER_STATUS,
   EXPRESS_PAYMENT_STATUS,
   EXPRESS_DELIVERY_PROFILE_STATUS,
+  EXPRESS_PICKUP_ITEM_LIMIT,
+  EXPRESS_PICKUP_ITEM_PACKAGE_LIMIT,
+  EXPRESS_ORDER_PACKAGE_LIMIT,
   canTransitionExpressOrder,
-  normalizeLegacyExpressOrder
+  normalizeLegacyExpressOrder,
+  normalizeExpressPickupItems
 } = require('../domain/express')
 const { STAFF_PERMISSIONS } = require('../domain/staff')
 
@@ -62,6 +66,45 @@ function findConfiguredDeliverySelection(settings, data) {
   return findDeliverySelection(settings, data)
 }
 
+function normalizeExpressPickupInput(data = {}, { allowEmptyCode = false } = {}) {
+  const source = Array.isArray(data.pickupItems)
+    ? data.pickupItems
+    : (data.pickupPointId || data.pickupCode ? [{ pickupPointId: data.pickupPointId, pickupCode: data.pickupCode, packageCount: data.packageCount }] : [])
+  if (!source.length) return { error: '请至少添加一个取件码' }
+  if (source.length > EXPRESS_PICKUP_ITEM_LIMIT) return { error: `最多添加 ${EXPRESS_PICKUP_ITEM_LIMIT} 个取件码` }
+  const items = []
+  const seen = new Set()
+  let totalPackageCount = 0
+  for (let index = 0; index < source.length; index += 1) {
+    const input = source[index] || {}
+    const pickupPointId = String(input.pickupPointId || '').trim()
+    const pickupCode = String(input.pickupCode || '').trim()
+    const packageCount = Number(input.packageCount)
+    if (!pickupPointId || (!pickupCode && !allowEmptyCode)) return { error: '请填写完整的快递点和取件码' }
+    if (!Number.isInteger(packageCount) || packageCount < 1 || packageCount > EXPRESS_PICKUP_ITEM_PACKAGE_LIMIT) return { error: `每个取件码件数需为 1-${EXPRESS_PICKUP_ITEM_PACKAGE_LIMIT}` }
+    const key = `${pickupPointId}\u0000${pickupCode.toUpperCase()}`
+    if (seen.has(key)) return { error: '同一快递点的取件码不能重复' }
+    seen.add(key)
+    totalPackageCount += packageCount
+    if (totalPackageCount > EXPRESS_ORDER_PACKAGE_LIMIT) return { error: `一个订单最多 ${EXPRESS_ORDER_PACKAGE_LIMIT} 件包裹` }
+    items.push({ id: String(input.id || `pickup_item_${index + 1}`), pickupPointId, pickupCode, packageCount })
+  }
+  return { items, totalPackageCount, pickupItemCount: items.length, pickupPointCount: new Set(items.map((item) => item.pickupPointId)).size }
+}
+
+function resolveExpressPricing(settings) {
+  const baseOrderPriceCents = Math.max(0, Number(settings && settings.baseOrderPriceCents) || 0)
+  const perPackagePriceCents = Math.max(0, Number(settings && (settings.perPackagePriceCents ?? settings.basePriceCents)) || 0)
+  const extraPickupPointPriceCents = Math.max(0, Number(settings && settings.extraPickupPointPriceCents) || 0)
+  return { pricingMode: String(settings && settings.pricingMode || 'PER_PACKAGE'), baseOrderPriceCents, perPackagePriceCents, extraPickupPointPriceCents }
+}
+
+  function summarizePickupPoints(items) {
+  const counts = new Map()
+  items.forEach((item) => counts.set(item.pickupPointNameSnapshot || item.pickupPointName || item.pickupPointId, (counts.get(item.pickupPointNameSnapshot || item.pickupPointName || item.pickupPointId) || 0) + item.packageCount))
+  return Array.from(counts.entries()).map(([name, count]) => `${name}×${count}`).join(' / ')
+}
+
 function createExpressModule({ db, _, cloud, helpers = {} }) {
   const {
     staff,
@@ -111,6 +154,10 @@ function createExpressModule({ db, _, cloud, helpers = {} }) {
       deliveryWindow: row.deliveryWindow || '',
       paymentExpireMinutes: Number(row.paymentExpireMinutes) || 30,
       basePriceCents: Number(row.basePriceCents) || 0,
+      pricingMode: row.pricingMode || 'PER_PACKAGE',
+      baseOrderPriceCents: Math.max(0, Number(row.baseOrderPriceCents) || 0),
+      perPackagePriceCents: Math.max(0, Number(row.perPackagePriceCents ?? row.basePriceCents) || 0),
+      extraPickupPointPriceCents: Math.max(0, Number(row.extraPickupPointPriceCents) || 0),
       pickupPoints: points,
       deliveryCampuses: cloneDeliveryCampuses(row.deliveryCampuses),
       notice: row.notice || '',
@@ -197,6 +244,41 @@ function createExpressModule({ db, _, cloud, helpers = {} }) {
     }
   }
 
+  async function writeDeliveryProfile(transaction, ownerUserId, campusId, settings, data) {
+    const parsed = validateDeliveryProfileInput(settings, data)
+    if (parsed.error) return { error: parsed.error }
+    const active = await listActiveDeliveryProfiles(ownerUserId, transaction)
+    if (active.length >= 10) return { error: '最多保存 10 条常用配送信息' }
+    const isDefault = active.length === 0 || data.isDefault === true
+    if (isDefault && active.length) {
+      await transaction.collection(DELIVERY_PROFILES).where({ ownerUserId, status: EXPRESS_DELIVERY_PROFILE_STATUS.ACTIVE, isDefault: true }).update({ data: { isDefault: false, updatedAt: now() } })
+    }
+    const profile = {
+      _id: `express_profile_${crypto.randomBytes(12).toString('hex')}`,
+      ownerUserId,
+      label: parsed.label,
+      isSelf: parsed.isSelf,
+      recipientName: parsed.recipientName,
+      contactPhone: parsed.contactPhone,
+      schoolId: settings.schoolId || EXPRESS_DEFAULT_SCHOOL_ID,
+      campusId,
+      deliveryCampus: parsed.selection.campus.id,
+      deliveryCampusName: parsed.selection.campus.name,
+      dormArea: parsed.selection.area.id,
+      dormAreaName: parsed.selection.area.name,
+      dormBuildingId: parsed.selection.building.id,
+      dormBuildingName: parsed.selection.building.name,
+      roomNumber: parsed.roomNumber,
+      isDefault,
+      status: EXPRESS_DELIVERY_PROFILE_STATUS.ACTIVE,
+      createdAt: now(),
+      updatedAt: now(),
+      smokeRunId: data.smokeRunId || null
+    }
+    await transaction.collection(DELIVERY_PROFILES).doc(profile._id).set({ data: profile })
+    return { profile }
+  }
+
   async function getMyExpressDeliveryProfiles(openid) {
     const user = await getUserForAction(openid, { requireActive: true })
     return { code: 0, data: (await listActiveDeliveryProfiles(userIdOf(user))).map(publicDeliveryProfile) }
@@ -208,38 +290,10 @@ function createExpressModule({ db, _, cloud, helpers = {} }) {
     const campusId = resolveCampus(user, data.campusId)
     if (campusId !== (user.campusId || campusId)) return fail('只能保存当前校区的配送信息', 403)
     const settings = await readSettings(campusId)
-    const parsed = validateDeliveryProfileInput(settings, data)
-    if (parsed.error) return fail(parsed.error)
     const result = await withTransaction(async (transaction) => {
-      const active = await listActiveDeliveryProfiles(ownerUserId, transaction)
-      if (active.length >= 10) return fail('最多保存 10 条常用配送信息')
-      const isDefault = active.length === 0 || data.isDefault === true
-      if (isDefault && active.length) {
-        await transaction.collection(DELIVERY_PROFILES).where({ ownerUserId, status: EXPRESS_DELIVERY_PROFILE_STATUS.ACTIVE, isDefault: true }).update({ data: { isDefault: false, updatedAt: now() } })
-      }
-      const profile = {
-        _id: `express_profile_${crypto.randomBytes(12).toString('hex')}`,
-        ownerUserId,
-        label: parsed.label,
-        isSelf: parsed.isSelf,
-        recipientName: parsed.recipientName,
-        contactPhone: parsed.contactPhone,
-        schoolId: settings.schoolId || EXPRESS_DEFAULT_SCHOOL_ID,
-        campusId,
-        deliveryCampus: parsed.selection.campus.id,
-        deliveryCampusName: parsed.selection.campus.name,
-        dormArea: parsed.selection.area.id,
-        dormAreaName: parsed.selection.area.name,
-        dormBuildingId: parsed.selection.building.id,
-        dormBuildingName: parsed.selection.building.name,
-        roomNumber: parsed.roomNumber,
-        isDefault,
-        status: EXPRESS_DELIVERY_PROFILE_STATUS.ACTIVE,
-        createdAt: now(),
-        updatedAt: now(),
-        smokeRunId: data.smokeRunId || null
-      }
-      await transaction.collection(DELIVERY_PROFILES).doc(profile._id).set({ data: profile })
+      const written = await writeDeliveryProfile(transaction, ownerUserId, campusId, settings, data)
+      if (written.error) return fail(written.error)
+      const profile = written.profile
       return { code: 0, data: publicDeliveryProfile(profile) }
     })
     return result
@@ -346,19 +400,48 @@ function createExpressModule({ db, _, cloud, helpers = {} }) {
     const campusId = resolveCampus(user, data.campusId)
     const settings = await readSettings(campusId)
     if (!settings || settings.acceptingOrders !== true) return fail('当前校区暂未开放快递代拿')
-    const point = (settings.pickupPoints || []).find((item) => item.id === data.pickupPointId && item.enabled !== false)
-    if (!point) return fail('请选择有效的快递点')
-    if (data.deliveryCampus && point.deliveryCampus && point.deliveryCampus !== data.deliveryCampus) return fail('快递点与配送校区不匹配')
-    const packageCount = Number(data.packageCount)
-    if (!Number.isInteger(packageCount) || packageCount < 1 || packageCount > 20) return fail('包裹数量需为 1-20 件')
-    const unitPriceCents = Math.max(0, Number(settings.basePriceCents) || 0)
-    return { code: 0, data: { unitPriceCents, totalPriceCents: unitPriceCents * packageCount, unitPrice: (unitPriceCents / 100).toFixed(2), totalPrice: (unitPriceCents * packageCount / 100).toFixed(2), deliveryWindow: settings.deliveryWindow || '' } }
+    const normalized = normalizeExpressPickupInput(data, { allowEmptyCode: !Array.isArray(data.pickupItems) })
+    if (normalized.error) return fail(normalized.error)
+    const names = new Map()
+    for (const item of normalized.items) {
+      const point = (settings.pickupPoints || []).find((candidate) => candidate.id === item.pickupPointId && candidate.enabled !== false)
+      if (!point) return fail('请选择有效的快递点')
+      if (data.deliveryCampus && point.deliveryCampus && point.deliveryCampus !== data.deliveryCampus) return fail('快递点与配送校区不匹配')
+      names.set(item.pickupPointId, point.name)
+    }
+    const pricing = resolveExpressPricing(settings)
+    const subtotal = pricing.baseOrderPriceCents + pricing.perPackagePriceCents * normalized.totalPackageCount
+    const extraPickupPointFee = pricing.extraPickupPointPriceCents * Math.max(0, normalized.pickupPointCount - 1)
+    const totalPriceCents = subtotal + extraPickupPointFee
+    return { code: 0, data: {
+      totalPackageCount: normalized.totalPackageCount,
+      pickupItemCount: normalized.pickupItemCount,
+      pickupPointCount: normalized.pickupPointCount,
+      subtotal,
+      extraPickupPointFee,
+      totalPriceCents,
+      unitPriceCents: pricing.perPackagePriceCents,
+      unitPrice: (pricing.perPackagePriceCents / 100).toFixed(2),
+      totalPrice: (totalPriceCents / 100).toFixed(2),
+      deliveryWindow: settings.deliveryWindow || '',
+      priceBreakdown: { pricingMode: pricing.pricingMode, baseOrderPriceCents: pricing.baseOrderPriceCents, perPackagePriceCents: pricing.perPackagePriceCents, extraPickupPointPriceCents: pricing.extraPickupPointPriceCents, pickupPointNames: Array.from(names.values()) }
+    } }
   }
 
   async function readOrder(orderId) {
     if (!orderId) return null
     const result = await db.collection(ORDERS).doc(String(orderId)).get()
     return result && result.data ? normalizeLegacyExpressOrder(result.data) : null
+  }
+
+  function publicPickupItems(order) {
+    return normalizeExpressPickupItems(order).map((item) => ({
+      id: item.id,
+      pickupPointId: item.pickupPointId,
+      pickupPointNameSnapshot: item.pickupPointNameSnapshot,
+      pickupCode: item.pickupCode,
+      packageCount: item.packageCount
+    }))
   }
 
   function publicOwnOrder(order) {
@@ -373,6 +456,10 @@ function createExpressModule({ db, _, cloud, helpers = {} }) {
       pickupPointId: order.pickupPointId,
       pickupPointName: order.pickupPointName,
       pickupPointNameSnapshot: order.pickupPointNameSnapshot || order.pickupPointName,
+      pickupItems: publicPickupItems(order),
+      totalPackageCount: Number(order.totalPackageCount) || Number(order.packageCount) || 0,
+      pickupItemCount: Number(order.pickupItemCount) || publicPickupItems(order).length,
+      pickupPointCount: Number(order.pickupPointCount) || new Set(publicPickupItems(order).map((item) => item.pickupPointId)).size,
       packageCount: order.packageCount,
       dormArea: order.dormArea || '',
       dormAreaNameSnapshot: order.dormAreaNameSnapshot || '',
@@ -408,6 +495,10 @@ function createExpressModule({ db, _, cloud, helpers = {} }) {
       pickupPointId: order.pickupPointId,
       pickupPointName: order.pickupPointName,
       pickupPointNameSnapshot: order.pickupPointNameSnapshot || order.pickupPointName,
+      pickupItems: publicPickupItems(order),
+      totalPackageCount: Number(order.totalPackageCount) || Number(order.packageCount) || 0,
+      pickupItemCount: Number(order.pickupItemCount) || publicPickupItems(order).length,
+      pickupPointCount: Number(order.pickupPointCount) || new Set(publicPickupItems(order).map((item) => item.pickupPointId)).size,
       pickupCode: order.pickupCode,
       packageCount: order.packageCount,
       dormArea: order.dormArea || '',
@@ -439,25 +530,26 @@ function createExpressModule({ db, _, cloud, helpers = {} }) {
     if (campusId !== (user.campusId || campusId)) return fail('只能为当前校区下单', 403)
     const settings = await readSettings(campusId)
     if (!settings || settings.acceptingOrders !== true) return fail('当前校区暂未开放快递代拿')
-    const point = (settings.pickupPoints || []).find((item) => item.id === data.pickupPointId && item.enabled !== false)
-    if (!point) return fail('请选择有效的快递点')
     if (isPastCutoff(settings)) return fail('今日已过截单时间，请明天再试')
-    const pickupCode = String(data.pickupCode || '').trim()
-    const packageCount = Number(data.packageCount)
-    let deliverySelection
+    const clientRequestId = String(data.clientRequestId || '').trim().slice(0, 100) || crypto.randomUUID()
+    const existingResult = await db.collection(ORDERS).where({ userId: userIdOf(user), clientRequestId }).limit(1).get()
+    if (existingResult.data && existingResult.data[0]) return { code: 0, data: publicOwnOrder(normalizeLegacyExpressOrder(existingResult.data[0])), idempotent: true }
+    const normalized = normalizeExpressPickupInput(data)
+    if (normalized.error) return fail(normalized.error)
     let deliveryProfile = null
-    let recipientName = ''
-    let recipientPhone = ''
-    let roomNumber = ''
+    let deliveryData = null
+    let deliverySelection
     if (data.deliveryProfileId) {
       deliveryProfile = await readOwnedDeliveryProfile(userIdOf(user), data.deliveryProfileId)
       if (!deliveryProfile || deliveryProfile.status !== EXPRESS_DELIVERY_PROFILE_STATUS.ACTIVE) return fail('配送信息不存在', 404)
       if (deliveryProfile.campusId !== campusId) return fail('配送信息不属于当前服务校区', 403)
+      deliveryData = deliveryProfile
       deliverySelection = findConfiguredDeliverySelection(settings, deliveryProfile)
       if (deliverySelection.error) return fail('该地址已失效，请更新')
-      recipientName = deliveryProfile.recipientName
-      recipientPhone = deliveryProfile.contactPhone
-      roomNumber = deliveryProfile.roomNumber
+    } else if (data.deliveryData) {
+      deliveryData = { ...data.deliveryData, label: data.deliveryData.label || (data.deliveryData.isSelf === true ? '我的宿舍' : '本次配送') }
+      deliverySelection = findConfiguredDeliverySelection(settings, deliveryData)
+      if (deliverySelection.error) return fail(deliverySelection.error)
     } else if (!data.deliveryCampus && !data.dormArea && !data.dormBuildingId) {
       const legacyBuilding = String(data.dormBuilding || '').trim()
       if (!legacyBuilding) return fail('请填写有效的宿舍楼')
@@ -467,59 +559,87 @@ function createExpressModule({ db, _, cloud, helpers = {} }) {
       deliverySelection = findDeliverySelection(settings, data)
     }
     if (deliverySelection.error) return fail(deliverySelection.error)
-    if (point.deliveryCampus && point.deliveryCampus !== deliverySelection.campus.id) return fail('快递点与配送校区不匹配')
+    const resolvedItems = []
+    for (let index = 0; index < normalized.items.length; index += 1) {
+      const item = normalized.items[index]
+      const point = (settings.pickupPoints || []).find((candidate) => candidate.id === item.pickupPointId && candidate.enabled !== false)
+      if (!point) return fail('请选择有效的快递点')
+      if (point.deliveryCampus && point.deliveryCampus !== deliverySelection.campus.id) return fail('快递点与配送校区不匹配')
+      resolvedItems.push({
+        id: makeDeterministicId('express_pickup_item', `${clientRequestId}:${index}:${item.pickupPointId}:${item.pickupCode.toUpperCase()}`),
+        pickupPointId: point.id,
+        pickupPointNameSnapshot: point.name,
+        pickupCode: item.pickupCode,
+        packageCount: item.packageCount
+      })
+    }
+    const pricing = resolveExpressPricing(settings)
+    const subtotal = pricing.baseOrderPriceCents + pricing.perPackagePriceCents * normalized.totalPackageCount
+    const extraPickupPointFee = pricing.extraPickupPointPriceCents * Math.max(0, normalized.pickupPointCount - 1)
+    const amountCents = subtotal + extraPickupPointFee
+    const orderId = makeDeterministicId('express_order', `${userIdOf(user)}:${clientRequestId}`)
+    const orderNo = `EXP${new Date().toISOString().replace(/[-:TZ.]/g, '').slice(0, 14)}${crypto.randomBytes(3).toString('hex').toUpperCase()}`
+    const recipientName = String((deliveryData && deliveryData.recipientName) || data.recipientName || '').trim().slice(0, 30)
+    const recipientPhone = String((deliveryData && (deliveryData.contactPhone || deliveryData.recipientPhoneSnapshot)) || data.recipientPhoneSnapshot || data.phone || '').trim()
     const dormBuilding = deliverySelection.building.name
-    roomNumber = roomNumber || String(data.roomNumber || '').trim()
-    recipientPhone = recipientPhone || String(data.recipientPhoneSnapshot || data.phone || '').trim()
-    recipientName = recipientName || String(data.recipientName || '').trim().slice(0, 30)
-    if (!pickupCode || pickupCode.length > 40) return fail('请填写有效取件码')
-    if (!Number.isInteger(packageCount) || packageCount < 1 || packageCount > 20) return fail('包裹数量需为 1-20 件')
+    const roomNumber = String((deliveryData && deliveryData.roomNumber) || data.roomNumber || '').trim()
     if (!dormBuilding || dormBuilding.length > 40 || !roomNumber || roomNumber.length > 20) return fail('请填写宿舍楼和房间号')
     if (!/^1\d{10}$/.test(recipientPhone)) return fail('请填写有效手机号')
-    const clientRequestId = String(data.clientRequestId || '').trim().slice(0, 100) || crypto.randomUUID()
-    const existingResult = await db.collection(ORDERS).where({ userId: userIdOf(user), clientRequestId }).limit(1).get()
-    if (existingResult.data && existingResult.data[0]) return { code: 0, data: publicOwnOrder(normalizeLegacyExpressOrder(existingResult.data[0])), idempotent: true }
-    const orderNo = `EXP${new Date().toISOString().replace(/[-:TZ.]/g, '').slice(0, 14)}${crypto.randomBytes(3).toString('hex').toUpperCase()}`
-    const orderId = makeDeterministicId('express_order', `${userIdOf(user)}:${clientRequestId}`)
-    const amountCents = Math.max(0, Number(settings.basePriceCents) || 0) * packageCount
-    const order = {
-      _id: orderId,
-      orderNo,
-      userId: userIdOf(user),
-      schoolId: settings.schoolId || EXPRESS_DEFAULT_SCHOOL_ID,
-      campusId,
-      deliveryProfileId: deliveryProfile ? deliveryProfile._id : null,
-      deliveryCampus: deliverySelection.campus.id,
-      deliveryCampusNameSnapshot: deliverySelection.campus.name,
-      pickupPointId: point.id,
-      pickupPointName: point.name,
-      pickupPointNameSnapshot: point.name,
-      pickupCode,
-      packageCount,
-      dormArea: deliverySelection.area.id,
-      dormAreaNameSnapshot: deliverySelection.area.name,
-      dormBuildingId: deliverySelection.building.id,
-      dormBuilding,
-      dormBuildingNameSnapshot: dormBuilding,
-      roomNumber,
-      roomNumberSnapshot: roomNumber,
-      recipientNameSnapshot: recipientName,
-      recipientPhoneSnapshot: recipientPhone,
-      phone: recipientPhone,
-      note: String(data.note || '').trim().slice(0, 100),
-      amountCents,
-      clientRequestId,
-      paymentStatus: EXPRESS_PAYMENT_STATUS.UNPAID,
-      orderStatus: EXPRESS_ORDER_STATUS.WAIT_PAYMENT,
-      createdAt: now(),
-      updatedAt: now(),
-      paidAt: null,
-      completedAt: null,
-      updatedByUserId: null,
-      smokeRunId: data.smokeRunId || null
-    }
-    await db.collection(ORDERS).doc(orderId).set({ data: order })
-    return { code: 0, data: publicOwnOrder(order) }
+    const shouldSaveInlineProfile = !deliveryProfile && deliveryData && (deliveryData.isSelf === true || data.saveDeliveryProfile === true)
+    const result = await withTransaction(async (transaction) => {
+      const txExisting = await transaction.collection(ORDERS).where({ userId: userIdOf(user), clientRequestId }).limit(1).get()
+      if (txExisting.data && txExisting.data[0]) return { code: 0, data: publicOwnOrder(normalizeLegacyExpressOrder(txExisting.data[0])), idempotent: true }
+      let savedProfile = deliveryProfile
+      if (shouldSaveInlineProfile) {
+        const written = await writeDeliveryProfile(transaction, userIdOf(user), campusId, settings, { ...deliveryData, isDefault: deliveryData.isSelf === true || deliveryData.isDefault === true, smokeRunId: data.smokeRunId || null })
+        if (written.error) return fail(written.error)
+        savedProfile = written.profile
+      }
+      const firstItem = resolvedItems[0]
+      const order = {
+        _id: orderId,
+        orderNo,
+        userId: userIdOf(user),
+        schoolId: settings.schoolId || EXPRESS_DEFAULT_SCHOOL_ID,
+        campusId,
+        deliveryProfileId: savedProfile ? savedProfile._id : null,
+        deliveryCampus: deliverySelection.campus.id,
+        deliveryCampusNameSnapshot: deliverySelection.campus.name,
+        pickupPointId: firstItem.pickupPointId,
+        pickupPointName: firstItem.pickupPointNameSnapshot,
+        pickupPointNameSnapshot: firstItem.pickupPointNameSnapshot,
+        pickupCode: firstItem.pickupCode,
+        packageCount: normalized.totalPackageCount,
+        pickupItems: resolvedItems,
+        totalPackageCount: normalized.totalPackageCount,
+        pickupItemCount: normalized.pickupItemCount,
+        pickupPointCount: normalized.pickupPointCount,
+        dormArea: deliverySelection.area.id,
+        dormAreaNameSnapshot: deliverySelection.area.name,
+        dormBuildingId: deliverySelection.building.id,
+        dormBuilding,
+        dormBuildingNameSnapshot: dormBuilding,
+        roomNumber,
+        roomNumberSnapshot: roomNumber,
+        recipientNameSnapshot: recipientName,
+        recipientPhoneSnapshot: recipientPhone,
+        phone: recipientPhone,
+        note: String(data.note || '').trim().slice(0, 100),
+        amountCents,
+        clientRequestId,
+        paymentStatus: EXPRESS_PAYMENT_STATUS.UNPAID,
+        orderStatus: EXPRESS_ORDER_STATUS.WAIT_PAYMENT,
+        createdAt: now(),
+        updatedAt: now(),
+        paidAt: null,
+        completedAt: null,
+        updatedByUserId: null,
+        smokeRunId: data.smokeRunId || null
+      }
+      await transaction.collection(ORDERS).doc(orderId).set({ data: order })
+      return { code: 0, data: publicOwnOrder(order), profileCreated: !!(savedProfile && !deliveryProfile) }
+    })
+    return result
   }
 
   async function getMyExpressOrders(openid, data = {}) {
@@ -584,10 +704,10 @@ function createExpressModule({ db, _, cloud, helpers = {} }) {
     const result = await db.collection(ORDERS).where({ campusId }).orderBy('createdAt', 'desc').limit(200).get()
     let rows = (result.data || []).map(normalizeLegacyExpressOrder)
     if (data.status && Object.values(EXPRESS_ORDER_STATUS).includes(data.status)) rows = rows.filter((row) => row.orderStatus === data.status)
-    if (data.pickupPointId) rows = rows.filter((row) => row.pickupPointId === data.pickupPointId)
+    if (data.pickupPointId) rows = rows.filter((row) => normalizeExpressPickupItems(row).some((item) => item.pickupPointId === data.pickupPointId))
     if (data.paymentStatus) rows = rows.filter((row) => row.paymentStatus === data.paymentStatus)
     const keyword = String(data.keyword || '').trim().toLowerCase()
-    if (keyword) rows = rows.filter((row) => [row.orderNo, row.pickupCode, row.phone, row.roomNumber].some((value) => String(value || '').toLowerCase().includes(keyword)))
+    if (keyword) rows = rows.filter((row) => [row.orderNo, row.phone, row.recipientNameSnapshot, row.roomNumber, ...normalizeExpressPickupItems(row).flatMap((item) => [item.pickupCode, item.pickupPointNameSnapshot])].some((value) => String(value || '').toLowerCase().includes(keyword)))
     return rows
   }
 
@@ -597,13 +717,19 @@ function createExpressModule({ db, _, cloud, helpers = {} }) {
     const dayStart = new Date()
     dayStart.setHours(0, 0, 0, 0)
     const rows = (await listScopedOrders(auth.campusId, data)).filter((row) => row.paymentStatus === EXPRESS_PAYMENT_STATUS.PAID && (!row.createdAt || new Date(row.createdAt).getTime() >= dayStart.getTime()))
-    const counts = { all: rows.length, waitPickup: 0, delivering: 0, completed: 0, cancelled: 0 }
+    const counts = { all: rows.length, totalPackageCount: 0, pickupItemCount: 0, pickupPointCount: new Set(), revenueCents: 0, waitPickup: 0, delivering: 0, completed: 0, cancelled: 0 }
     rows.forEach((row) => {
+      const items = normalizeExpressPickupItems(row)
+      counts.totalPackageCount += Number(row.totalPackageCount) || items.reduce((sum, item) => sum + item.packageCount, 0)
+      counts.pickupItemCount += Number(row.pickupItemCount) || items.length
+      items.forEach((item) => counts.pickupPointCount.add(item.pickupPointId))
+      counts.revenueCents += Number(row.amountCents) || 0
       if (row.orderStatus === EXPRESS_ORDER_STATUS.WAIT_PICKUP) counts.waitPickup++
       if (row.orderStatus === EXPRESS_ORDER_STATUS.DELIVERING) counts.delivering++
       if (row.orderStatus === EXPRESS_ORDER_STATUS.COMPLETED) counts.completed++
       if (row.orderStatus === EXPRESS_ORDER_STATUS.CANCELLED) counts.cancelled++
     })
+    counts.pickupPointCount = counts.pickupPointCount.size
     return { code: 0, data: { campusId: auth.campusId, counts, acceptingOrders: (await readSettings(auth.campusId))?.acceptingOrders === true } }
   }
 
@@ -663,7 +789,7 @@ function createExpressModule({ db, _, cloud, helpers = {} }) {
 
   function sortForExport(rows) {
     const by = (a, b) => String(a || '').localeCompare(String(b || ''), 'zh-CN')
-    const pickup = rows.slice().sort((a, b) => by(a.pickupPointNameSnapshot || a.pickupPointName, b.pickupPointNameSnapshot || b.pickupPointName) || by(a.pickupCode, b.pickupCode))
+    const pickup = rows.flatMap((row) => normalizeExpressPickupItems(row).map((item) => ({ ...row, ...item, pickupPointNameSnapshot: item.pickupPointNameSnapshot || row.pickupPointNameSnapshot || row.pickupPointName }))).sort((a, b) => by(a.pickupPointNameSnapshot || a.pickupPointName, b.pickupPointNameSnapshot || b.pickupPointName) || by(a.pickupCode, b.pickupCode))
     const delivery = rows.slice().sort((a, b) => by(a.deliveryCampusNameSnapshot || a.deliveryCampus, b.deliveryCampusNameSnapshot || b.deliveryCampus) || by(a.dormAreaNameSnapshot || a.dormArea, b.dormAreaNameSnapshot || b.dormArea) || by(a.dormBuildingNameSnapshot || a.dormBuilding, b.dormBuildingNameSnapshot || b.dormBuilding) || by(a.roomNumber, b.roomNumber))
     return { pickup, delivery }
   }
@@ -681,11 +807,14 @@ function createExpressModule({ db, _, cloud, helpers = {} }) {
       { header: '取件码', key: 'pickupCode', width: 18 },
       { header: '件数', key: 'packageCount', width: 8 },
       { header: '订单号', key: 'orderNo', width: 24 },
+      { header: '配送校区', key: 'deliveryCampusName', width: 18 },
+      { header: '宿舍楼', key: 'dormBuilding', width: 18 },
+      { header: '房间', key: 'roomNumber', width: 12 },
       { header: '备注', key: 'note', width: 30 }
     ]
-    pickup.forEach((row, index) => pickupSheet.addRow({ index: index + 1, pickupPointName: row.pickupPointNameSnapshot || row.pickupPointName, pickupCode: row.pickupCode, packageCount: row.packageCount, orderNo: row.orderNo, note: row.note || '' }))
+    pickup.forEach((row, index) => pickupSheet.addRow({ index: index + 1, pickupPointName: row.pickupPointNameSnapshot || row.pickupPointName, pickupCode: row.pickupCode, packageCount: row.packageCount, orderNo: row.orderNo, deliveryCampusName: row.deliveryCampusNameSnapshot || row.deliveryCampus || '未配置', dormBuilding: row.dormBuildingNameSnapshot || row.dormBuilding || '未配置', roomNumber: row.roomNumberSnapshot || row.roomNumber || '', note: row.note || '' }))
     pickupSheet.getRow(1).font = { bold: true }
-    pickupSheet.autoFilter = { from: 'A1', to: 'F1' }
+    pickupSheet.autoFilter = { from: 'A1', to: 'I1' }
     pickupSheet.pageSetup.orientation = 'landscape'
     const deliverySheet = workbook.addWorksheet('配送清单', { views: [{ state: 'frozen', ySplit: 1 }] })
     deliverySheet.columns = [
@@ -697,12 +826,22 @@ function createExpressModule({ db, _, cloud, helpers = {} }) {
       { header: '收件人', key: 'recipientName', width: 16 },
       { header: '手机号', key: 'phone', width: 16 },
       { header: '件数', key: 'packageCount', width: 8 },
+      { header: '快递点摘要', key: 'pickupPointSummary', width: 30 },
       { header: '订单号', key: 'orderNo', width: 24 },
       { header: '状态', key: 'orderStatus', width: 14 }
     ]
-    delivery.forEach((row, index) => deliverySheet.addRow({ index: index + 1, deliveryCampusName: row.deliveryCampusNameSnapshot || row.deliveryCampus || '未配置', dormAreaName: row.dormAreaNameSnapshot || row.dormArea || '未配置', dormBuilding: row.dormBuildingNameSnapshot || row.dormBuilding, roomNumber: row.roomNumberSnapshot || row.roomNumber, recipientName: row.recipientNameSnapshot || '未填写', phone: row.recipientPhoneSnapshot || row.phone, packageCount: row.packageCount, orderNo: row.orderNo, orderStatus: row.orderStatus }))
+    delivery.forEach((row, index) => deliverySheet.addRow({ index: index + 1, deliveryCampusName: row.deliveryCampusNameSnapshot || row.deliveryCampus || '未配置', dormAreaName: row.dormAreaNameSnapshot || row.dormArea || '未配置', dormBuilding: row.dormBuildingNameSnapshot || row.dormBuilding, roomNumber: row.roomNumberSnapshot || row.roomNumber, recipientName: row.recipientNameSnapshot || '未填写', phone: row.recipientPhoneSnapshot || row.phone, packageCount: row.totalPackageCount || row.packageCount, pickupPointSummary: summarizePickupPoints(normalizeExpressPickupItems(row).map((item) => ({ ...item, pickupPointNameSnapshot: item.pickupPointNameSnapshot || row.pickupPointNameSnapshot || row.pickupPointName }))), orderNo: row.orderNo, orderStatus: row.orderStatus }))
     deliverySheet.getRow(1).font = { bold: true }
-    deliverySheet.autoFilter = { from: 'A1', to: 'J1' }
+    deliverySheet.autoFilter = { from: 'A1', to: 'K1' }
+    deliverySheet.getCell('M1').value = '统计'
+    deliverySheet.getCell('M2').value = '订单'
+    deliverySheet.getCell('N2').value = delivery.length
+    deliverySheet.getCell('M3').value = '包裹'
+    deliverySheet.getCell('N3').value = delivery.reduce((sum, row) => sum + (Number(row.totalPackageCount) || Number(row.packageCount) || 0), 0)
+    deliverySheet.getCell('M4').value = '取件码'
+    deliverySheet.getCell('N4').value = pickup.length
+    deliverySheet.getCell('M5').value = '快递点'
+    deliverySheet.getCell('N5').value = new Set(pickup.map((row) => row.pickupPointId)).size
     deliverySheet.pageSetup.orientation = 'portrait'
     const content = await workbook.xlsx.writeBuffer()
     const runId = crypto.randomBytes(8).toString('hex')
@@ -744,6 +883,10 @@ function createExpressModule({ db, _, cloud, helpers = {} }) {
       deliveryWindow: String(data.deliveryWindow || '').trim().slice(0, 60),
       paymentExpireMinutes: Math.min(1440, Math.max(5, Number(data.paymentExpireMinutes) || 30)),
       basePriceCents,
+      pricingMode: String(data.pricingMode || 'PER_PACKAGE').trim().slice(0, 30) || 'PER_PACKAGE',
+      baseOrderPriceCents: Math.min(10000, Math.max(0, Number(data.baseOrderPriceCents) || 0)),
+      perPackagePriceCents: Math.min(10000, Math.max(0, Number(data.perPackagePriceCents ?? basePriceCents) || 0)),
+      extraPickupPointPriceCents: Math.min(10000, Math.max(0, Number(data.extraPickupPointPriceCents) || 0)),
       pickupPoints,
       deliveryCampuses: cloneDeliveryCampuses(data.deliveryCampuses),
       notice: String(data.notice || '').trim().slice(0, 200),
@@ -761,6 +904,7 @@ function createExpressModule({ db, _, cloud, helpers = {} }) {
     SETTINGS,
     EXPORTS,
     DELIVERY_PROFILES,
+    normalizeExpressPickupInput,
     getExpressServiceConfig: getServiceConfig,
     getServiceConfig,
     getExpressQuote,
