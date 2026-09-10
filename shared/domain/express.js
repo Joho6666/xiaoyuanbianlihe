@@ -20,6 +20,18 @@ const EXPRESS_DELIVERY_PROFILE_STATUS = Object.freeze({
   ARCHIVED: 'ARCHIVED'
 })
 
+const EXPRESS_PARCEL_SIZE = Object.freeze({
+  SMALL: 'SMALL',
+  MEDIUM: 'MEDIUM',
+  LARGE: 'LARGE'
+})
+
+const EXPRESS_DEFAULT_PARCEL_SIZE_PRICING = Object.freeze({
+  SMALL: Object.freeze({ enabled: true, priceCents: 100, label: '小件', description: '文件、小袋、轻小包裹' }),
+  MEDIUM: Object.freeze({ enabled: true, priceCents: 300, label: '中件', description: '鞋盒、衣物箱、普通纸箱' }),
+  LARGE: Object.freeze({ enabled: true, priceCents: 600, label: '大件', description: '较重或体积较大的包裹' })
+})
+
 const EXPRESS_PICKUP_ITEM_LIMIT = 10
 const EXPRESS_PICKUP_ITEM_PACKAGE_LIMIT = 20
 const EXPRESS_ORDER_PACKAGE_LIMIT = 30
@@ -53,13 +65,17 @@ function normalizeExpressPickupItems(order) {
         pickupCode: order.pickupCode || '',
         packageCount: order.packageCount
       }]
-  return source.map((item, index) => ({
+  return source.map((item, index) => {
+    const normalized = {
     id: String(item.id || `pickup_item_${index + 1}`),
     pickupPointId: String(item.pickupPointId || '').trim(),
     pickupPointNameSnapshot: String(item.pickupPointNameSnapshot || item.pickupPointName || '').trim(),
     pickupCode: String(item.pickupCode || '').trim(),
     packageCount: Number(item.packageCount) || 0
-  }))
+    }
+    if (item.parcelSize !== undefined) normalized.parcelSize = normalizeExpressParcelSize(item.parcelSize)
+    return normalized
+  })
 }
 
 function normalizeLegacyExpressOrder(order) {
@@ -86,6 +102,24 @@ function normalizeExpressPaymentStatus(value) {
   return Object.values(EXPRESS_PAYMENT_STATUS).includes(value) ? value : null
 }
 
+function normalizeExpressParcelSize(value) {
+  return Object.values(EXPRESS_PARCEL_SIZE).includes(value) ? value : null
+}
+
+function normalizeExpressParcelSizePricing(value) {
+  const source = value && typeof value === 'object' ? value : {}
+  return Object.fromEntries(Object.values(EXPRESS_PARCEL_SIZE).map((size) => {
+    const defaults = EXPRESS_DEFAULT_PARCEL_SIZE_PRICING[size]
+    const item = source[size] && typeof source[size] === 'object' ? source[size] : {}
+    return [size, {
+      enabled: item.enabled !== false,
+      priceCents: Math.min(10000, Math.max(0, Number.isFinite(Number(item.priceCents)) ? Number(item.priceCents) : defaults.priceCents)),
+      label: String(item.label || defaults.label).trim().slice(0, 12),
+      description: String(item.description || defaults.description).trim().slice(0, 60)
+    }]
+  }))
+}
+
 function normalizeExpressDeliveryProfileStatus(value) {
   return Object.values(EXPRESS_DELIVERY_PROFILE_STATUS).includes(value) ? value : null
 }
@@ -103,6 +137,10 @@ module.exports = {
   canTransitionExpressOrder,
   normalizeExpressOrderStatus,
   normalizeExpressPaymentStatus,
+  EXPRESS_PARCEL_SIZE,
+  EXPRESS_DEFAULT_PARCEL_SIZE_PRICING,
+  normalizeExpressParcelSize,
+  normalizeExpressParcelSizePricing,
   normalizeExpressDeliveryProfileStatus,
   normalizeExpressPickupItems,
   normalizeLegacyExpressOrder

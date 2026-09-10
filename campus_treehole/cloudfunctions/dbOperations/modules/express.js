@@ -14,9 +14,12 @@ const {
   EXPRESS_PICKUP_ITEM_LIMIT,
   EXPRESS_PICKUP_ITEM_PACKAGE_LIMIT,
   EXPRESS_ORDER_PACKAGE_LIMIT,
+  EXPRESS_PARCEL_SIZE,
   canTransitionExpressOrder,
   normalizeLegacyExpressOrder,
-  normalizeExpressPickupItems
+  normalizeExpressPickupItems,
+  normalizeExpressParcelSize,
+  normalizeExpressParcelSizePricing
 } = require('../domain/express')
 const { STAFF_PERMISSIONS } = require('../domain/staff')
 
@@ -68,7 +71,7 @@ function findConfiguredDeliverySelection(settings, data) {
   return findDeliverySelection(settings, data)
 }
 
-function normalizeExpressPickupInput(data = {}, { allowEmptyCode = false } = {}) {
+function normalizeExpressPickupInput(data = {}, { allowEmptyCode = false, requireParcelSize = false } = {}) {
   const source = Array.isArray(data.pickupItems)
     ? data.pickupItems
     : (data.pickupPointId || data.pickupCode ? [{ pickupPointId: data.pickupPointId, pickupCode: data.pickupCode, packageCount: data.packageCount }] : [])
@@ -82,14 +85,16 @@ function normalizeExpressPickupInput(data = {}, { allowEmptyCode = false } = {})
     const pickupPointId = String(input.pickupPointId || '').trim()
     const pickupCode = String(input.pickupCode || '').trim()
     const packageCount = Number(input.packageCount)
+    const parcelSize = normalizeExpressParcelSize(input.parcelSize)
     if (!pickupPointId || (!pickupCode && !allowEmptyCode)) return { error: '请填写完整的快递点和取件码' }
     if (!Number.isInteger(packageCount) || packageCount < 1 || packageCount > EXPRESS_PICKUP_ITEM_PACKAGE_LIMIT) return { error: `每个取件码件数需为 1-${EXPRESS_PICKUP_ITEM_PACKAGE_LIMIT}` }
+    if (requireParcelSize && !parcelSize) return { error: '请选择包裹规格' }
     const key = `${pickupPointId}\u0000${pickupCode.toUpperCase()}`
     if (seen.has(key)) return { error: '同一快递点的取件码不能重复' }
     seen.add(key)
     totalPackageCount += packageCount
     if (totalPackageCount > EXPRESS_ORDER_PACKAGE_LIMIT) return { error: `一个订单最多 ${EXPRESS_ORDER_PACKAGE_LIMIT} 件包裹` }
-    items.push({ id: String(input.id || `pickup_item_${index + 1}`), pickupPointId, pickupCode, packageCount })
+    items.push({ id: String(input.id || `pickup_item_${index + 1}`), pickupPointId, pickupCode, packageCount, parcelSize })
   }
   return { items, totalPackageCount, pickupItemCount: items.length, pickupPointCount: new Set(items.map((item) => item.pickupPointId)).size }
 }
@@ -98,7 +103,34 @@ function resolveExpressPricing(settings) {
   const baseOrderPriceCents = Math.max(0, Number(settings && settings.baseOrderPriceCents) || 0)
   const perPackagePriceCents = Math.max(0, Number(settings && (settings.perPackagePriceCents ?? settings.basePriceCents)) || 0)
   const extraPickupPointPriceCents = Math.max(0, Number(settings && settings.extraPickupPointPriceCents) || 0)
-  return { pricingMode: String(settings && settings.pricingMode || 'PER_PACKAGE'), baseOrderPriceCents, perPackagePriceCents, extraPickupPointPriceCents }
+  return {
+    pricingMode: String(settings && settings.pricingMode || 'PER_PACKAGE'),
+    baseOrderPriceCents,
+    perPackagePriceCents,
+    extraPickupPointPriceCents,
+    parcelSizePricing: normalizeExpressParcelSizePricing(settings && settings.parcelSizePricing)
+  }
+}
+
+function calculateExpressAmount(normalized, pricing) {
+  const sizeBreakdown = Object.fromEntries(Object.values(EXPRESS_PARCEL_SIZE).map((size) => [size, { count: 0, unitPriceCents: pricing.parcelSizePricing[size].priceCents, subtotalCents: 0 }]))
+  let parcelSubtotalCents = 0
+  if (pricing.pricingMode === 'PARCEL_SIZE') {
+    for (const item of normalized.items) {
+      const parcelSize = normalizeExpressParcelSize(item.parcelSize)
+      const configured = parcelSize && pricing.parcelSizePricing[parcelSize]
+      if (!configured || configured.enabled !== true) return { error: '请选择有效且可用的包裹规格' }
+      const count = Number(item.packageCount) || 0
+      sizeBreakdown[parcelSize].count += count
+      sizeBreakdown[parcelSize].subtotalCents += configured.priceCents * count
+      parcelSubtotalCents += configured.priceCents * count
+    }
+  }
+  const extraPickupPointFee = pricing.extraPickupPointPriceCents * Math.max(0, normalized.pickupPointCount - 1)
+  const additionalFeeCents = pricing.pricingMode === 'PARCEL_SIZE' ? pricing.baseOrderPriceCents + extraPickupPointFee : pricing.baseOrderPriceCents + extraPickupPointFee
+  const legacySubtotal = pricing.perPackagePriceCents * normalized.totalPackageCount
+  const totalPriceCents = pricing.pricingMode === 'PARCEL_SIZE' ? parcelSubtotalCents + additionalFeeCents : legacySubtotal + additionalFeeCents
+  return { parcelSubtotalCents, extraPickupPointFee, additionalFeeCents, totalPriceCents, sizeBreakdown }
 }
 
   function summarizePickupPoints(items) {
@@ -132,7 +164,8 @@ function createExpressModule({ db, _, cloud, helpers = {} }) {
       const result = await db.collection(SETTINGS).doc(campusId).get()
       return result && result.data ? result.data : null
     } catch (err) {
-      return null
+      if (isCollectionNotExistError(err)) return null
+      throw err
     }
   }
 
@@ -162,9 +195,11 @@ function createExpressModule({ db, _, cloud, helpers = {} }) {
       baseOrderPriceCents: Math.max(0, Number(row.baseOrderPriceCents) || 0),
       perPackagePriceCents: Math.max(0, Number(row.perPackagePriceCents ?? row.basePriceCents) || 0),
       extraPickupPointPriceCents: Math.max(0, Number(row.extraPickupPointPriceCents) || 0),
+      parcelSizePricing: normalizeExpressParcelSizePricing(row.parcelSizePricing),
       pickupPoints: points,
       deliveryCampuses: cloneDeliveryCampuses(row.deliveryCampuses),
       notice: row.notice || '',
+      specialParcelNotice: row.specialParcelNotice || '超重、超大、易碎或特殊物品请先联系工作人员确认是否可配送。',
       testPaymentAvailable: testPaymentEnabled()
     }
   }
@@ -411,7 +446,8 @@ function createExpressModule({ db, _, cloud, helpers = {} }) {
     const campusId = resolveCampus(user, data.campusId)
     const settings = await readSettings(campusId)
     if (!settings || settings.acceptingOrders !== true) return fail('当前校区暂未开放快递代拿')
-    const normalized = normalizeExpressPickupInput(data, { allowEmptyCode: !Array.isArray(data.pickupItems) })
+    const pricing = resolveExpressPricing(settings)
+    const normalized = normalizeExpressPickupInput(data, { allowEmptyCode: !Array.isArray(data.pickupItems), requireParcelSize: pricing.pricingMode === 'PARCEL_SIZE' })
     if (normalized.error) return fail(normalized.error)
     const names = new Map()
     for (const item of normalized.items) {
@@ -420,22 +456,24 @@ function createExpressModule({ db, _, cloud, helpers = {} }) {
       if (data.deliveryCampus && point.deliveryCampus && point.deliveryCampus !== data.deliveryCampus) return fail('快递点与配送校区不匹配')
       names.set(item.pickupPointId, point.name)
     }
-    const pricing = resolveExpressPricing(settings)
-    const subtotal = pricing.baseOrderPriceCents + pricing.perPackagePriceCents * normalized.totalPackageCount
-    const extraPickupPointFee = pricing.extraPickupPointPriceCents * Math.max(0, normalized.pickupPointCount - 1)
-    const totalPriceCents = subtotal + extraPickupPointFee
+    const calculated = calculateExpressAmount(normalized, pricing)
+    if (calculated.error) return fail(calculated.error)
+    const subtotal = pricing.pricingMode === 'PARCEL_SIZE' ? calculated.parcelSubtotalCents : pricing.baseOrderPriceCents + pricing.perPackagePriceCents * normalized.totalPackageCount
     return { code: 0, data: {
       totalPackageCount: normalized.totalPackageCount,
       pickupItemCount: normalized.pickupItemCount,
       pickupPointCount: normalized.pickupPointCount,
       subtotal,
-      extraPickupPointFee,
-      totalPriceCents,
+      extraPickupPointFee: calculated.extraPickupPointFee,
+      totalPriceCents: calculated.totalPriceCents,
+      parcelSubtotalCents: calculated.parcelSubtotalCents,
+      additionalFeeCents: calculated.additionalFeeCents,
+      sizeBreakdown: calculated.sizeBreakdown,
       unitPriceCents: pricing.perPackagePriceCents,
       unitPrice: (pricing.perPackagePriceCents / 100).toFixed(2),
-      totalPrice: (totalPriceCents / 100).toFixed(2),
+      totalPrice: (calculated.totalPriceCents / 100).toFixed(2),
       deliveryWindow: settings.deliveryWindow || '',
-      priceBreakdown: { pricingMode: pricing.pricingMode, baseOrderPriceCents: pricing.baseOrderPriceCents, perPackagePriceCents: pricing.perPackagePriceCents, extraPickupPointPriceCents: pricing.extraPickupPointPriceCents, pickupPointNames: Array.from(names.values()) }
+      priceBreakdown: { pricingMode: pricing.pricingMode, baseOrderPriceCents: pricing.baseOrderPriceCents, perPackagePriceCents: pricing.perPackagePriceCents, extraPickupPointPriceCents: pricing.extraPickupPointPriceCents, pickupPointNames: Array.from(names.values()), parcelSizePricing: pricing.parcelSizePricing }
     } }
   }
 
@@ -451,7 +489,8 @@ function createExpressModule({ db, _, cloud, helpers = {} }) {
       pickupPointId: item.pickupPointId,
       pickupPointNameSnapshot: item.pickupPointNameSnapshot,
       pickupCode: item.pickupCode,
-      packageCount: item.packageCount
+      packageCount: item.packageCount,
+      parcelSize: item.parcelSize || null
     }))
   }
 
@@ -472,6 +511,10 @@ function createExpressModule({ db, _, cloud, helpers = {} }) {
       pickupItemCount: Number(order.pickupItemCount) || publicPickupItems(order).length,
       pickupPointCount: Number(order.pickupPointCount) || new Set(publicPickupItems(order).map((item) => item.pickupPointId)).size,
       packageCount: order.packageCount,
+      pricingMode: order.pricingMode || 'PER_PACKAGE',
+      parcelSubtotalCents: Number(order.parcelSubtotalCents) || 0,
+      additionalFeeCents: Number(order.additionalFeeCents) || 0,
+      sizeBreakdown: order.sizeBreakdown || null,
       dormArea: order.dormArea || '',
       dormAreaNameSnapshot: order.dormAreaNameSnapshot || '',
       dormBuilding: order.dormBuilding,
@@ -512,6 +555,10 @@ function createExpressModule({ db, _, cloud, helpers = {} }) {
       pickupPointCount: Number(order.pickupPointCount) || new Set(publicPickupItems(order).map((item) => item.pickupPointId)).size,
       pickupCode: order.pickupCode,
       packageCount: order.packageCount,
+      pricingMode: order.pricingMode || 'PER_PACKAGE',
+      parcelSubtotalCents: Number(order.parcelSubtotalCents) || 0,
+      additionalFeeCents: Number(order.additionalFeeCents) || 0,
+      sizeBreakdown: order.sizeBreakdown || null,
       dormArea: order.dormArea || '',
       dormAreaNameSnapshot: order.dormAreaNameSnapshot || '',
       dormBuilding: order.dormBuilding,
@@ -545,7 +592,8 @@ function createExpressModule({ db, _, cloud, helpers = {} }) {
     const clientRequestId = String(data.clientRequestId || '').trim().slice(0, 100) || crypto.randomUUID()
     const existingResult = await db.collection(ORDERS).where({ userId: userIdOf(user), clientRequestId }).limit(1).get()
     if (existingResult.data && existingResult.data[0]) return { code: 0, data: publicOwnOrder(normalizeLegacyExpressOrder(existingResult.data[0])), idempotent: true }
-    const normalized = normalizeExpressPickupInput(data)
+    const pricing = resolveExpressPricing(settings)
+    const normalized = normalizeExpressPickupInput(data, { requireParcelSize: pricing.pricingMode === 'PARCEL_SIZE' })
     if (normalized.error) return fail(normalized.error)
     let deliveryProfile = null
     let deliveryData = null
@@ -581,13 +629,13 @@ function createExpressModule({ db, _, cloud, helpers = {} }) {
         pickupPointId: point.id,
         pickupPointNameSnapshot: point.name,
         pickupCode: item.pickupCode,
-        packageCount: item.packageCount
+        packageCount: item.packageCount,
+        parcelSize: item.parcelSize || null
       })
     }
-    const pricing = resolveExpressPricing(settings)
-    const subtotal = pricing.baseOrderPriceCents + pricing.perPackagePriceCents * normalized.totalPackageCount
-    const extraPickupPointFee = pricing.extraPickupPointPriceCents * Math.max(0, normalized.pickupPointCount - 1)
-    const amountCents = subtotal + extraPickupPointFee
+    const calculated = calculateExpressAmount(normalized, pricing)
+    if (calculated.error) return fail(calculated.error)
+    const amountCents = calculated.totalPriceCents
     const orderId = makeDeterministicId('express_order', `${userIdOf(user)}:${clientRequestId}`)
     const orderNo = `EXP${new Date().toISOString().replace(/[-:TZ.]/g, '').slice(0, 14)}${crypto.randomBytes(3).toString('hex').toUpperCase()}`
     const recipientName = String((deliveryData && deliveryData.recipientName) || data.recipientName || '').trim().slice(0, 30)
@@ -625,6 +673,10 @@ function createExpressModule({ db, _, cloud, helpers = {} }) {
         totalPackageCount: normalized.totalPackageCount,
         pickupItemCount: normalized.pickupItemCount,
         pickupPointCount: normalized.pickupPointCount,
+        pricingMode: pricing.pricingMode,
+        parcelSubtotalCents: calculated.parcelSubtotalCents,
+        additionalFeeCents: calculated.additionalFeeCents,
+        sizeBreakdown: calculated.sizeBreakdown,
         dormArea: deliverySelection.area.id,
         dormAreaNameSnapshot: deliverySelection.area.name,
         dormBuildingId: deliverySelection.building.id,
@@ -901,9 +953,11 @@ function createExpressModule({ db, _, cloud, helpers = {} }) {
       baseOrderPriceCents: Math.min(10000, Math.max(0, Number(data.baseOrderPriceCents) || 0)),
       perPackagePriceCents: Math.min(10000, Math.max(0, Number(data.perPackagePriceCents ?? basePriceCents) || 0)),
       extraPickupPointPriceCents: Math.min(10000, Math.max(0, Number(data.extraPickupPointPriceCents) || 0)),
+      parcelSizePricing: normalizeExpressParcelSizePricing(data.parcelSizePricing),
       pickupPoints,
       deliveryCampuses: cloneDeliveryCampuses(data.deliveryCampuses),
       notice: String(data.notice || '').trim().slice(0, 200),
+      specialParcelNotice: String(data.specialParcelNotice || '超重、超大、易碎或特殊物品请先联系工作人员确认是否可配送。').trim().slice(0, 200),
       updatedByUserId: auth.capabilities.userId,
       updatedAt: now(),
       smokeRunId: data.smokeRunId || null

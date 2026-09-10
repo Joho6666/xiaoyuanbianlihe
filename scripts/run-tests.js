@@ -36,6 +36,8 @@ const testFiles = [
   path.join(__dirname, '..', 'test', 'regression', 'express-multi-pickup-export.test.js'),
   path.join(__dirname, '..', 'test', 'regression', 'express-multi-pickup-staff.test.js'),
   path.join(__dirname, '..', 'test', 'regression', 'express-screenshot-import.test.js'),
+  path.join(__dirname, '..', 'test', 'regression', 'express-settings-errors.test.js'),
+  path.join(__dirname, '..', 'test', 'regression', 'express-parcel-size.test.js'),
   path.join(__dirname, '..', 'test', 'unit', 'express-pickup-parser.test.js'),
   path.join(__dirname, '..', 'test', 'unit', 'express-pickup-matcher.test.js'),
   path.join(__dirname, '..', 'test', 'regression', 'express-3-7-ui.test.js'),
