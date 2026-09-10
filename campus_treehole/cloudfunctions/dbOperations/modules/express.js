@@ -104,7 +104,7 @@ function resolveExpressPricing(settings) {
   const perPackagePriceCents = Math.max(0, Number(settings && (settings.perPackagePriceCents ?? settings.basePriceCents)) || 0)
   const extraPickupPointPriceCents = Math.max(0, Number(settings && settings.extraPickupPointPriceCents) || 0)
   return {
-    pricingMode: String(settings && settings.pricingMode || 'PER_PACKAGE'),
+    pricingMode: String(settings && settings.pricingMode || 'PER_PACKAGE') === 'PARCEL_SIZE' ? 'PARCEL_SIZE' : 'PER_PACKAGE',
     baseOrderPriceCents,
     perPackagePriceCents,
     extraPickupPointPriceCents,
@@ -127,7 +127,7 @@ function calculateExpressAmount(normalized, pricing) {
     }
   }
   const extraPickupPointFee = pricing.extraPickupPointPriceCents * Math.max(0, normalized.pickupPointCount - 1)
-  const additionalFeeCents = pricing.pricingMode === 'PARCEL_SIZE' ? pricing.baseOrderPriceCents + extraPickupPointFee : pricing.baseOrderPriceCents + extraPickupPointFee
+  const additionalFeeCents = pricing.baseOrderPriceCents + extraPickupPointFee
   const legacySubtotal = pricing.perPackagePriceCents * normalized.totalPackageCount
   const totalPriceCents = pricing.pricingMode === 'PARCEL_SIZE' ? parcelSubtotalCents + additionalFeeCents : legacySubtotal + additionalFeeCents
   return { parcelSubtotalCents, extraPickupPointFee, additionalFeeCents, totalPriceCents, sizeBreakdown }
@@ -841,27 +841,6 @@ function createExpressModule({ db, _, cloud, helpers = {} }) {
     return { code: 0, data: staffOrder({ ...order, ...patch }) }
   }
 
-  async function staffFlagExpressParcelSizeMismatch(openid, data = {}) {
-    const auth = await requireStaff(openid, STAFF_PERMISSIONS.EXPRESS_ORDER_UPDATE, data)
-    if (auth.code !== 0) return auth
-    const order = await readOrder(data.orderId)
-    if (!order || order.campusId !== auth.campusId) return fail('订单不存在', 404)
-    if (order.paymentStatus !== EXPRESS_PAYMENT_STATUS.PAID) return fail('订单尚未支付，不能核验包裹规格')
-    const actualParcelSize = normalizeExpressParcelSize(data.actualParcelSize)
-    if (!actualParcelSize) return fail('请选择有效的实际包裹规格')
-    const items = normalizeExpressPickupItems(order)
-    const itemIndex = items.findIndex((item) => item.id === String(data.itemId || ''))
-    if (itemIndex < 0) return fail('包裹条目不存在', 404)
-    const expectedParcelSize = items[itemIndex].parcelSize || null
-    if (!expectedParcelSize || expectedParcelSize === actualParcelSize) return fail('当前包裹没有规格差异')
-    const checkedAt = now()
-    const updatedItems = items.map((item, index) => index === itemIndex ? { ...item, parcelSizeMismatch: true, expectedParcelSize, actualParcelSize, mismatchStaffUserId: auth.capabilities.userId, mismatchCheckedAt: checkedAt } : item)
-    const patch = { pickupItems: updatedItems, parcelSizeMismatch: true, updatedAt: checkedAt }
-    await db.collection(ORDERS).doc(order._id).update({ data: patch })
-    await staff.writeAudit({ actorUserId: auth.capabilities.userId, action: 'EXPRESS_PARCEL_SIZE_MISMATCH', resourceType: 'express_order', resourceId: order._id, metadata: { itemId: items[itemIndex].id, expectedParcelSize, actualParcelSize, campusId: order.campusId } })
-    return { code: 0, data: staffOrder({ ...order, ...patch }) }
-  }
-
   async function staffBatchUpdateExpressOrderStatus(openid, data = {}) {
     const ids = Array.isArray(data.orderIds) ? Array.from(new Set(data.orderIds.map(String))).slice(0, 50) : []
     if (!ids.length) return fail('请选择订单')
@@ -880,15 +859,22 @@ function createExpressModule({ db, _, cloud, helpers = {} }) {
     if (!order || order.campusId !== auth.campusId) return fail('订单不存在', 404)
     const actualParcelSize = normalizeExpressParcelSize(data.actualParcelSize)
     if (!actualParcelSize) return fail('请选择实际包裹规格')
-    const expectedParcelSize = normalizeExpressParcelSize(data.expectedParcelSize) || (order.pickupItems && order.pickupItems[0] && order.pickupItems[0].parcelSize) || 'SMALL'
+    const items = normalizeExpressPickupItems(order)
+    const item = data.itemId ? items.find((candidate) => candidate.id === String(data.itemId)) : items[0]
+    const expectedParcelSize = item && item.parcelSize
+    if (!expectedParcelSize) return fail('该订单未记录包裹规格')
+    if (expectedParcelSize === actualParcelSize) return fail('实际规格与下单规格一致')
+    const checkedAt = now()
+    const updatedItems = items.map((candidate) => candidate.id === item.id ? { ...candidate, parcelSizeMismatch: true, expectedParcelSize, actualParcelSize, mismatchStaffUserId: auth.capabilities.userId, mismatchCheckedAt: checkedAt } : candidate)
     const patch = {
+      pickupItems: updatedItems,
       parcelSizeMismatch: true,
       expectedParcelSize,
       actualParcelSize,
       mismatchStaffUserId: auth.capabilities.userId,
-      mismatchCheckedAt: now(),
+      mismatchCheckedAt: checkedAt,
       mismatchNote: String(data.note || '').trim().slice(0, 100),
-      updatedAt: now()
+      updatedAt: checkedAt
     }
     await db.collection(ORDERS).doc(order._id).update({ data: patch })
     await staff.writeAudit({
@@ -995,6 +981,8 @@ function createExpressModule({ db, _, cloud, helpers = {} }) {
     const campusId = auth.campusId
     const basePriceCents = Number(data.basePriceCents)
     if (!Number.isInteger(basePriceCents) || basePriceCents < 0 || basePriceCents > 10000) return fail('基础价格无效')
+    const pricingMode = String(data.pricingMode || 'PER_PACKAGE').trim().toUpperCase()
+    if (!['PER_PACKAGE', 'PARCEL_SIZE'].includes(pricingMode)) return fail('计价模式无效')
     const pickupPoints = Array.isArray(data.pickupPoints) ? data.pickupPoints.slice(0, 20).map((point, index) => ({
       id: String(point.id || `point_${index + 1}`).trim().slice(0, 40),
       name: String(point.name || '').trim().slice(0, 40),
@@ -1016,7 +1004,7 @@ function createExpressModule({ db, _, cloud, helpers = {} }) {
       deliveryWindow: String(data.deliveryWindow || '').trim().slice(0, 60),
       paymentExpireMinutes: Math.min(1440, Math.max(5, Number(data.paymentExpireMinutes) || 30)),
       basePriceCents,
-      pricingMode: String(data.pricingMode || 'PER_PACKAGE').trim().slice(0, 30) || 'PER_PACKAGE',
+      pricingMode,
       baseOrderPriceCents: Math.min(10000, Math.max(0, Number(data.baseOrderPriceCents) || 0)),
       perPackagePriceCents: Math.min(10000, Math.max(0, Number(data.perPackagePriceCents ?? basePriceCents) || 0)),
       extraPickupPointPriceCents: Math.min(10000, Math.max(0, Number(data.extraPickupPointPriceCents) || 0)),
@@ -1058,7 +1046,6 @@ function createExpressModule({ db, _, cloud, helpers = {} }) {
     staffGetExpressOrderDetail,
     staffUpdateExpressOrderStatus,
     staffBatchUpdateExpressOrderStatus,
-    staffFlagExpressParcelSizeMismatch,
     staffRecordExpressParcelMismatch,
     staffExportExpressOrders,
     ownerUpdateExpressSettings,
@@ -1085,7 +1072,6 @@ module.exports.ACTION_NAMES = [
   'staffGetExpressOrderDetail',
   'staffUpdateExpressOrderStatus',
   'staffBatchUpdateExpressOrderStatus',
-  'staffFlagExpressParcelSizeMismatch',
   'staffRecordExpressParcelMismatch',
   'staffExportExpressOrders',
   'ownerUpdateExpressSettings',

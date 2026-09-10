@@ -22,16 +22,19 @@ const decorate = (row) => {
 }
 
 Page({
-  data: { order: null, capabilities: {} },
+  data: { order: null, capabilities: {}, parcelSizeOptions: [] },
   onLoad(options) { this.orderId = options.orderId; this.load() },
   onBack() { wx.navigateBack() },
   async load() {
     try {
-      const [caps, order] = await Promise.all([
+      const [caps, order, config] = await Promise.all([
         app.callDB('getMyStaffCapabilities', {}),
-        app.callDB('staffGetExpressOrderDetail', { orderId: this.orderId })
+        app.callDB('staffGetExpressOrderDetail', { orderId: this.orderId }),
+        app.callDB('getExpressServiceConfig', {})
       ])
-      this.setData({ capabilities: caps.data, order: decorate(order.data) })
+      const pricing = config.data && config.data.parcelSizePricing || {}
+      const parcelSizeOptions = ['SMALL', 'MEDIUM', 'LARGE'].map((size) => ({ size, label: `${pricing[size] && pricing[size].label || PARCEL_SIZE_LABELS[size]} (¥${((pricing[size] && pricing[size].priceCents || 0) / 100).toFixed(0)})` }))
+      this.setData({ capabilities: caps.data, order: decorate(order.data), parcelSizeOptions })
     } catch (e) {
       wx.showToast({ title: e.msg || '无权限', icon: 'none' })
     }
@@ -48,11 +51,7 @@ Page({
     }
   },
   onReportMismatch() {
-    const options = [
-      { size: 'SMALL', label: '实际为小件 (¥1)' },
-      { size: 'MEDIUM', label: '实际为中件 (¥3)' },
-      { size: 'LARGE', label: '实际为大件 (¥6)' }
-    ]
+    const options = this.data.parcelSizeOptions
     wx.showActionSheet({
       itemList: options.map((opt) => opt.label),
       success: async (res) => {
