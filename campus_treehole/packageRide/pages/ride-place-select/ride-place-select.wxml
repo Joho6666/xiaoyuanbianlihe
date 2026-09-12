@@ -1,0 +1,48 @@
+<view class="place-select">
+  <view class="search-bar">
+    <input
+      class="search-input"
+      placeholder="搜索地点、车站、学校、商场"
+      value="{{keyword}}"
+      focus
+      confirm-type="search"
+      bindinput="onKeywordInput"
+      bindconfirm="onSearchConfirm"
+    />
+  </view>
+
+  <scroll-view scroll-x class="cat-scroll">
+    <view class="cat-row">
+      <view
+        wx:for="{{categories}}"
+        wx:key="id"
+        class="cat-chip {{currentCategory === item.id ? 'cat-active' : ''}}"
+        data-id="{{item.id}}"
+        bindtap="onCategoryTap"
+      >{{item.name}}</view>
+    </view>
+  </scroll-view>
+
+  <view class="place-list">
+    <view
+      wx:for="{{places}}"
+      wx:key="poiId"
+      class="place-item"
+      data-place="{{item}}"
+      bindtap="onPick"
+    >
+      <view class="place-marker">📍</view>
+      <view class="place-main">
+        <view class="place-name">{{item.name}}</view>
+        <view class="place-address">{{item.address}}</view>
+      </view>
+    </view>
+
+    <empty-state
+      wx:if="{{!places.length && !loading}}"
+      icon="📍"
+      title="没有找到地点"
+      description="换个关键词试试"
+    />
+  </view>
+</view>

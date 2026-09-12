@@ -1,0 +1,5 @@
+{
+  "navigationBarTitleText": "推荐同行",
+  "enablePullDownRefresh": true,
+  "usingComponents": {"empty-state": "/components/empty-state/empty-state"}
+}

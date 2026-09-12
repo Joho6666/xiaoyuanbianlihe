@@ -1,0 +1,67 @@
+<view class="publish-page">
+  <view class="field-card card">
+    <view class="field-label">从哪里出发</view>
+    <view class="place-cell" data-field="origin" bindtap="openPlacePicker">
+      <text class="place-icon start">📍</text>
+      <text class="place-value {{origin ? '' : 'placeholder'}}">{{origin ? origin.name : '桂林航天工业学院（南校门）'}}</text>
+      <text class="cell-arrow">›</text>
+    </view>
+    <view class="divider" />
+    <view class="field-label">要去哪里</view>
+    <view class="place-cell" data-field="destination" bindtap="openPlacePicker">
+      <text class="place-icon dest">🏁</text>
+      <text class="place-value {{destination ? '' : 'placeholder'}}">{{destination ? destination.name : '选择目的地'}}</text>
+      <text class="cell-arrow">›</text>
+    </view>
+  </view>
+
+  <view class="field-card card">
+    <view class="field-label">出发方式</view>
+    <view class="mode-row">
+      <button class="mode-btn {{departureMode === 'NOW' ? 'active' : ''}}" data-mode="NOW" bindtap="switchMode">现在出发</button>
+      <button class="mode-btn {{departureMode === 'SCHEDULED' ? 'active' : ''}}" data-mode="SCHEDULED" bindtap="switchMode">预约时间</button>
+    </view>
+
+    <block wx:if="{{departureMode === 'SCHEDULED'}}">
+      <view class="schedule-row">
+        <picker mode="date" start="{{minDate}}" value="{{scheduleDate}}" bindchange="onDateChange">
+          <view class="schedule-picker">{{scheduleDate || '选择日期'}} 📅</view>
+        </picker>
+        <picker mode="time" value="{{scheduleTime}}" bindchange="onTimeChange">
+          <view class="schedule-picker">{{scheduleTime || '选择时间'}} ⏰</view>
+        </picker>
+      </view>
+      <view class="field-label small">时间可浮动</view>
+      <view class="flex-row gap-sm">
+        <view
+          wx:for="{{flexibleOptions}}"
+          wx:key="*this"
+          class="chip {{flexibleMinutes === item ? 'chip-active' : ''}}"
+          data-value="{{item}}"
+          bindtap="pickFlexible"
+        >±{{item}}分钟</view>
+      </view>
+    </block>
+  </view>
+
+  <view class="field-card card">
+    <view class="field-label">预计同行人数</view>
+    <view class="stepper-row">
+      <button class="stepper-btn" bindtap="decPeople">−</button>
+      <text class="stepper-value">{{maxPeople}}人</text>
+      <button class="stepper-btn" bindtap="incPeople">+</button>
+    </view>
+
+    <view class="field-label small">备注（可选）</view>
+    <textarea
+      class="note-input"
+      value="{{note}}"
+      maxlength="{{noteMaxLength}}"
+      placeholder="例如：高铁19:40，最好18:30左右走"
+      bindinput="onNoteInput"
+    />
+    <view class="note-count">{{note.length}}/{{noteMaxLength}}</view>
+  </view>
+
+  <button class="submit-btn btn-primary" bindtap="onSubmit">发布行程</button>
+</view>

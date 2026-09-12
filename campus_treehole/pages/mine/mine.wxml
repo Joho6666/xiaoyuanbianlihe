@@ -261,6 +261,13 @@
   </view>
 
   <view class="menu-section">
+    <view class="menu-item" bindtap="onMenuTap" data-page="myRides">
+      <view class="menu-left">
+        <view class="menu-icon-wrap menu-icon-secondary"><image class="menu-icon" src="/images/icon_location.png" mode="aspectFit"></image></view>
+        <text class="menu-name">我的拼车</text>
+      </view>
+      <image class="menu-arrow" src="/images/icon_arrow.png" mode="aspectFit"></image>
+    </view>
     <view class="menu-item" bindtap="onMenuTap" data-page="referral">
       <view class="menu-left">
         <view class="menu-icon-wrap menu-icon-primary"><image class="menu-icon" src="/images/icon_share.png" mode="aspectFit"></image></view>

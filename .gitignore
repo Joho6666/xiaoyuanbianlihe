@@ -34,3 +34,6 @@ campus_treehole/cloudbaserc.json
 # Local submodules / cookbooks
 cookbook/
 
+
+# Security scanner workspace artifacts
+.mimosa/

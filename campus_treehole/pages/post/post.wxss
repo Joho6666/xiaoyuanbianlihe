@@ -503,3 +503,38 @@
   color: var(--error) !important;
   background-color: rgba(168, 56, 54, 0.1) !important;
 }
+
+/* 拼车发布入口条 */
+.ride-entry {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  margin: 16rpx 24rpx;
+  padding: 24rpx 28rpx;
+  background: var(--primary-container);
+  border-radius: 24rpx;
+}
+
+.ride-entry-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.ride-entry-title {
+  font-size: 28rpx;
+  font-weight: 700;
+  color: var(--on-primary-container);
+}
+
+.ride-entry-desc {
+  font-size: 22rpx;
+  color: var(--on-primary-container);
+  opacity: 0.8;
+  margin-top: 6rpx;
+}
+
+.ride-entry-arrow {
+  color: var(--on-primary-container);
+  font-size: 32rpx;
+}

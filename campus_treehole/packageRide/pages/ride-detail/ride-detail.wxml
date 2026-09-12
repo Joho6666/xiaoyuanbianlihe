@@ -1,0 +1,100 @@
+<view class="detail-page" wx:if="{{ride}}">
+  <view class="author-card card">
+    <image class="avatar" src="{{ride.author.avatarUrl}}" mode="aspectFill" />
+    <view class="author-main">
+      <view class="author-name">{{ride.author.nickName}}</view>
+      <view class="author-meta">{{ride.isAuthor ? '我发布的行程' : '拼车发起人'}}</view>
+    </view>
+    <text class="status-chip status-{{ride.status}}">{{statusLabel}}</text>
+  </view>
+
+  <view class="route-card card">
+    <view class="route-row">
+      <view class="route-dot start" />
+      <text class="route-name">{{ride.origin.name}}</text>
+    </view>
+    <view class="route-line" />
+    <view class="route-row">
+      <view class="route-dot dest" />
+      <text class="route-name">{{ride.destination.name}}</text>
+    </view>
+    <map
+      wx:if="{{markers.length}}"
+      class="mini-map"
+      latitude="{{mapCenter.latitude}}"
+      longitude="{{mapCenter.longitude}}"
+      markers="{{markers}}"
+      include-points="{{markers}}"
+      show-location="{{false}}"
+      enable-zoom="{{false}}"
+      enable-scroll="{{false}}"
+    />
+  </view>
+
+  <view class="info-card card">
+    <view class="info-row">
+      <text class="info-label">出发方式</text>
+      <text class="info-value">{{ride.departureMode === 'NOW' ? '现在出发' : '预约出行'}}</text>
+    </view>
+    <view class="info-row">
+      <text class="info-label">出发时间</text>
+      <text class="info-value">{{timeText}}</text>
+    </view>
+    <view class="info-row">
+      <text class="info-label">可浮动时间</text>
+      <text class="info-value">{{flexText}}</text>
+    </view>
+    <view class="info-row">
+      <text class="info-label">当前人数</text>
+      <text class="info-value">{{ride.currentPeople}} / {{ride.maxPeople}} 人</text>
+    </view>
+    <view class="info-row" wx:if="{{ride.note}}">
+      <text class="info-label">备注</text>
+      <text class="info-value">{{ride.note}}</text>
+    </view>
+  </view>
+
+  <view class="members-card card">
+    <view class="members-title">同行成员（{{ride.members.length}}）</view>
+    <view class="member-row">
+      <view
+        wx:for="{{ride.members}}"
+        wx:key="memberId"
+        class="member-item"
+        data-targetuserid="{{item.memberId}}"
+        data-name="{{item.memberSnapshot.nickName}}"
+        bindtap="onContact"
+      >
+        <image class="member-avatar" src="{{item.memberSnapshot.avatarUrl || '/images/avatar_default.png'}}" mode="aspectFill" />
+        <text class="member-name">{{item.memberSnapshot.nickName}}{{item.role === 'author' ? '（发起人）' : ''}}</text>
+        <text class="member-chat">私信</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="action-bar safe-bottom">
+    <block wx:if="{{ride.isAuthor}}">
+      <button class="action-btn ghost" bindtap="onViewRequests">申请管理</button>
+      <button class="action-btn ghost" wx:if="{{ride.status === 'OPEN' || ride.status === 'FULL'}}" bindtap="onCancelRide">取消行程</button>
+      <button class="action-btn primary" wx:if="{{ride.status === 'OPEN' || ride.status === 'FULL'}}" bindtap="onDepart">已出发</button>
+      <button class="action-btn primary" wx:if="{{ride.status === 'DEPARTED'}}" bindtap="onComplete">完成行程</button>
+    </block>
+    <block wx:else>
+      <button class="action-btn ghost" bindtap="onReport">举报</button>
+      <block wx:if="{{ride.myRequest && ride.myRequest.status === 'PENDING'}}">
+        <button class="action-btn ghost" bindtap="onCancelApply">撤销申请</button>
+        <button class="action-btn disabled" disabled>等待发起人确认</button>
+      </block>
+      <block wx:elif="{{ride.isMember}}">
+        <button class="action-btn ghost" wx:if="{{ride.status === 'OPEN' || ride.status === 'FULL'}}" bindtap="onLeave">退出行程</button>
+        <button class="action-btn disabled" disabled>已是成员</button>
+      </block>
+      <block wx:elif="{{ride.status === 'OPEN'}}">
+        <button class="action-btn primary {{applying ? 'disabled' : ''}}" bindtap="onApply">申请加入</button>
+      </block>
+      <button wx:else class="action-btn disabled" disabled>{{statusLabel}}</button>
+    </block>
+  </view>
+
+  <view class="safety-note">校园便利盒仅提供同行信息匹配，不提供车辆运输服务。请使用正规出租车、网约车或公共交通工具出行，车费请同行人员自行协商 AA。</view>
+</view>

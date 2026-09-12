@@ -85,6 +85,17 @@ Page({
     })
   },
 
+  // 2.5 进入拼车同行 (ride 分包)
+  goToRide() {
+    wx.navigateTo({
+      url: '/packageRide/pages/ride-home/ride-home',
+      fail: (err) => {
+        console.error('跳转拼车失败:', err)
+        wx.showToast({ title: '拼车功能加载失败', icon: 'none' })
+      }
+    })
+  },
+
   // 3. 返回首页树洞
   goToTreehole() {
     wx.switchTab({

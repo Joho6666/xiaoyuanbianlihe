@@ -1,0 +1,70 @@
+<view class="square-page">
+  <view class="search-bar">
+    <input
+      class="search-input"
+      placeholder="搜索目的地，如：桂林北站"
+      value="{{keyword}}"
+      confirm-type="search"
+      bindinput="onKeywordInput"
+      bindconfirm="onSearchConfirm"
+    />
+  </view>
+
+  <view class="tabs">
+    <view
+      wx:for="{{tabs}}"
+      wx:key="id"
+      class="tab {{currentTab === item.id ? 'tab-active' : ''}}"
+      data-id="{{item.id}}"
+      bindtap="onTabTap"
+    >{{item.name}}</view>
+  </view>
+
+  <view class="ride-list">
+    <view class="ride-card card" wx:for="{{list}}" wx:key="id" data-id="{{item.id}}" bindtap="onRideTap">
+      <view class="ride-head">
+        <image class="avatar" src="{{item.authorAvatar}}" mode="aspectFill" />
+        <view class="head-main">
+          <view class="author-name">{{item.authorName}}</view>
+          <view class="publish-time">{{item.timeAgo}}发布</view>
+        </view>
+        <text class="tag {{item.departLabel === '现在出发' ? 'tag-now' : ''}}">{{item.departLabel}}</text>
+      </view>
+
+      <view class="route">
+        <view class="route-line">
+          <view class="dot start" />
+          <text class="route-name">{{item.originName}}</text>
+        </view>
+        <view class="route-arrow">→</view>
+        <view class="route-line">
+          <view class="dot dest" />
+          <text class="route-name">{{item.destinationName}}</text>
+        </view>
+      </view>
+
+      <view class="ride-meta">
+        <text class="meta-time">🕐 {{item.timeText}}</text>
+        <text class="meta-flex">{{item.flexLabel}}</text>
+      </view>
+      <view class="ride-meta">
+        <text class="meta-people">👥 {{item.peopleText}}人</text>
+      </view>
+
+      <button class="apply-btn {{item.applied ? 'applied' : ''}}" data-id="{{item.id}}" catchtap="onApplyTap" disabled="{{item.applied}}">{{item.applied ? '已申请' : '申请加入'}}</button>
+    </view>
+
+    <empty-state
+      wx:if="{{!list.length && !loading}}"
+      icon="🚗"
+      title="暂无行程"
+      description="换个时间看看，或发布一条行程"
+    />
+
+    <view class="load-more" wx:if="{{loading}}">加载中…</view>
+    <view class="load-more" wx:elif="{{list.length && !hasMore}}">没有更多了</view>
+  </view>
+
+  <view class="fab" bindtap="goPublish">+</view>
+  <view class="safety-note safe-bottom">校园便利盒仅提供同行信息匹配，不提供车辆运输服务。</view>
+</view>

@@ -5,6 +5,9 @@ const conversation = require('./conversation')
 const buddy = require('./buddy')
 const language = require('./language')
 const mutual = require('./mutual')
+const ride = require('./ride')
+const ridePlaces = require('./ride-places')
+const rideMatching = require('./ride-matching')
 
 module.exports = {
   ...user,
@@ -12,5 +15,8 @@ module.exports = {
   ...conversation,
   ...buddy,
   ...language,
-  ...mutual
+  ...mutual,
+  ...ride,
+  ...ridePlaces,
+  ...rideMatching
 }

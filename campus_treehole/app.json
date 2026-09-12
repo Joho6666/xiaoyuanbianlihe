@@ -85,6 +85,20 @@
         "pages/staff-settings/staff-settings",
         "pages/staff-management/staff-management"
       ]
+    },
+    {
+      "root": "packageRide",
+      "name": "packageRide",
+      "pages": [
+        "pages/ride-home/ride-home",
+        "pages/ride-publish/ride-publish",
+        "pages/ride-square/ride-square",
+        "pages/ride-place-select/ride-place-select",
+        "pages/ride-matches/ride-matches",
+        "pages/ride-detail/ride-detail",
+        "pages/ride-requests/ride-requests",
+        "pages/my-rides/my-rides"
+      ]
     }
   ],
   "window": {

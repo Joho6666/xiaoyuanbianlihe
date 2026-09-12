@@ -9,6 +9,7 @@
     <view class="discover-card mutual" bindtap="onOpenMutual"><image class="card-icon" src="/images/services/mutual.svg" mode="aspectFit" /><text class="card-title">校园互助</text><text class="card-desc">发起或回应一份求助</text></view>
     <view class="discover-card lost" bindtap="onOpenLost"><image class="card-icon" src="/images/services/lost.svg" mode="aspectFit" /><text class="card-title">失物招领</text><text class="card-desc">让物品尽快回到主人身边</text></view>
     <view class="discover-card events" bindtap="goToEvents"><image class="card-icon" src="/images/services/events.svg" mode="aspectFit" /><text class="card-title">校园活动</text><text class="card-desc">查看正在报名的真实活动</text></view>
+    <view class="discover-card ride" bindtap="goToRide"><image class="card-icon" src="/images/services/more.svg" mode="aspectFit" /><text class="card-title">拼车同行</text><text class="card-desc">找同路校友一起出发</text></view>
     <view class="discover-card treehole" bindtap="goToTreehole"><image class="card-icon" src="/images/services/more.svg" mode="aspectFit" /><text class="card-title">校园动态</text><text class="card-desc">回到帖子流看看大家在聊什么</text></view>
   </view>
   <view class="discover-footer">服务内容随学校开放范围而变化</view>
