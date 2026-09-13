@@ -6,6 +6,14 @@
     <text class="chat-user-tip">查看主页</text>
   </view>
   <view class="chat-context" wx:if="{{businessContext}}"><text class="chat-context-label">{{businessContext}}</text><text class="chat-context-copy">围绕具体事情，礼貌沟通</text></view>
+  <view class="ride-context" wx:if="{{rideContext}}" bindtap="onRideContextTap">
+    <text class="ride-context-icon">🚗</text>
+    <view class="ride-context-main">
+      <text class="ride-context-route">{{rideContext.routeText}}</text>
+      <text class="ride-context-time">{{rideContext.timeText}} · 拼车同行</text>
+    </view>
+    <text class="ride-context-arrow">›</text>
+  </view>
 
   <view class="chat-status-bar" wx:if="{{composerStatus}}">
     <text>{{composerStatus}}</text>

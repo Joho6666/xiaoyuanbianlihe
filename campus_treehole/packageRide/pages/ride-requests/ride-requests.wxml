@@ -1,0 +1,45 @@
+<view class="requests-page">
+  <view class="tabs">
+    <view class="tab {{currentTab === 'received' ? 'tab-active' : ''}}" data-id="received" bindtap="onTabTap">收到的申请</view>
+    <view class="tab {{currentTab === 'sent' ? 'tab-active' : ''}}" data-id="sent" bindtap="onTabTap">我发出的</view>
+  </view>
+
+  <view class="request-list">
+    <view class="request-card card" wx:for="{{list}}" wx:key="_id" data-rideid="{{item.ride.id}}" bindtap="onRideTap">
+      <view class="request-head">
+        <block wx:if="{{currentTab === 'received'}}">
+          <image class="avatar" src="{{item.requesterSnapshot.avatarUrl || '/images/avatar_default.png'}}" mode="aspectFill" />
+          <view class="head-main">
+            <view class="request-name">{{item.requesterSnapshot.nickName}}</view>
+            <view class="request-sub">想加入你的行程</view>
+          </view>
+        </block>
+        <block wx:else>
+          <view class="head-main">
+            <view class="request-name">{{item.ride ? item.ride.routeText : '行程已删除'}}</view>
+            <view class="request-sub">{{item.timeText}}</view>
+          </view>
+        </block>
+        <text class="req-status req-{{item.status}}">{{item.statusLabel}}</text>
+      </view>
+
+      <view class="request-route" wx:if="{{currentTab === 'received' && item.ride}}">
+        <text>{{item.ride.routeText}}</text>
+        <text class="request-time"> · {{item.timeText}}</text>
+      </view>
+
+      <view class="request-actions" wx:if="{{currentTab === 'received' && item.isPending}}" catchtap="">
+        <button class="req-btn ghost" data-requestid="{{item._id}}" data-name="{{item.requesterSnapshot.nickName}}" catchtap="onReject">拒绝</button>
+        <button class="req-btn primary" data-requestid="{{item._id}}" data-name="{{item.requesterSnapshot.nickName}}" catchtap="onAccept">接受</button>
+      </view>
+    </view>
+
+    <empty-state
+      wx:if="{{!list.length && !loading}}"
+      icon="📨"
+      title="{{currentTab === 'received' ? '暂无收到的申请' : '还没有发出申请'}}"
+      description="{{currentTab === 'received' ? '发布行程后，申请会出现在这里' : '去广场看看有没有顺路的行程'}}"
+    />
+    <view class="load-more" wx:if="{{loading}}">加载中…</view>
+  </view>
+</view>

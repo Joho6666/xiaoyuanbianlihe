@@ -706,6 +706,24 @@ Page({
     wx.navigateTo({ url: '/packageEvents/pages/activity/activity' })
   },
 
+  // 拼车同行入口（ride 分包）
+  onOpenRide() {
+    if (!app.globalData.isLoggedIn) {
+      wx.showToast({ title: '请先登录', icon: 'none' })
+      return
+    }
+    if (!app.ensureComplianceOnTabShow({ mode: 'browse' })) return
+    if (!app.hasSelectedCampusInStorage()) {
+      wx.showToast({ title: '请先选择校区', icon: 'none' })
+      this.setData({
+        showCampusPicker: true,
+        campusPickerList: campuses.filterCampusesByQuery(this.data.campusQuery || '')
+      })
+      return
+    }
+    wx.navigateTo({ url: '/packageRide/pages/ride-home/ride-home' })
+  },
+
   _openService(url) {
     if (!app.globalData.isLoggedIn) {
       wx.showToast({ title: '请先登录', icon: 'none' })

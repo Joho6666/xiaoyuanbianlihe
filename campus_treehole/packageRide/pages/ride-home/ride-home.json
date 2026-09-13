@@ -1,0 +1,4 @@
+{
+  "navigationBarTitleText": "拼车同行",
+  "usingComponents": {"empty-state": "/components/empty-state/empty-state"}
+}

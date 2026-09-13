@@ -142,6 +142,38 @@ function getBuddiesModule() {
 
 const createBridgeModule = require('./modules/bridge')
 const createCampusNowModule = require('./modules/campus-now')
+const createRideModule = require('./modules/ride')
+let rideModuleInstance = null
+function getRideModule() {
+  if (!rideModuleInstance) {
+    rideModuleInstance = createRideModule({
+      db,
+      _,
+      cloud,
+      helpers: {
+        getUserForAction,
+        checkRateLimit,
+        checkBannedWords,
+        wxTextCheck,
+        isCollectionNotExistError,
+        ensureCollection,
+        campusWhereClause: (cid) => sharedCampusWhereClause(_, cid),
+        resolveCampusIdForRead,
+        DEFAULT_CAMPUS_ID,
+        escapeRegExp,
+        findAuthorsHiddenByBlockRelation: (a, ids) => getSafetyModule().findAuthorsHiddenByBlockRelation(a, ids),
+        viewerBlockedByAuthor: (a, b) => getSafetyModule().viewerBlockedByAuthor(a, b),
+        conversationBlocked: (a, b) => getSafetyModule().conversationBlocked(a, b),
+        addNotification,
+        triggerSubscribeNotify,
+        makeDeterministicId,
+        grantForOpenids: (a, b, type, sourceId) => getContactsModule().grantForOpenids(a, b, type, sourceId)
+      }
+    })
+  }
+  return rideModuleInstance
+}
+
 let bridgeModuleInstance = null
 function getCampusNowModule() {
   if (!_campusNowModule) {
@@ -416,7 +448,11 @@ const PUBLIC_READ_ACTIONS = new Set([
   'getActivityZone',
   'getCampusNowSummary',
   'getExpressServiceConfig',
-  'getExpressQuote'
+  'getExpressQuote',
+  'getRideSquare',
+  'getRideById',
+  'getRidePlaces',
+  'searchRidePlaces'
 ])
 
 async function checkAdmin(openid) {
@@ -424,19 +460,15 @@ async function checkAdmin(openid) {
   return res.data.length > 0
 }
 
-async function checkRateLimit(openid, collection, minutes, maxCount) {
-  const timeAgo = new Date(Date.now() - minutes * 60 * 1000)
-  try {
-    const res = await db.collection(collection).where({
-      _openid: openid,
-      createTime: _.gte(timeAgo)
-    }).count()
-    return res.total < maxCount
-  } catch (err) {
-    if (isCollectionNotExistError(err)) return true
-    console.error('[checkRateLimit] 频率检查异常，按已达上限处理:', err)
-    return false
-  }
+const { createRateLimiter } = require('./shared/rate-limit')
+let rateLimiterInstance = null
+function getRateLimiter() {
+  if (!rateLimiterInstance) rateLimiterInstance = createRateLimiter({ db, _ })
+  return rateLimiterInstance
+}
+
+async function checkRateLimit(openid, collection, minutes, maxCount, field) {
+  return getRateLimiter().check(openid, collection, minutes, maxCount, field)
 }
 
 async function getUserForAction(openid, { requireActive = true } = {}) {
@@ -932,6 +964,36 @@ exports.main = async (event, context) => {
         return await getMutualModule().updateMutualPostStatus(openid, data)
       case 'deleteMutualPost':
         return await getMutualModule().deleteMutualPost(openid, data.id)
+
+      // ===== 拼车同行相关 (modules/ride.js) =====
+      case 'publishRide':
+        return await getRideModule().publishRide(openid, data)
+      case 'getRideSquare':
+        return await getRideModule().getRideSquare({ ...data, currentOpenid: openid })
+      case 'getRideById':
+        return await getRideModule().getRideById({ ...data, openid })
+      case 'getRidePlaces':
+        return await getRideModule().getRidePlaces(data)
+      case 'searchRidePlaces':
+        return await getRideModule().searchRidePlaces(data)
+      case 'getRideMatches':
+        return await getRideModule().getRideMatches({ ...data, openid })
+      case 'applyRideJoin':
+        return await getRideModule().applyRideJoin(openid, data)
+      case 'cancelRideJoin':
+        return await getRideModule().cancelRideJoin(openid, data)
+      case 'reviewRideJoin':
+        return await getRideModule().reviewRideJoin(openid, data)
+      case 'leaveRide':
+        return await getRideModule().leaveRide(openid, data)
+      case 'updateRideStatus':
+        return await getRideModule().updateRideStatus(openid, data)
+      case 'startRideContact':
+        return await getRideModule().startRideContact(openid, data)
+      case 'getMyRides':
+        return await getRideModule().getMyRides(openid, data)
+      case 'getRideRequests':
+        return await getRideModule().getRideRequests(openid, data)
 
       default:
         return { code: -1, msg: `未知操作: ${action}` }

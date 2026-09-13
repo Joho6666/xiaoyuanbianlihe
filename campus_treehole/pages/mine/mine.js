@@ -619,6 +619,8 @@ Page({
       wx.navigateTo({ url: '/packageExpress/pages/orders/orders' })
     } else if (page === 'expressProfiles') {
       wx.navigateTo({ url: '/packageExpress/pages/delivery-profiles/delivery-profiles' })
+    } else if (page === 'myRides') {
+      wx.navigateTo({ url: '/packageRide/pages/my-rides/my-rides' })
     }
   },
 
