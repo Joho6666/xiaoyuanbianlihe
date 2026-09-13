@@ -1,6 +1,7 @@
 // packageRide/pages/ride-place-select/ride-place-select.js - 拼车地点选择
 // 服务端 searchRidePlaces：配置 TENCENT_LBS_KEY 走腾讯 POI，否则预置目录
 const app = getApp()
+const { nearestRidePlaces } = require('../../../utils/domain/ride-places')
 
 Page({
   data: {
@@ -9,7 +10,9 @@ Page({
     categories: [],
     currentCategory: 'all',
     places: [],
-    loading: false
+    loading: false,
+    locating: false,
+    locError: ''
   },
 
   onLoad(options = {}) {
@@ -39,11 +42,18 @@ Page({
     }
   },
 
+  // §13: 400ms debounce 防抖搜索
   onKeywordInput(e) {
-    this.setData({ keyword: e.detail.value })
+    const keyword = e.detail.value
+    this.setData({ keyword })
+    if (this._debounceTimer) clearTimeout(this._debounceTimer)
+    this._debounceTimer = setTimeout(() => {
+      this.search()
+    }, 400)
   },
 
   onSearchConfirm() {
+    if (this._debounceTimer) clearTimeout(this._debounceTimer)
     this.search()
   },
 
@@ -70,6 +80,33 @@ Page({
     } finally {
       this.setData({ loading: false })
     }
+  },
+
+  // §12: 主动定位 - 获取当前位置并计算离我最近的常用上车点
+  onUseCurrentLocation() {
+    this.setData({ locating: true, locError: '' })
+    wx.getLocation({
+      type: 'gcj02',
+      success: (res) => {
+        const nearest = nearestRidePlaces(res.latitude, res.longitude, 6)
+        if (nearest && nearest.length) {
+          this.setData({
+            places: nearest,
+            currentCategory: 'nearby',
+            locating: false
+          })
+          wx.showToast({ title: '已找到附近上车点', icon: 'none' })
+        } else {
+          this.setData({ locating: false })
+          wx.showToast({ title: '附近暂无推荐点', icon: 'none' })
+        }
+      },
+      fail: (err) => {
+        console.warn('getLocation fail:', err)
+        this.setData({ locating: false, locError: '未获取到定位权限' })
+        wx.showToast({ title: '获取位置失败，可手动搜索', icon: 'none' })
+      }
+    })
   },
 
   onPick(e) {

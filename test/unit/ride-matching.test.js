@@ -124,11 +124,13 @@ test('EXPIRED → 不在推荐列表', () => {
   assert.equal(ranked.length, 0)
 })
 
-test('资格过滤：自己 / 满员 / 不同校 / 非 OPEN', () => {
+test('资格过滤：自己 / 满员 / 不同校 / 非 OPEN / CANCELLED', () => {
   assert.ok(!isRideEligible(ride({ _id: 'ride_a', _openid: 'author_a' }), target, { now: NOW }), 'self')
   assert.ok(!isRideEligible(ride({ currentPeople: 4 }), target, { now: NOW }), 'full')
   assert.ok(!isRideEligible(ride({ schoolId: 'gxnu' }), target, { now: NOW }), 'different school')
-  assert.ok(!isRideEligible(ride({ status: 'FULL' }), target, { now: NOW }), 'not open')
+  assert.ok(!isRideEligible(ride({ status: 'FULL' }), target, { now: NOW }), 'not open (FULL)')
+  assert.ok(!isRideEligible(ride({ status: 'CANCELLED' }), target, { now: NOW }), 'not open (CANCELLED)')
+  assert.ok(!isRideEligible(ride({ status: 'DEPARTED' }), target, { now: NOW }), 'not open (DEPARTED)')
   assert.ok(isRideEligible(rideB, target, { now: NOW }))
 })
 
@@ -148,6 +150,17 @@ test('Top 10 上限', () => {
   }
   const ranked = rankRideMatches(target, many, { now: NOW })
   assert.equal(ranked.length, 10)
+})
+
+test('§16: 确定性排序 tie-break 规则（得分相同时比时间差，再比出发时间，再比ID）', () => {
+  const t = ride({ departureTime: '2026-09-11T10:00:00.000Z' })
+  // 两个得分相同的候选：目的地相同(50分)且起点相同(20分)
+  // rEarly 时间差 5min (+30分 = 100分) 出发 10:05
+  // rLate 时间差 15min (+30分 = 100分) 出发 10:15
+  const rLate = ride({ _id: 'r_late', departureTime: '2026-09-11T10:15:00.000Z' })
+  const rEarly = ride({ _id: 'r_early', departureTime: '2026-09-11T10:05:00.000Z' })
+  const res = rankRideMatches(t, [rLate, rEarly], { now: NOW })
+  assert.equal(res[0].ride._id, 'r_early', 'smaller time difference must rank first on tie score')
 })
 
 process.exitCode = failed > 0 ? 1 : 0

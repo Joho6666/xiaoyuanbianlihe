@@ -14,9 +14,10 @@ const {
   filterRidePlaces,
   getHotRidePlaces,
   getRidePlaceById,
+  nearestRidePlaces,
   haversineMeters
 } = require('../../shared/domain/ride-places')
-const { formatRideTime, departureLabel, rideStatusLabel } = require('../../campus_treehole/utils/ride-format')
+const { formatRideTime, formatRelativeTime, formatFlexible, departureLabel, formatNowUrgency, rideStatusLabel } = require('../../campus_treehole/utils/ride-format')
 
 let passed = 0
 let failed = 0
@@ -98,10 +99,12 @@ test('状态机：合法与非法流转', () => {
   assert.ok(canTransitionRideStatus('OPEN', 'EXPIRED'))
   assert.ok(canTransitionRideStatus('FULL', 'OPEN'))
   assert.ok(canTransitionRideStatus('FULL', 'DEPARTED'))
-  assert.ok(canTransitionRideStatus('FULL', 'COMPLETED'))
   assert.ok(canTransitionRideStatus('FULL', 'CANCELLED'))
+  assert.ok(canTransitionRideStatus('FULL', 'EXPIRED'))
   assert.ok(canTransitionRideStatus('DEPARTED', 'COMPLETED'))
-  assert.ok(!canTransitionRideStatus('OPEN', 'COMPLETED'))
+  // P1-9: 必须 DEPARTED 之后才能 COMPLETED，禁止从 OPEN 或 FULL 直达 COMPLETED
+  assert.ok(!canTransitionRideStatus('FULL', 'COMPLETED'), 'FULL -> COMPLETED prohibited')
+  assert.ok(!canTransitionRideStatus('OPEN', 'COMPLETED'), 'OPEN -> COMPLETED prohibited')
   assert.ok(!canTransitionRideStatus('COMPLETED', 'DEPARTED'))
   assert.ok(!canTransitionRideStatus('CANCELLED', 'OPEN'))
   assert.ok(!canTransitionRideStatus('EXPIRED', 'OPEN'))
@@ -145,6 +148,36 @@ test('时间展示与标签', () => {
   assert.equal(departureLabel({ departureMode: 'SCHEDULED' }), '预约')
   assert.equal(rideStatusLabel('OPEN'), '招募中')
   assert.equal(rideStatusLabel('WHATEVER'), 'WHATEVER')
+})
+
+test('§12: nearestRidePlaces 计算当前位置附近的地点并排序', () => {
+  // 位于桂航南校门附近 (25.3320, 110.3650)
+  const nearby = nearestRidePlaces(25.3320, 110.3650, 3)
+  assert.ok(nearby.length > 0)
+  assert.equal(nearby[0].poiId, 'guat-south-gate', 'closest place is guat south gate')
+  assert.ok(nearby[0].distanceMeters < 100, `distance is within 100m, got ${nearby[0].distanceMeters}`)
+  assert.ok(nearby[0].distanceText.endsWith('m'), 'distance formatted in m')
+})
+
+test('§17: formatNowUrgency 行程紧迫度文案（刚刚 / 15分钟内 / 30分钟内 / 即将过期）', () => {
+  const baseNow = new Date('2026-09-11T10:00:00.000Z')
+  const expires = new Date('2026-09-11T11:00:00.000Z').toISOString() // 60min TTL
+
+  // 刚刚：创建在 2 分钟前
+  const justNow = new Date('2026-09-11T09:58:00.000Z').toISOString()
+  assert.equal(formatNowUrgency(justNow, expires, baseNow), '刚刚')
+
+  // 15分钟内：创建在 10 分钟前
+  const tenAgo = new Date('2026-09-11T09:50:00.000Z').toISOString()
+  assert.equal(formatNowUrgency(tenAgo, expires, baseNow), '15分钟内')
+
+  // 30分钟内：创建在 25 分钟前
+  const twentyFiveAgo = new Date('2026-09-11T09:35:00.000Z').toISOString()
+  assert.equal(formatNowUrgency(twentyFiveAgo, expires, baseNow), '30分钟内')
+
+  // 即将过期：离过期剩余 8 分钟（即 expires 在 8 分钟后）
+  const almostExpires = new Date('2026-09-11T10:08:00.000Z').toISOString()
+  assert.equal(formatNowUrgency(twentyFiveAgo, almostExpires, baseNow), '即将过期')
 })
 
 process.exitCode = failed > 0 ? 1 : 0

@@ -70,6 +70,16 @@ const { fixture } = require('../helpers/ride-fixture')
   const reopened = (await f.db.collection('ride_posts').doc(rideId).get()).data
   assert.equal(reopened.currentPeople, 2)
   assert.equal(reopened.status, 'OPEN', 'FULL → OPEN after leave')
+
+  // P1-4: 验证 carol 退出后，其 join request 变为 CANCELLED，且 carol 本人可以重新申请
+  const carolReq = (await f.db.collection('ride_join_requests').doc(carolApply.data.requestId).get()).data
+  assert.equal(carolReq.status, 'CANCELLED', 'request must be CANCELLED after leave')
+  const carolReapply = await f.ride.applyRideJoin('carol', { rideId })
+  assert.equal(carolReapply.code, 0, 'carol can re-apply after leaving')
+  assert.equal(carolReapply.data.status, 'PENDING')
+  // 撤回 carol 重新申请，让 dave 继续
+  await f.ride.cancelRideJoin('carol', { rideId })
+
   const daveReapply = await f.ride.applyRideJoin('dave', { rideId })
   assert.equal(daveReapply.code, 0, 'dave can apply after reopen')
 
@@ -118,6 +128,20 @@ const { fixture } = require('../helpers/ride-fixture')
   assert.equal(complete.code, 0, 'DEPARTED → COMPLETED ok')
   const clientForged = await f.ride.updateRideStatus('bob', { rideId: departRideId, action: 'cancel' })
   assert.notEqual(clientForged.code, 0, 'non-author cannot change status')
+
+  // P1-2：过期行程禁止审批（事务内重新检查 expiresAt）
+  const expRideId = await f.publishRide('mallory', { maxPeople: 3 })
+  const expApply = await f.ride.applyRideJoin('carol', { rideId: expRideId })
+  assert.equal(expApply.code, 0)
+  f.addTime(61) // NOW 行程 60min TTL 已过
+  const expiredReview = await f.ride.reviewRideJoin('mallory', { requestId: expApply.data.requestId, decision: 'accept' })
+  assert.notEqual(expiredReview.code, 0, 'expired ride cannot be approved')
+  assert.ok(/过期/.test(expiredReview.msg), expiredReview.msg)
+  const expDoc = (await f.db.collection('ride_posts').doc(expRideId).get()).data
+  assert.equal(expDoc.status, 'EXPIRED', 'ride corrected to EXPIRED')
+  const expReqDoc = (await f.db.collection('ride_join_requests').doc(expApply.data.requestId).get()).data
+  assert.equal(expReqDoc.status, 'PENDING', 'request stays PENDING (not wrongly accepted)')
+  f.addTime(-61)
 
   console.log('PASS Ride requests: workflow, idempotency, capacity gates, state machine, notifications')
 })().catch(error => { console.error(error); process.exitCode = 1 })

@@ -27,22 +27,56 @@ function publicAuthorId(openid) {
  * 公开输出白名单：剥离发起人 openid，输出确定性 authorId。
  * 绝不返回 openid / numericId / internalUserId / 实时位置。
  */
-function publicRidePost(post, viewerOpenid) {
+function publicPlace(place) {
+  if (!place) return null
+  return {
+    poiId: place.poiId || '',
+    name: place.name || '',
+    shortName: place.shortName || place.name || ''
+  }
+}
+
+function memberPlace(place) {
+  if (!place) return null
+  return {
+    poiId: place.poiId || '',
+    name: place.name || '',
+    shortName: place.shortName || place.name || '',
+    address: place.address || '',
+    latitude: place.latitude != null ? place.latitude : null,
+    longitude: place.longitude != null ? place.longitude : null
+  }
+}
+
+/**
+ * 公开输出白名单：剥离发起人 openid，输出确定性 authorId。
+ * 默认使用 publicPlace 脱敏地点（不暴露经纬度与完整地址）。
+ * 绝不返回 openid / numericId / internalUserId / 实时位置。
+ */
+function publicRidePost(post, viewerOpenid, { fullPlace = false } = {}) {
   if (!post) return null
-  const { _openid, authorOpenid, authorId, ...safePost } = post
+  const { _openid, authorOpenid, authorId, origin, destination, ...safePost } = post
   const remainPeople = Math.max(0, (Number(post.maxPeople) || 0) - (Number(post.currentPeople) || 0))
+  const author = post.authorSnapshot || post.author || { nickName: '同学', avatarUrl: '/images/avatar_default.png' }
+  const placeSerializer = fullPlace ? memberPlace : publicPlace
   return {
     ...safePost,
     id: post._id,
     authorId: publicAuthorId(_openid),
-    author: post.author || { nickName: '同学', avatarUrl: '/images/avatar_default.png' },
+    author: {
+      nickName: author.nickName || '同学',
+      avatarUrl: author.avatarUrl || '/images/avatar_default.png'
+    },
+    origin: placeSerializer(origin),
+    destination: placeSerializer(destination),
     remainPeople,
     isFull: (Number(post.currentPeople) || 0) >= (Number(post.maxPeople) || 0),
     isAuthor: !!viewerOpenid && viewerOpenid === _openid
   }
 }
 
-function createRideModule({ db, _, cloud, helpers }) {
+function createRideModule({ db, _, cloud, helpers, now }) {
+  const nowMs = typeof now === 'function' ? now : () => Date.now()
   const validateUserContent = createContentValidator(helpers)
   const {
     getUserForAction,
@@ -78,7 +112,7 @@ function createRideModule({ db, _, cloud, helpers }) {
    * 惰性过期：读取时发现 OPEN/FULL 已过 expiresAt → 更正为 EXPIRED（尽力而为）
    */
   function lazyExpire(post) {
-    const nextStatus = resolveExpiredRideStatus(post)
+    const nextStatus = resolveExpiredRideStatus(post, nowMs())
     if (nextStatus === post.status) return post.status
     db.collection('ride_posts').doc(post._id).update({
       data: { status: nextStatus, updatedAt: db.serverDate() }
@@ -100,7 +134,7 @@ function createRideModule({ db, _, cloud, helpers }) {
       if (!safety.pass) return { code: safety.code, msg: safety.reason }
     }
 
-    const canPublish = await checkRateLimit(openid, 'ride_posts', 60, 10)
+    const canPublish = await checkRateLimit(openid, 'ride_posts', 60, 10, 'createdAt')
     if (!canPublish) return { code: -1, msg: '发布太频繁，请稍后再试' }
 
     let user
@@ -118,7 +152,8 @@ function createRideModule({ db, _, cloud, helpers }) {
         departureTime: postData.departureTime,
         flexibleMinutes: postData.flexibleMinutes,
         maxPeople: postData.maxPeople,
-        note
+        note,
+        now: new Date(nowMs()).toISOString()
       })
     } catch (err) {
       return { code: -1, msg: err.message || '行程参数不合法' }
@@ -126,6 +161,14 @@ function createRideModule({ db, _, cloud, helpers }) {
 
     const doc = { _openid: openid, ...entity }
     delete doc.id
+    // P1-5: 持久化 authorSnapshot 公开安全字段（禁止泄露 openid/phone/internalUserId）
+    doc.authorSnapshot = {
+      nickName: user.nickName || '同学',
+      avatarUrl: user.avatarUrl || '/images/avatar_default.png'
+    }
+    // createdAt/updatedAt 存 Date（限流契约：createRateLimiter 用 _.gte(Date) 计数）
+    doc.createdAt = db.serverDate()
+    doc.updatedAt = db.serverDate()
 
     try {
       const res = await db.collection('ride_posts').add({ data: doc })
@@ -139,7 +182,7 @@ function createRideModule({ db, _, cloud, helpers }) {
         return { code: 0, msg: '发布成功', data: { rideId: res._id } }
       }
       console.error('publishRide error:', err)
-      return { code: -1, msg: '发布失败: ' + err.message }
+      return { code: -1, msg: '服务暂时不可用，请稍后再试' }
     }
   }
 
@@ -166,7 +209,7 @@ function createRideModule({ db, _, cloud, helpers }) {
   function inDayWindow(ms, tab) {
     // Asia/Shanghai 日界（UTC+8），广场「今天/明天」筛选用
     const day = Math.floor((ms + 8 * 3600000) / 86400000)
-    const nowDay = Math.floor((Date.now() + 8 * 3600000) / 86400000)
+    const nowDay = Math.floor((nowMs() + 8 * 3600000) / 86400000)
     return tab === 'today' ? day === nowDay : day === nowDay + 1
   }
 
@@ -201,7 +244,7 @@ function createRideModule({ db, _, cloud, helpers }) {
       return { code: -1, msg: '获取拼车广场失败: ' + err.message }
     }
 
-    const now = Date.now()
+    const now = nowMs()
     const kw = escapeRegExp(String(keyword || '')).trim()
     const keywordRe = kw ? new RegExp(kw, 'i') : null
 
@@ -275,7 +318,13 @@ function createRideModule({ db, _, cloud, helpers }) {
         memberId: publicAuthorId(member._openid)
       }))
     } catch (err) {
-      if (!isCollectionNotExistError(err)) console.error('getRideById members error:', err)
+      if (isCollectionNotExistError(err)) {
+        members = []
+      } else {
+        // §31: fail-closed - 关键成员读取异常
+        console.error('getRideById members error:', err)
+        return { code: -1, msg: '服务暂时不可用，请稍后再试' }
+      }
     }
 
     let myRequest = null
@@ -296,7 +345,7 @@ function createRideModule({ db, _, cloud, helpers }) {
     return {
       code: 0,
       data: {
-        ...publicRidePost(post, openid),
+        ...publicRidePost(post, openid, { fullPlace: isAuthor || isMember }),
         status,
         members,
         isMember,
@@ -398,7 +447,7 @@ function createRideModule({ db, _, cloud, helpers }) {
       return { code: -1, msg: '获取匹配失败: ' + err.message }
     }
 
-    const now = Date.now()
+    const now = nowMs()
     const candidates = []
     for (const row of rows) {
       if (row._id === rideId) continue
@@ -458,7 +507,7 @@ function createRideModule({ db, _, cloud, helpers }) {
       return { code: -1, msg: '无法申请该行程' }
     }
 
-    const canApply = await checkRateLimit(openid, 'ride_join_requests', 60, 30)
+    const canApply = await checkRateLimit(openid, 'ride_join_requests', 60, 30, 'createdAt')
     if (!canApply) return { code: -1, msg: '操作太频繁，请稍后再试' }
 
     const requestId = makeDeterministicId('ride_req', rideId, openid)
@@ -596,6 +645,14 @@ function createRideModule({ db, _, cloud, helpers }) {
         await transaction.rollback()
         return { code: -1, msg: '仅发起人可以处理申请' }
       }
+      // 事务内重新校验过期：惰性过期不能只依赖其他页面读取触发
+      if (resolveExpiredRideStatus(txPost, nowMs()) === RIDE_STATUS.EXPIRED) {
+        await transaction.rollback()
+        db.collection('ride_posts').doc(txRequest.rideId).update({
+          data: { status: RIDE_STATUS.EXPIRED, updatedAt: db.serverDate() }
+        }).catch(() => {})
+        return { code: -1, msg: '该行程已过期，无法通过申请' }
+      }
       const currentPeople = Number(txPost.currentPeople) || 0
       const maxPeople = Number(txPost.maxPeople) || 0
       if (txPost.status !== RIDE_STATUS.OPEN) {
@@ -615,9 +672,22 @@ function createRideModule({ db, _, cloud, helpers }) {
       const rideUpdate = { currentPeople: nextCount, updatedAt: db.serverDate() }
       if (nextCount >= maxPeople) rideUpdate.status = RIDE_STATUS.FULL
       await transaction.collection('ride_posts').doc(txRequest.rideId).update({ data: rideUpdate })
+
+      // member 写入与审批 + 容量推进同事务：要么全部成功，要么全部 rollback，不吞错
+      await transaction.collection('ride_members')
+        .doc(makeDeterministicId('ride_mem', txRequest.rideId, requesterOpenid))
+        .set({
+          data: {
+            rideId: txRequest.rideId,
+            _openid: requesterOpenid,
+            role: 'member',
+            memberSnapshot: txRequest.requesterSnapshot || { nickName: '同学', avatarUrl: '/images/avatar_default.png' },
+            joinedAt: db.serverDate()
+          }
+        })
+
       await transaction.commit()
 
-      await ensureMemberDoc(txRequest.rideId, requesterOpenid, txRequest.requesterSnapshot)
       if (typeof grantForOpenids === 'function') {
         // RIDE Contact Grant：接受后双方建立联系，可私信
         await grantForOpenids(openid, requesterOpenid, 'RIDE', txRequest.rideId).catch(() => {})
@@ -629,24 +699,11 @@ function createRideModule({ db, _, cloud, helpers }) {
         data: { status: RIDE_REQUEST_STATUS.ACCEPTED, currentPeople: nextCount, rideStatus: nextCount >= maxPeople ? RIDE_STATUS.FULL : RIDE_STATUS.OPEN }
       }
     } catch (err) {
+      try {
+        await transaction.rollback()
+      } catch (e) {}
       console.error('reviewRideJoin transaction error:', err)
-      return { code: -1, msg: '处理审批失败: ' + err.message }
-    }
-  }
-
-  async function ensureMemberDoc(rideId, memberOpenid, snapshot) {
-    try {
-      await db.collection('ride_members').doc(makeDeterministicId('ride_mem', rideId, memberOpenid)).set({
-        data: {
-          rideId,
-          _openid: memberOpenid,
-          role: 'member',
-          memberSnapshot: snapshot || { nickName: '同学', avatarUrl: '/images/avatar_default.png' },
-          joinedAt: db.serverDate()
-        }
-      })
-    } catch (err) {
-      if (!isCollectionNotExistError(err)) console.error('ensureMemberDoc error:', err)
+      return { code: -1, msg: '服务暂时不可用，请稍后再试' }
     }
   }
 
@@ -693,16 +750,27 @@ function createRideModule({ db, _, cloud, helpers }) {
         rideUpdate.status = RIDE_STATUS.OPEN
       }
       await transaction.collection('ride_posts').doc(rideId).update({ data: rideUpdate })
-      await transaction.commit()
 
+      // 事务内移除成员 doc
       for (const member of memberRes.data) {
-        await db.collection('ride_members').doc(member._id).remove().catch(() => {})
+        await transaction.collection('ride_members').doc(member._id).remove()
       }
+
+      // P1-4: 事务内将对应的 join request 重置为 CANCELLED，使申请人退出后能重新申请
+      const reqId = makeDeterministicId('ride_req', rideId, openid)
+      await transaction.collection('ride_join_requests').doc(reqId).update({
+        data: { status: RIDE_REQUEST_STATUS.CANCELLED, handledAt: db.serverDate() }
+      }).catch(() => {})
+
+      await transaction.commit()
       await notifyRide(post._openid, openid, 'ride_member_left', rideId, '退出了你的拼车行程', rideRouteText(post))
       return { code: 0, msg: '已退出行程', data: { currentPeople: nextCount } }
     } catch (err) {
+      try {
+        await transaction.rollback()
+      } catch (e) {}
       console.error('leaveRide transaction error:', err)
-      return { code: -1, msg: '退出行程失败: ' + err.message }
+      return { code: -1, msg: '服务暂时不可用，请稍后再试' }
     }
   }
 
@@ -726,9 +794,16 @@ function createRideModule({ db, _, cloud, helpers }) {
       return { code: -1, msg: '当前状态无法执行该操作' }
     }
 
-    await db.collection('ride_posts').doc(rideId).update({
+    // §22: 条件更新防并发（原子比较并替换）：避免 cancel 与 accept/depart 等发生竞态
+    const updateRes = await db.collection('ride_posts').where({
+      _id: rideId,
+      status: post.status
+    }).update({
       data: { status: targetStatus, updatedAt: db.serverDate() }
     })
+    if (!updateRes || !updateRes.stats || updateRes.stats.updated === 0) {
+      return { code: -1, msg: '行程状态已变化，请刷新后重试' }
+    }
 
     const routeText = rideRouteText(post)
     if (action === 'cancel') {
@@ -761,6 +836,8 @@ function createRideModule({ db, _, cloud, helpers }) {
 
   /**
    * 成员/发起人建立联系（RIDE Contact Grant）
+   * P1-8: 仅允许 发起人 ↔ 成员 双向联系，禁止 成员 A ↔ 成员 B
+   * §20/§21: CANCELLED / EXPIRED / COMPLETED 行程禁止新建联系
    */
   async function startRideContact(openid, data = {}) {
     if (!openid) return { code: -1, msg: '未授权访问' }
@@ -771,6 +848,12 @@ function createRideModule({ db, _, cloud, helpers }) {
     const post = await getRideDoc(rideId)
     if (!post) return { code: -1, msg: '行程不存在或已结束' }
 
+    // 状态门禁：已取消/已过期/已完成的行程禁止发起新的联系
+    const status = lazyExpire(post)
+    if (['CANCELLED', 'EXPIRED', 'COMPLETED'].includes(status)) {
+      return { code: -1, msg: '行程已结束，无法发起联系' }
+    }
+
     let memberOpenids = [post._openid]
     try {
       const members = await db.collection('ride_members')
@@ -779,7 +862,13 @@ function createRideModule({ db, _, cloud, helpers }) {
         .get()
       memberOpenids = (members.data || []).map(member => member._openid)
     } catch (err) {
-      if (!isCollectionNotExistError(err)) console.error('startRideContact members error:', err)
+      if (isCollectionNotExistError(err)) {
+        memberOpenids = [post._openid]
+      } else {
+        // §31: fail-closed - 关键成员读取异常时拒绝联系，不默认放行
+        console.error('startRideContact members error:', err)
+        return { code: -1, msg: '服务暂时不可用，请稍后再试' }
+      }
     }
 
     // 客户端只持有公开 targetUserId（确定性 UUID）；在此解析回内部 openid
@@ -787,9 +876,19 @@ function createRideModule({ db, _, cloud, helpers }) {
     const targetOpenidRaw = typeof data.targetOpenid === 'string' ? data.targetOpenid : ''
     let resolvedTarget = memberOpenids.find(mo => mo === targetOpenidRaw || (targetUserId && publicAuthorId(mo) === targetUserId)) || ''
     if (!resolvedTarget) return { code: -1, msg: '缺少联系人' }
+    if (resolvedTarget === openid) return { code: -1, msg: '不能联系自己' }
+
     if (!memberOpenids.includes(openid)) {
       return { code: -1, msg: '仅行程成员可以互相联系' }
     }
+
+    // P1-8 规则：caller 与 target 中必须有一个是作者
+    const isCallerAuthor = openid === post._openid
+    const isTargetAuthor = resolvedTarget === post._openid
+    if (!isCallerAuthor && !isTargetAuthor) {
+      return { code: -1, msg: '普通成员间不能直接私信，请通过发起人协调' }
+    }
+
     if (typeof conversationBlocked === 'function' && await conversationBlocked(openid, resolvedTarget)) {
       return { code: -1, msg: '无法与对方建立联系' }
     }
@@ -807,7 +906,6 @@ function createRideModule({ db, _, cloud, helpers }) {
   async function getMyRides(openid, data = {}) {
     if (!openid) return { code: -1, msg: '未授权访问' }
     const { tab = 'published' } = data
-    const now = Date.now()
 
     if (tab === 'joined') {
       let memberships = []

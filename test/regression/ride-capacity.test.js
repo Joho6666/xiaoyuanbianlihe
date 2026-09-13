@@ -78,5 +78,33 @@ const { fixture } = require('../helpers/ride-fixture')
   assert.equal(afterLeave.currentPeople, 1)
   assert.equal(afterLeave.status, 'OPEN', 'FULL → OPEN after leave')
 
+  // P1-3 原子性证明：member 写入同事务，commit 失败时 request/人数/member 全部无部分状态
+  const atomicRide = await f.publishRide('author', { maxPeople: 2 })
+  const atomicApp = await f.ride.applyRideJoin('racer2', { rideId: atomicRide })
+  f.db.failNextCommit()
+  const failedReview = await f.ride.reviewRideJoin('author', { requestId: atomicApp.data.requestId, decision: 'accept' })
+  assert.notEqual(failedReview.code, 0, 'commit failure must fail the review')
+  const atomicRideDoc = (await f.db.collection('ride_posts').doc(atomicRide).get()).data
+  assert.equal(atomicRideDoc.currentPeople, 1, 'no partial seat increment')
+  const atomicReqDoc = (await f.db.collection('ride_join_requests').doc(atomicApp.data.requestId).get()).data
+  assert.equal(atomicReqDoc.status, 'PENDING', 'request not half-accepted')
+  const atomicMembers = (await f.db.collection('ride_members').where({ rideId: atomicRide }).get()).data
+  assert.equal(atomicMembers.length, 1, 'only author member, no orphaned member doc')
+  // 事务锁已释放：后续审批可正常进行
+  const retryReview = await f.ride.reviewRideJoin('author', { requestId: atomicApp.data.requestId, decision: 'accept' })
+  assert.equal(retryReview.code, 0, 'retry after rollback works')
+  const afterRetry = (await f.db.collection('ride_members').where({ rideId: atomicRide }).get()).data
+  assert.equal(afterRetry.length, 2, 'author + member committed atomically')
+
+  // §22: cancel 与 depart/complete 条件并发安全测试
+  const raceRide = await f.publishRide('author', { maxPeople: 3 })
+  const raceApp = await f.ride.applyRideJoin('racer3', { rideId: raceRide })
+  // 模拟并发：一个人先 cancel，另一个按旧状态去 depart，必须报错“状态已变化”
+  const cancelRes = await f.ride.updateRideStatus('author', { rideId: raceRide, action: 'cancel' })
+  assert.equal(cancelRes.code, 0)
+  const staleDepart = await f.ride.updateRideStatus('author', { rideId: raceRide, action: 'depart' })
+  assert.notEqual(staleDepart.code, 0, 'depart on cancelled ride must fail')
+  assert.ok(/状态已变化/.test(staleDepart.msg) || /无法执行/.test(staleDepart.msg))
+
   console.log('PASS Ride capacity: serialized transactions, no over-acceptance, leave restores OPEN')
 })().catch(error => { console.error(error); process.exitCode = 1 })

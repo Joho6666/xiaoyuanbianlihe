@@ -148,9 +148,9 @@ Page({
     wx.navigateTo({ url: `/packageRide/pages/ride-requests/ride-requests?rideId=${this.data.rideId}` })
   },
 
-  async onContact(e) {
-    const { targetuserid, name } = e.currentTarget.dataset
-    if (!targetuserid) return
+  async onMemberTap(e) {
+    const { targetuserid, name, cancontact } = e.currentTarget.dataset
+    if (!cancontact || !targetuserid) return
     try {
       await app.callDB('startRideContact', { rideId: this.data.rideId, targetUserId: targetuserid })
       wx.navigateTo({

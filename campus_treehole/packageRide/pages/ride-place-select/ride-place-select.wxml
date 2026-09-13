@@ -11,6 +11,13 @@
     />
   </view>
 
+  <view class="location-btn-row">
+    <button class="location-btn" bindtap="onUseCurrentLocation" loading="{{locating}}">
+      <text class="loc-icon">📍</text>
+      <text>使用当前位置附近上车点</text>
+    </button>
+  </view>
+
   <scroll-view scroll-x class="cat-scroll">
     <view class="cat-row">
       <view

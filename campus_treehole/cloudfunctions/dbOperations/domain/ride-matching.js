@@ -110,8 +110,15 @@ function rankRideMatches(target, candidates, { now = Date.now(), blockedOpenids,
     if (!isRecommendable(pair)) continue
     scored.push({ ride: candidate, score: pair, percent: matchPercent(pair.total) })
   }
-  scored.sort((x, y) => (y.score.total - x.score.total)
-    || (new Date(x.ride.departureTime).getTime() - new Date(y.ride.departureTime).getTime()))
+  // §16: 确定性排序规则：得分高优先 -> 时间差小优先 -> 出发时间早优先 -> ID 稳定兜底
+  scored.sort((x, y) => {
+    if (y.score.total !== x.score.total) return y.score.total - x.score.total
+    const diffDiff = (x.score.diffMinutes || 0) - (y.score.diffMinutes || 0)
+    if (diffDiff !== 0) return diffDiff
+    const timeDiff = new Date(x.ride.departureTime).getTime() - new Date(y.ride.departureTime).getTime()
+    if (timeDiff !== 0) return timeDiff
+    return String(x.ride._id || x.ride.id || '').localeCompare(String(y.ride._id || y.ride.id || ''))
+  })
   return scored.slice(0, limit)
 }
 

@@ -63,11 +63,13 @@
         class="member-item"
         data-targetuserid="{{item.memberId}}"
         data-name="{{item.memberSnapshot.nickName}}"
-        bindtap="onContact"
+        data-cancontact="{{ride.isAuthor ? (item.role !== 'author') : (item.role === 'author')}}"
+        bindtap="onMemberTap"
       >
         <image class="member-avatar" src="{{item.memberSnapshot.avatarUrl || '/images/avatar_default.png'}}" mode="aspectFill" />
         <text class="member-name">{{item.memberSnapshot.nickName}}{{item.role === 'author' ? '（发起人）' : ''}}</text>
-        <text class="member-chat">私信</text>
+        <text class="member-chat" wx:if="{{ride.isAuthor && item.role !== 'author'}}">私信成员</text>
+        <text class="member-chat" wx:elif="{{!ride.isAuthor && item.role === 'author'}}">联系发起人</text>
       </view>
     </view>
   </view>
@@ -84,6 +86,9 @@
       <block wx:if="{{ride.myRequest && ride.myRequest.status === 'PENDING'}}">
         <button class="action-btn ghost" bindtap="onCancelApply">撤销申请</button>
         <button class="action-btn disabled" disabled>等待发起人确认</button>
+      </block>
+      <block wx:elif="{{ride.myRequest && ride.myRequest.status === 'REJECTED'}}">
+        <button class="action-btn disabled" disabled>申请未通过</button>
       </block>
       <block wx:elif="{{ride.isMember}}">
         <button class="action-btn ghost" wx:if="{{ride.status === 'OPEN' || ride.status === 'FULL'}}" bindtap="onLeave">退出行程</button>

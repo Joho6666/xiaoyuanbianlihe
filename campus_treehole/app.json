@@ -149,6 +149,14 @@
   },
   "style": "v2",
   "lazyCodeLoading": "requiredComponents",
+  "permission": {
+    "scope.userLocation": {
+      "desc": "仅用于寻找离您最近的校内与周边拼车集合地点"
+    }
+  },
+  "requiredPrivateInfos": [
+    "getLocation"
+  ],
   "networkTimeout": {
     "request": 10000,
     "downloadFile": 10000,

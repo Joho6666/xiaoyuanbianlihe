@@ -120,6 +120,15 @@ const { fixture } = require('../helpers/ride-fixture')
   assert.equal(contactAsMember.code, 0, 'member can start contact via public userId')
   assert.ok(contactAsMember.data && contactAsMember.data.targetUserId)
 
+  // ===== P1-5: Author Snapshot 真实持久化与展示 =====
+  await f.addUser('xiaolin', { nickName: '小林', avatarUrl: '/images/avatar_xiaolin.jpg' })
+  const xiaolinRideId = await f.publishRide('xiaolin', { maxPeople: 3 })
+  const squareXiaolin = await f.ride.getRideSquare({ campusId: 'guit-hangtian' })
+  const xiaolinItem = squareXiaolin.data.list.find(i => i.id === xiaolinRideId)
+  assert.ok(xiaolinItem, 'xiaolin ride in square')
+  assert.equal(xiaolinItem.author.nickName, '小林', 'author nickName must be persisted snapshot')
+  assert.equal(xiaolinItem.author.avatarUrl, '/images/avatar_xiaolin.jpg', 'avatarUrl must be persisted snapshot')
+
   // ===== 未注册 action：ride 域不会出现“未知操作”穿透（契约测试单独覆盖注册表） =====
   console.log('PASS Ride security: serialization whitelist, forge-proof status, block semantics, RIDE grant DM gate')
 })().catch(error => { console.error(error); process.exitCode = 1 })

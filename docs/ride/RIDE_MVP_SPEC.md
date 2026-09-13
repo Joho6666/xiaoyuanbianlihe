@@ -100,10 +100,10 @@ CANCELLED        EXPIRED（OPEN/FULL 可过期）
 ```
 
 - `OPEN → FULL / DEPARTED / CANCELLED / EXPIRED`
-- `FULL → OPEN（成员退出回补）/ DEPARTED / CANCELLED / EXPIRED / COMPLETED`
+- `FULL → OPEN（成员退出回补）/ DEPARTED / CANCELLED / EXPIRED`
 - `DEPARTED → COMPLETED`
 - 终态：`COMPLETED / CANCELLED / EXPIRED`
-- 与任务书偏差：允许 `FULL → CANCELLED`（发起人随时可取消）与 `FULL → COMPLETED`。
+- 规则约束：禁止从 OPEN 或 FULL 直达 COMPLETED，必须先标记 DEPARTED（已出发）；发起人随时可在出发前 CANCELLED。
 - **客户端提交的 status 字段一律忽略**；状态只能由服务端动作（审批满员、出发、完成、取消、惰性过期）流转，且每次流转经 `canTransitionRideStatus()` 校验。
 - 惰性过期：读取时 `expiresAt <= now` 且状态为 OPEN/FULL → 视为 EXPIRED 并异步更正数据库（与 buddy deadline 处理一致），不依赖定时器。
 
@@ -147,26 +147,26 @@ Score（`scoreRidePair`，满分 100）：
   - `campus_treehole/cloudfunctions/dbOperations/domain/ride-places.js`（云函数副本）
   - contract 测试断言两份目录同步。
 - `searchRidePlaces` 服务端做目录关键词/分类过滤；预留 `TENCENT_LBS_KEY` 环境变量：配置后切换腾讯位置服务 webservice POI 搜索，数据结构不变。**不引入定位权限、不用 wx.chooseLocation。**
-- 公开面只展示 POI 名称；经纬度仅详情页小地图使用；不采集、不展示实时位置。
+- 公开面只展示 POI 名称；经纬度与地址通过 `publicPlace` 彻底剥离，仅在详情页向作者与已确认成员输出 `memberPlace` 供小地图展示；不采集、不展示实时位置。
 
 ## 8. 服务端 Action（modules/ride.js，flat camelCase）
 
 | Action | 权限 | 说明 |
 | --- | --- | --- |
-| `publishRide` | 登录 | 限流 + 内容审核；忽略客户端 status；写 author 成员 |
+| `publishRide` | 登录 | 限流(P1-1) + 内容审核 + authorSnapshot 持久化(P1-5)；忽略客户端 status；写 author 成员 |
 | `getRidePlaces` | 公开读 | 预置目录（可按 category/hot 过滤） |
 | `searchRidePlaces` | 公开读 | 目录关键词搜索（腾讯升级钩子） |
-| `getRideSquare` | 公开读 | tab=全部/现在出发/今天/明天 + keyword + 20/页；Block 过滤；脱敏白名单 |
-| `getRideMatches` | 仅作者 | 发布成功后的推荐列表（Top 10） |
-| `getRideById` | 公开读 | Block 检查；脱敏；viewer 关系态（申请态/成员态/是否作者） |
+| `getRideSquare` | 公开读 | tab=全部/现在出发/今天/明天 + keyword + 20/页；Block 过滤；publicPlace 脱敏白名单 |
+| `getRideMatches` | 仅作者 | 发布成功后的推荐列表（Top 10），确定性平局排序 |
+| `getRideById` | 公开读 | Block 检查；脱敏分层（成员/作者见 fullPlace，访客见 publicPlace）；viewer 关系态（申请态/成员态/是否作者） |
 | `applyRideJoin` | 登录 | 非本人/OPEN/未过期/有余位/双向 Block 检查/幂等 |
 | `cancelRideJoin` | 申请人 | 撤销自己的 PENDING |
-| `reviewRideJoin` | 仅作者 | accept/reject；**事务内**容量检查 + 写成员 + 满员置 FULL + 创建 RIDE grant + 通知 |
-| `updateRideStatus` | 仅作者 | depart/complete/cancel；状态机校验；取消通知成员并拒绝残余 PENDING |
-| `leaveRide` | 成员 | 出发前退出；回补名额；FULL→OPEN；通知作者 |
+| `reviewRideJoin` | 仅作者 | accept/reject；**事务内**过期校验(P1-2) + 容量检查 + 写入成员(P1-3) + 满员置 FULL + 创建 RIDE grant + 通知 |
+| `updateRideStatus` | 仅作者 | depart/complete/cancel；原子条件更新(§22)；状态机校验；取消通知成员并拒绝残余 PENDING |
+| `leaveRide` | 成员 | 出发前退出；回补名额；FULL→OPEN；**事务内**将申请重置为 CANCELLED 允许重申(P1-4)；通知作者 |
 | `getMyRides` | 登录 | tab=published/joined |
 | `getRideRequests` | 登录 | tab=received/sent |
-| `startRideContact` | 成员/作者 | 校验双方为成员 → 创建/确认 RIDE grant → 返回 targetUserId |
+| `startRideContact` | 成员/作者 | 严格限制仅 发起人 ↔ 成员 双向联系(P1-8)；已结束行程禁止联系；返回 targetUserId |
 
 容量并发（关键）：`reviewRideJoin(accept)` 使用 `db.startTransaction()`（与 buddy 审批同一模式）：事务内读 request 必须 PENDING、读 ride 必须 OPEN 且 `currentPeople < maxPeople` → 更新 request=ACCEPTED、`currentPeople+1`、达上限置 FULL → commit。两个并发接受最后 1 席时事务串行化，只有一个成功。成员写入用确定性 `_id` 兜底防重。
 

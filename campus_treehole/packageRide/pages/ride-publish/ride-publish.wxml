@@ -3,7 +3,7 @@
     <view class="field-label">从哪里出发</view>
     <view class="place-cell" data-field="origin" bindtap="openPlacePicker">
       <text class="place-icon start">📍</text>
-      <text class="place-value {{origin ? '' : 'placeholder'}}">{{origin ? origin.name : '桂林航天工业学院（南校门）'}}</text>
+      <text class="place-value {{origin ? '' : 'placeholder'}}">{{origin ? origin.name : '选择出发地'}}</text>
       <text class="cell-arrow">›</text>
     </view>
     <view class="divider" />

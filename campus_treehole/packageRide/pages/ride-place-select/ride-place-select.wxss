@@ -65,3 +65,25 @@
   color: var(--on-surface-variant);
   margin-top: 6rpx;
 }
+
+.location-btn-row {
+  margin-top: 16rpx;
+}
+
+.location-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12rpx;
+  background: var(--surface-container);
+  color: var(--primary);
+  border-radius: 999rpx;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  line-height: 2.2;
+  padding: 0 24rpx;
+}
+
+.loc-icon {
+  font-size: 28rpx;
+}

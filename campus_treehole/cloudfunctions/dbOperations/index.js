@@ -460,19 +460,15 @@ async function checkAdmin(openid) {
   return res.data.length > 0
 }
 
-async function checkRateLimit(openid, collection, minutes, maxCount) {
-  const timeAgo = new Date(Date.now() - minutes * 60 * 1000)
-  try {
-    const res = await db.collection(collection).where({
-      _openid: openid,
-      createTime: _.gte(timeAgo)
-    }).count()
-    return res.total < maxCount
-  } catch (err) {
-    if (isCollectionNotExistError(err)) return true
-    console.error('[checkRateLimit] 频率检查异常，按已达上限处理:', err)
-    return false
-  }
+const { createRateLimiter } = require('./shared/rate-limit')
+let rateLimiterInstance = null
+function getRateLimiter() {
+  if (!rateLimiterInstance) rateLimiterInstance = createRateLimiter({ db, _ })
+  return rateLimiterInstance
+}
+
+async function checkRateLimit(openid, collection, minutes, maxCount, field) {
+  return getRateLimiter().check(openid, collection, minutes, maxCount, field)
 }
 
 async function getUserForAction(openid, { requireActive = true } = {}) {

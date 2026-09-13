@@ -7,8 +7,9 @@ const createRide = require('../../campus_treehole/cloudfunctions/dbOperations/mo
 const createContacts = require('../../campus_treehole/cloudfunctions/dbOperations/modules/contacts')
 const createMessages = require('../../campus_treehole/cloudfunctions/dbOperations/modules/messages')
 const { publicId } = require('../../campus_treehole/cloudfunctions/dbOperations/shared/public-data')
+const { createRateLimiter } = require('../../campus_treehole/cloudfunctions/dbOperations/shared/rate-limit')
 
-async function fixture() {
+async function fixture({ useRealRateLimit = false } = {}) {
   const db = memoryDb()
   const users = {}
   const blocked = new Set()
@@ -23,7 +24,9 @@ async function fixture() {
       if (!user) throw new Error('用户不存在')
       return user
     },
-    checkRateLimit: async () => true,
+    checkRateLimit: useRealRateLimit
+      ? (openid, collection, minutes, maxCount, field) => createRateLimiter({ db, _: db.command, now: () => clock }).check(openid, collection, minutes, maxCount, field)
+      : async () => true,
     checkBannedWords: () => ({ pass: true }),
     wxTextCheck: async () => ({ pass: true }),
     wxImageBatchCheck: async () => ({ pass: true }),
@@ -56,7 +59,7 @@ async function fixture() {
     ...baseHelpers,
     grantForOpenids: (a, b, type, sourceId) => contacts.grantForOpenids(a, b, type, sourceId)
   }
-  const ride = createRide({ db, _: db.command, cloud: {}, helpers })
+  const ride = createRide({ db, _: db.command, cloud: {}, helpers, now: () => clock })
 
   async function addUser(id, overrides = {}) {
     users[id] = {

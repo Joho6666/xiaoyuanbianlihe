@@ -20,6 +20,11 @@ Page({
   },
 
   onLoad(options = {}) {
+    // P1-6: 默认起点设为真实地点对象（桂航南校门），不再是空指针假 placeholder
+    const defaultOrigin = getRidePlaceById('guat-south-gate')
+    if (defaultOrigin) {
+      this.setData({ origin: defaultOrigin })
+    }
     if (options.destination) {
       const place = getRidePlaceById(decodeURIComponent(options.destination))
       if (place) this.setData({ destination: place })

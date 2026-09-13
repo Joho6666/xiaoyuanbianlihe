@@ -53,6 +53,27 @@ function departureLabel(ride) {
   return ride && ride.departureMode === RIDE_DEPARTURE_MODES.NOW ? '现在出发' : '预约'
 }
 
+function formatVoiceSeconds(duration) {
+  return ''
+}
+
+/**
+ * §17: NOW 行程紧迫度标签（刚刚 / 15分钟内 / 30分钟内 / 即将过期）
+ */
+function formatNowUrgency(createdAt, expiresAt, now = new Date()) {
+  const createdMs = new Date(createdAt).getTime()
+  const expiresMs = new Date(expiresAt).getTime()
+  const nowMs = now.getTime()
+  if (!Number.isFinite(createdMs) || !Number.isFinite(expiresMs)) return '现在出发'
+  const elapsedMinutes = (nowMs - createdMs) / 60000
+  const remainMinutes = (expiresMs - nowMs) / 60000
+  if (remainMinutes <= 10) return '即将过期'
+  if (elapsedMinutes < 5) return '刚刚'
+  if (elapsedMinutes <= 15) return '15分钟内'
+  if (elapsedMinutes <= 30) return '30分钟内'
+  return '现在出发'
+}
+
 /**
  * 拼车状态中文标签
  */
@@ -69,4 +90,4 @@ function rideStatusLabel(status) {
   return RIDE_STATUS_LABELS[status] || status
 }
 
-module.exports = { formatRideTime, formatRelativeTime, formatFlexible, departureLabel, rideStatusLabel, RIDE_STATUS_LABELS }
+module.exports = { formatRideTime, formatRelativeTime, formatFlexible, departureLabel, formatNowUrgency, rideStatusLabel, RIDE_STATUS_LABELS }

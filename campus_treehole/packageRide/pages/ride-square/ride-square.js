@@ -1,6 +1,6 @@
 // packageRide/pages/ride-square/ride-square.js - 拼车广场
 const app = getApp()
-const { formatRideTime, formatRelativeTime, departureLabel, formatFlexible } = require('../../../utils/ride-format')
+const { formatRideTime, formatRelativeTime, departureLabel, formatFlexible, formatNowUrgency } = require('../../../utils/ride-format')
 
 const TABS = [
   { id: 'all', name: '全部' },
@@ -77,7 +77,7 @@ Page({
         destinationName: (ride.destination && (ride.destination.shortName || ride.destination.name)) || '',
         timeText: formatRideTime(ride.departureTime),
         timeAgo: formatRelativeTime(ride.createdAt),
-        departLabel: departureLabel(ride),
+        departLabel: ride.departureMode === 'NOW' ? formatNowUrgency(ride.createdAt, ride.expiresAt) : departureLabel(ride),
         flexLabel: ride.departureMode === 'SCHEDULED' ? formatFlexible(ride.flexibleMinutes) : '约30分钟内出发',
         peopleText: `${ride.currentPeople}/${ride.maxPeople}`,
         remainPeople: ride.remainPeople

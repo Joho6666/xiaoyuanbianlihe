@@ -62,12 +62,30 @@ function getHotRidePlaces(limit = 6) {
   return RIDE_PLACES.filter(place => place.hot).slice(0, limit)
 }
 
+/**
+ * 根据当前经纬度计算预置目录距离并排序（§12: 轻量附近地点推荐）
+ */
+function nearestRidePlaces(lat, lng, limit = 5) {
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return []
+  return RIDE_PLACES.map(place => {
+    const dist = haversineMeters(lat, lng, place.latitude, place.longitude)
+    let distText = ''
+    if (dist < 1000) {
+      distText = `${Math.round(dist)}m`
+    } else {
+      distText = `${(dist / 1000).toFixed(1)}km`
+    }
+    return { ...place, distanceMeters: Math.round(dist), distanceText: distText }
+  }).sort((a, b) => a.distanceMeters - b.distanceMeters).slice(0, limit)
+}
+
 module.exports = {
   RIDE_PLACE_CATEGORIES,
   RIDE_PLACES,
   getRidePlaceById,
   getHotRidePlaces,
   filterRidePlaces,
+  nearestRidePlaces,
   haversineMeters,
   escapeRegExp
 }
