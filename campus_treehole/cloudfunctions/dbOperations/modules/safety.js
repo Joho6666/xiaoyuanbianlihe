@@ -234,6 +234,16 @@ function createSafetyModule({ db, _, cloud, helpers }) {
         }
       }
     }
+    // §11: 校验 ride 举报的目标行程真实存在
+    if (data.targetType === 'ride') {
+      if (typeof data.targetId !== 'string' || !data.targetId || typeof data.reason !== 'string' || !data.reason.trim() || data.reason.length > 200) return { code: -1, msg: '请填写有效举报原因（最多200字）' }
+      let targetRide = null
+      try {
+        const res = await db.collection('ride_posts').doc(data.targetId).get()
+        targetRide = (res && res.data) || null
+      } catch (e) {}
+      if (!targetRide) return { code: -1, msg: '举报的拼车行程不存在' }
+    }
     const existing = await db.collection('reports').where({
       _openid: openid,
       targetId: data.targetId,

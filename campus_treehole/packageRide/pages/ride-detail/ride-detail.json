@@ -1,0 +1,4 @@
+{
+  "navigationBarTitleText": "行程详情",
+  "usingComponents": {"empty-state": "/components/empty-state/empty-state"}
+}

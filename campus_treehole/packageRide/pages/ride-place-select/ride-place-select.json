@@ -1,0 +1,4 @@
+{
+  "navigationBarTitleText": "选择地点",
+  "usingComponents": {"empty-state": "/components/empty-state/empty-state"}
+}

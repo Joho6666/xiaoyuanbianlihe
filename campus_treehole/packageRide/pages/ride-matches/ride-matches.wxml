@@ -1,0 +1,38 @@
+<view class="matches-page">
+  <view class="match-banner">
+    <view class="banner-icon">✅</view>
+    <view class="banner-title">发布成功！</view>
+    <view class="banner-sub">{{matchCount > 0 ? '为你找到 ' + matchCount + ' 个可能同行的人' : '暂时没有找到同路人，可以去广场看看'}}</view>
+  </view>
+
+  <view class="match-list">
+    <view class="match-card card" wx:for="{{rides}}" wx:key="id" data-id="{{item.id}}" bindtap="onRideTap">
+      <view class="match-head">
+        <view class="match-badge">{{item.percent}}% 匹配</view>
+        <view class="match-author">
+          <image class="avatar" src="{{item.authorAvatar}}" mode="aspectFill" />
+          <text class="author-name">{{item.authorName}}</text>
+        </view>
+        <text class="tag">{{item.departLabel}}</text>
+      </view>
+      <view class="match-route">{{item.originName}} → {{item.destinationName}}</view>
+      <view class="match-meta">
+        <text>🕐 {{item.timeText}}</text>
+        <text wx:if="{{item.flexLabel}}"> · {{item.flexLabel}}</text>
+        <text> · {{item.peopleText}}人</text>
+      </view>
+      <button class="apply-btn {{item.applied ? 'applied' : ''}}" data-id="{{item.id}}" catchtap="onApplyTap" disabled="{{item.applied}}">{{item.applied ? '已申请' : '申请同行'}}</button>
+    </view>
+
+    <empty-state
+      wx:if="{{!rides.length && !loading}}"
+      icon="🤝"
+      title="暂无匹配"
+      description="行程已发布，有新同行时会出现在广场"
+    />
+  </view>
+
+  <view class="footer-actions safe-bottom">
+    <button class="ghost-btn" bindtap="goSquare">浏览广场</button>
+  </view>
+</view>

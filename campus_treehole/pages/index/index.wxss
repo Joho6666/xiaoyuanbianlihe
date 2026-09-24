@@ -1349,3 +1349,4 @@
 .wf-footer { margin-top: 14rpx; }
 .wf-name, .like-num { color: #8b98ab; font-size: 21rpx; }
 .page-hint { color: #94a2b7; font-size: 21rpx; }
+.tone-ride .home-service-icon { color:#0f8f8f;background:#e2f6f5 }

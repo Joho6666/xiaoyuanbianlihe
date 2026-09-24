@@ -79,6 +79,7 @@ module.exports = function createWebAdminDispatch(db, _, cloud, hooks = {}) {
     if (targetType === 'goods') return 'market_goods'
     if (targetType === 'market_comment' || targetType === 'goods_comment') return 'market_comments'
     if (targetType === 'user') return 'users'
+    if (targetType === 'ride') return 'ride_posts'
     return ''
   }
 

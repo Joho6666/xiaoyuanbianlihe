@@ -6,6 +6,14 @@
     <text>{{draftStatus}}</text>
   </view>
 
+  <view class="ride-entry" bindtap="onOpenRidePublish">
+    <view class="ride-entry-main">
+      <text class="ride-entry-title">🚗 发拼车</text>
+      <text class="ride-entry-desc">找同路校友一起出发，去发布拼车行程</text>
+    </view>
+    <text class="ride-entry-arrow">›</text>
+  </view>
+
   <view class="edit-mode-banner" wx:if="{{editMode}}">
     <text>正在编辑已发布帖子，保存后会直接更新原内容。</text>
   </view>

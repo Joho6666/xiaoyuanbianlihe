@@ -121,6 +121,7 @@
       <view class="home-service-item tone-mutual" bindtap="onOpenMutual"><image class="home-service-icon" src="/images/services/mutual.svg" mode="aspectFit" /><text>互助</text></view>
       <view class="home-service-item tone-lost" bindtap="onOpenLost"><image class="home-service-icon" src="/images/services/lost.svg" mode="aspectFit" /><text>失物</text></view>
       <view class="home-service-item tone-events" bindtap="onOpenActivityZone"><image class="home-service-icon" src="/images/services/events.svg" mode="aspectFit" /><text>活动</text></view>
+      <view class="home-service-item tone-ride" bindtap="onOpenRide"><image class="home-service-icon" src="/images/services/more.svg" mode="aspectFit" /><text>拼车</text></view>
       <view class="home-service-item tone-more" bindtap="onOpenDiscover"><image class="home-service-icon" src="/images/services/more.svg" mode="aspectFit" /><text>更多服务</text></view>
     </view>
   </view>

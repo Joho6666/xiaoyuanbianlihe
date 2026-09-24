@@ -1,0 +1,45 @@
+<view class="ride-home">
+  <view class="hero card">
+    <view class="hero-title">拼车同行</view>
+    <view class="hero-subtitle">找同路校友，一起出发</view>
+    <view class="hero-actions">
+      <button class="hero-btn primary" bindtap="goPublish">我要拼车</button>
+      <button class="hero-btn ghost" bindtap="goSquare">浏览广场</button>
+    </view>
+  </view>
+
+  <view class="section">
+    <view class="section-title">热门目的地</view>
+    <view class="place-grid">
+      <view class="place-item" wx:for="{{hotPlaces}}" wx:key="poiId" data-poiid="{{item.poiId}}" bindtap="onHotPlaceTap">
+        <view class="place-icon">{{item.category === 'station' ? '🚉' : item.category === 'airport' ? '✈️' : item.category === 'mall' ? '🛍️' : item.category === 'scenic' ? '🏞️' : '🏫'}}</view>
+        <view class="place-name">{{item.shortName}}</view>
+      </view>
+    </view>
+  </view>
+
+  <view class="section">
+    <view class="section-header">
+      <view class="section-title">最近行程</view>
+      <view class="section-more" bindtap="goSquare">查看全部 ›</view>
+    </view>
+    <view class="recent-list" wx:if="{{recentRides.length}}">
+      <view class="recent-item card" wx:for="{{recentRides}}" wx:key="id" data-id="{{item.id}}" bindtap="onRecentTap">
+        <view class="recent-route">{{item.originName}} → {{item.destinationName}}</view>
+        <view class="recent-meta">
+          <text class="tag">{{item.departLabel}}</text>
+          <text class="recent-time">{{item.timeText}}</text>
+          <text class="recent-people">{{item.peopleText}}人</text>
+        </view>
+      </view>
+    </view>
+    <empty-state wx:elif="{{!loading}}" icon="🚗" title="还没有行程" description="发布第一条拼车行程吧" />
+  </view>
+
+  <view class="my-rides-entry" bindtap="goMyRides">
+    <text>我的拼车行程</text>
+    <text class="entry-arrow">›</text>
+  </view>
+
+  <view class="safety-note safe-bottom">校园便利盒仅提供同行信息匹配，不提供车辆运输服务。</view>
+</view>

@@ -76,6 +76,7 @@ Page({
     chatBlocked: false,
     chatBlockedTip: '',
     businessContext: '',
+    rideContext: null,
     emojis: ['😀', '😄', '😆', '😉', '🥹', '😍', '🤔', '😭', '😡', '🥳', '👍', '👏', '🙏', '❤️', '💔', '🎉']
   },
 
@@ -248,9 +249,14 @@ Page({
     })
 
     // Context is optional UI metadata from an existing entry; historical chats do not invent one.
-    const businessContext = ['Heart', 'Buddy', 'Market', 'Bridge'].includes(options.context) ? options.context : ''
+    const businessContext = ['Heart', 'Buddy', 'Market', 'Bridge', 'Ride'].includes(options.context) ? options.context : ''
     // 客户端保留公开 userId，身份映射由云函数完成。
     this.setData({ targetOpenid, businessContext })
+
+    // 拼车行程上下文：顶部横幅展示路线与时间，点击可回详情
+    if (businessContext === 'Ride' && options.rideId) {
+      this.loadRideContext(options.rideId)
+    }
 
     const rel = await app.getBlockRelation(targetOpenid)
     let chatBlocked = false
@@ -386,6 +392,32 @@ Page({
       await this.loadMessages()
     }
     app.syncMessageBadge(typeof this.getTabBar === 'function' ? this.getTabBar() : null)
+  },
+
+  // 拼车行程上下文：只拉取脱敏摘要用于横幅展示
+  async loadRideContext(rideId) {
+    try {
+      const result = await app.callDB('getRideById', { rideId })
+      const ride = result && result.data
+      if (!ride) return
+      const { formatRideTime } = require('../../utils/ride-format')
+      this.setData({
+        rideContext: {
+          rideId,
+          routeText: `${(ride.origin && (ride.origin.shortName || ride.origin.name)) || ''} → ${(ride.destination && (ride.destination.shortName || ride.destination.name)) || ''}`,
+          timeText: formatRideTime(ride.departureTime)
+        }
+      })
+    } catch (err) {
+      // 行程可能已删除：横幅静默降级
+    }
+  },
+
+  onRideContextTap() {
+    const ctx = this.data.rideContext
+    if (ctx && ctx.rideId) {
+      wx.navigateTo({ url: `/packageRide/pages/ride-detail/ride-detail?rideId=${ctx.rideId}` })
+    }
   },
 
   onShow() {

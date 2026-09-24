@@ -1,0 +1,36 @@
+<view class="my-rides-page">
+  <view class="tabs">
+    <view class="tab {{currentTab === 'published' ? 'tab-active' : ''}}" data-id="published" bindtap="onTabTap">我发布的</view>
+    <view class="tab {{currentTab === 'joined' ? 'tab-active' : ''}}" data-id="joined" bindtap="onTabTap">我加入的</view>
+  </view>
+
+  <view class="entry-row" bindtap="onRequestsTap">
+    <text>📨 申请管理</text>
+    <text class="entry-arrow">收到的申请 / 我发出的 ›</text>
+  </view>
+
+  <view class="ride-list">
+    <view class="ride-card card" wx:for="{{list}}" wx:key="id" data-id="{{item.id}}" bindtap="onRideTap">
+      <view class="ride-head">
+        <view class="ride-route">{{item.originName}} → {{item.destinationName}}</view>
+        <text class="status-chip {{item.isActive ? 'active' : item.isDeparted ? 'departed' : 'closed'}}">{{item.statusLabel}}</text>
+      </view>
+      <view class="ride-meta">
+        <text class="tag">{{item.departLabel}}</text>
+        <text>🕐 {{item.timeText}}</text>
+        <text wx:if="{{item.flexLabel}}"> · {{item.flexLabel}}</text>
+        <text> · 👥 {{item.peopleText}}人</text>
+      </view>
+    </view>
+
+    <empty-state
+      wx:if="{{!list.length && !loading}}"
+      icon="🚗"
+      title="{{currentTab === 'published' ? '还没有发布过行程' : '还没有加入任何行程'}}"
+      description="{{currentTab === 'published' ? '发布一条拼车行程，找同路校友一起出发' : '去广场或推荐页看看有没有顺路的行程'}}"
+    />
+    <view class="load-more" wx:if="{{loading}}">加载中…</view>
+  </view>
+
+  <view class="fab" bindtap="goPublish">+</view>
+</view>

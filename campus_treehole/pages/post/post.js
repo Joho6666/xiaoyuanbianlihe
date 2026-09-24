@@ -237,6 +237,12 @@ Page({
     }
   },
 
+  // 拼车发布入口（ride 分包）
+  onOpenRidePublish() {
+    if (!app.requestComplianceForAction()) return
+    wx.navigateTo({ url: '/packageRide/pages/ride-publish/ride-publish' })
+  },
+
   _filterValidTempFiles(files) {
     const fs = wx.getFileSystemManager()
     return (files || []).filter((item) => {

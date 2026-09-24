@@ -24,6 +24,16 @@ function formatInteractionText(item) {
       return `${name} 收藏了你的商品 ${title}`
     case 'goods_want':
       return `${name} 对你的商品点了想要 ${title}`
+    case 'ride_join_request':
+      return `${name} 想加入你的拼车行程 ${item.itemTitle || ''}`
+    case 'ride_join_accepted':
+      return `${name} 通过了你的拼车申请 ${item.itemTitle || ''}`
+    case 'ride_join_rejected':
+      return `${name} 未通过你的拼车申请 ${item.itemTitle || ''}`
+    case 'ride_cancelled':
+      return `${name} 取消了拼车行程 ${item.itemTitle || ''}`
+    case 'ride_member_left':
+      return `${name} 退出了你的拼车行程 ${item.itemTitle || ''}`
     default:
       return `${name} 和你有新的互动`
   }
@@ -66,6 +76,12 @@ function formatInteractionTypeLabel(type) {
       return '收藏'
     case 'goods_want':
       return '想要'
+    case 'ride_join_request':
+    case 'ride_join_accepted':
+    case 'ride_join_rejected':
+    case 'ride_cancelled':
+    case 'ride_member_left':
+      return '拼车'
     case 'user_follow':
       return '关注'
     default:
@@ -288,6 +304,10 @@ Page({
   onNotificationTap(e) {
     const { targetType, targetId, postId, goodsId, fromOpenid } = e.currentTarget.dataset
     if (!targetType) return
+    if (targetType === 'ride' && targetId) {
+      wx.navigateTo({ url: `/packageRide/pages/ride-detail/ride-detail?rideId=${encodeURIComponent(targetId)}` })
+      return
+    }
     if (targetType === 'user' && fromOpenid) {
       wx.navigateTo({ url: `/pages/profile/profile?userId=${encodeURIComponent(fromOpenid)}` })
       return

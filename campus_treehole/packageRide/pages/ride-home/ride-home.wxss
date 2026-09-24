@@ -1,0 +1,141 @@
+/* packageRide/pages/ride-home/ride-home.wxss */
+.ride-home {
+  padding: 24rpx;
+}
+
+.hero {
+  background: linear-gradient(135deg, var(--primary), var(--primary-dim));
+  color: var(--on-primary);
+  padding: 48rpx 40rpx;
+}
+
+.hero-title {
+  font-size: var(--text-hero);
+  font-weight: 700;
+}
+
+.hero-subtitle {
+  margin-top: 12rpx;
+  font-size: var(--text-sm);
+  opacity: 0.9;
+}
+
+.hero-actions {
+  display: flex;
+  gap: 20rpx;
+  margin-top: 36rpx;
+}
+
+.hero-btn {
+  flex: 1;
+  border-radius: 999rpx;
+  font-size: var(--text-md);
+  line-height: 2.4;
+  padding: 0;
+}
+
+.hero-btn.primary {
+  background: #ffffff;
+  color: var(--primary);
+}
+
+.hero-btn.ghost {
+  background: rgba(255, 255, 255, 0.16);
+  color: var(--on-primary);
+  border: 1rpx solid rgba(255, 255, 255, 0.4);
+}
+
+.section {
+  margin-top: 40rpx;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.section-title {
+  font-size: var(--text-lg);
+  font-weight: 600;
+  color: var(--on-surface);
+  margin-bottom: 20rpx;
+}
+
+.section-more {
+  font-size: var(--text-xs);
+  color: var(--primary);
+  margin-bottom: 20rpx;
+}
+
+.place-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16rpx;
+}
+
+.place-item {
+  width: calc((100% - 48rpx) / 4);
+  background: var(--surface-container);
+  border-radius: var(--radius-md);
+  padding: 24rpx 8rpx;
+  text-align: center;
+}
+
+.place-icon {
+  font-size: 40rpx;
+}
+
+.place-name {
+  margin-top: 12rpx;
+  font-size: var(--text-xs);
+  color: var(--on-surface);
+}
+
+.recent-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+
+.recent-item {
+  padding: 24rpx;
+}
+
+.recent-route {
+  font-size: var(--text-md);
+  font-weight: 600;
+  color: var(--on-surface);
+}
+
+.recent-meta {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  margin-top: 16rpx;
+  font-size: var(--text-xs);
+  color: var(--on-surface-variant);
+}
+
+.my-rides-entry {
+  margin-top: 40rpx;
+  background: var(--surface-container);
+  border-radius: var(--radius-md);
+  padding: 28rpx 32rpx;
+  display: flex;
+  justify-content: space-between;
+  font-size: var(--text-md);
+  color: var(--on-surface);
+}
+
+.entry-arrow {
+  color: var(--on-surface-variant);
+}
+
+.safety-note {
+  margin-top: 40rpx;
+  text-align: center;
+  font-size: var(--text-xs);
+  color: var(--on-surface-variant);
+  padding-bottom: 32rpx;
+}
